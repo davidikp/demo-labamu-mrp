@@ -1,0 +1,622 @@
+import React, { useEffect, useState } from "react";
+import { AddIcon, ChevronDownIcon, Download, Settings } from "../../../components/icons/Icons.jsx";
+import { Button } from "../../../components/common/Button.jsx";
+import { Checkbox } from "../../../components/common/Checkbox.jsx";
+import { FilterPill } from "../../../components/common/FilterPill.jsx";
+import { ListStatusCounterCard } from "../../../components/common/ListStatusCounterCard.jsx";
+import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
+import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
+import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
+import { MOCK_PO_TABLE_DATA } from "../mock/purchaseOrderMocks.js";
+import { DateRangeInputControl } from "../components/DateRangeInputControl.jsx";
+import { cellStyle } from "../utils/purchaseOrderTableUtils.js";
+
+export const PurchaseOrderListPage = ({ onNavigate, t }) => {
+  const [sortBy, setSortBy] = useState("createdDate");
+  const [sortDirection, setSortDirection] = useState("desc");
+  const [openFilterKey, setOpenFilterKey] = useState(null);
+  const [filterStatuses, setFilterStatuses] = useState([]);
+  const [dateFilterType, setDateFilterType] = useState("all");
+  const [customDateRange, setCustomDateRange] = useState({
+    start: "",
+    end: "",
+  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
+  const [viewportHeight, setViewportHeight] = useState(() =>
+    typeof window !== "undefined" ? window.innerHeight : 900
+  );
+  const [showActionToast, setShowActionToast] = useState(false);
+  const [actionToastMessage, setActionToastMessage] = useState("");
+
+  const tableColumns = [
+    { label: "PO Number", key: "poNumber", flex: "1.5", sortable: true },
+    { label: "Vendor Name", key: "vendorName", flex: "2", sortable: true },
+    { label: "Total Amount", key: "amount", flex: "1.5", sortable: false },
+    { label: "Created Date", key: "createdDate", flex: "1.2", sortable: true },
+    { label: "Status", key: "status", flex: "1.2", sortable: false },
+  ];
+
+  const statusCards = [
+    { key: "Draft", label: "Draft", activeColor: "grey-light" },
+    {
+      key: "Waiting for Approval",
+      label: "Waiting for Approval",
+      activeColor: "orange-light",
+    },
+    { key: "Issued", label: "Issued", activeColor: "blue-light" },
+    { key: "Completed", label: "Completed", activeColor: "green-light" },
+    {
+      key: "Need Revision",
+      label: "Need Revision",
+      activeColor: "yellow-light",
+    },
+    { key: "Canceled", label: "Canceled", activeColor: "red-light" },
+  ];
+
+  const statusCounts = statusCards.reduce((acc, card) => {
+    acc[card.key] = MOCK_PO_TABLE_DATA.filter(
+      (row) => row.status === card.key
+    ).length;
+    return acc;
+  }, {});
+
+  const toggleSort = (key) => {
+    if (sortBy === key) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(key);
+      setSortDirection(key === "createdDate" ? "desc" : "asc");
+    }
+  };
+
+  const toggleFilterStatus = (status) => {
+    setFilterStatuses((prev) =>
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status]
+    );
+  };
+
+  const parsedDate = (value) => {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  };
+
+  const now = new Date("2026-03-31");
+  const filteredRows = MOCK_PO_TABLE_DATA.filter((row) => {
+    const matchesStatusFilter =
+      filterStatuses.length === 0 || filterStatuses.includes(row.status);
+    const matchesSearch =
+      !searchQuery ||
+      `${row.poNumber} ${row.vendorName}`
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
+    let matchesDate = true;
+    const rowDate = parsedDate(row.createdDate);
+
+    if (dateFilterType === "last7" && rowDate) {
+      const start = new Date(now);
+      start.setDate(now.getDate() - 7);
+      matchesDate = rowDate >= start && rowDate <= now;
+    } else if (dateFilterType === "last30" && rowDate) {
+      const start = new Date(now);
+      start.setDate(now.getDate() - 30);
+      matchesDate = rowDate >= start && rowDate <= now;
+    } else if (
+      dateFilterType === "custom" &&
+      rowDate &&
+      customDateRange.start &&
+      customDateRange.end
+    ) {
+      const start = parsedDate(customDateRange.start);
+      const end = parsedDate(customDateRange.end);
+      if (start && end) matchesDate = rowDate >= start && rowDate <= end;
+    }
+
+    return matchesStatusFilter && matchesSearch && matchesDate;
+  }).sort((a, b) => {
+    const direction = sortDirection === "asc" ? 1 : -1;
+    if (sortBy === "createdDate") {
+      return (new Date(a.createdDate) - new Date(b.createdDate)) * direction;
+    }
+    return a[sortBy].localeCompare(b[sortBy]) * direction;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
+  const visibleRows = filteredRows.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage
+  );
+  const purchaseOrderTableBodyMaxHeight = "calc(100vh - 412px)";
+  const purchaseOrderAvailableBodyHeight = Math.max(220, viewportHeight - 412);
+  const purchaseOrderVisibleBodyHeight =
+    filteredRows.length === 0 ? 160 : visibleRows.length * 56;
+  const purchaseOrderShouldScroll =
+    purchaseOrderVisibleBodyHeight > purchaseOrderAvailableBodyHeight;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    filterStatuses.join("|"),
+    dateFilterType,
+    customDateRange.start,
+    customDateRange.end,
+    searchQuery,
+    rowsPerPage,
+  ]);
+
+  useEffect(() => {
+    setCurrentPage((prev) => Math.min(prev, totalPages));
+  }, [totalPages]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleResize = () => setViewportHeight(window.innerHeight);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!showActionToast) return undefined;
+    const timer = setTimeout(() => setShowActionToast(false), 3000);
+    return () => clearTimeout(timer);
+  }, [showActionToast]);
+
+  return (
+    <div
+      style={{
+        height: "calc(100vh - 64px)",
+        padding: "24px",
+        boxSizing: "border-box",
+        display: "flex",
+        flexDirection: "column",
+        gap: "24px",
+        overflow: "hidden",
+        minHeight: 0,
+      }}
+    >
+      {showActionToast ? (
+        <div
+          style={{
+            position: "fixed",
+            top: "84px",
+            right: "24px",
+            width: "335px",
+            minHeight: "51px",
+            background: "var(--status-green-primary)",
+            color: "var(--status-green-on-primary)",
+            padding: "12px 20px",
+            borderRadius: "8px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "var(--text-body)", lineHeight: "1.5" }}>
+              {actionToastMessage}
+            </span>
+          </div>
+          <button
+            type="button"
+            data-no-localize
+            translate="no"
+            style={{
+              border: "none",
+              background: "transparent",
+              fontSize: "var(--text-body)",
+              fontWeight: "var(--font-weight-bold)",
+              cursor: "pointer",
+              color: "var(--status-green-on-primary)",
+              marginLeft: "12px",
+              padding: 0,
+              fontFamily: "inherit",
+              lineHeight: "1.5",
+            }}
+            onClick={() => setShowActionToast(false)}
+          >
+            Okay
+          </button>
+        </div>
+      ) : null}
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <h1
+          style={{
+            margin: "0",
+            fontSize: "var(--text-big-title)",
+            fontWeight: "var(--font-weight-bold)",
+          }}
+        >
+          {t("purchase_order.title")}
+        </h1>
+        <div style={{ display: "flex", gap: "12px" }}>
+          <Button
+            variant="outlined"
+            leftIcon={Download}
+            onClick={() => {
+              setActionToastMessage("Report successfully downloaded");
+              setShowActionToast(true);
+            }}
+          >
+            Download Report
+          </Button>
+          <Button variant="outlined" leftIcon={Settings} onClick={() => onNavigate("settings")}>
+            {t("purchase_order.settings")}
+          </Button>
+          <Button variant="filled" leftIcon={AddIcon} onClick={() => onNavigate("create")}>
+            {t("purchase_order.new")}
+          </Button>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+        {statusCards.map((card) => (
+          <ListStatusCounterCard
+            key={card.key}
+            label={card.label}
+            count={statusCounts[card.key] || 0}
+            badgeVariant={card.activeColor}
+            active={filterStatuses.includes(card.key)}
+            onClick={() => toggleFilterStatus(card.key)}
+          />
+        ))}
+      </div>
+
+      <div
+        style={{
+          background: "var(--neutral-surface-primary)",
+          borderRadius: "var(--radius-card)",
+          border: "1px solid var(--neutral-line-separator-1)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          minHeight: 0,
+        }}
+      >
+        <div
+          style={{
+            padding: "16px 20px",
+            borderBottom: "1px solid var(--neutral-line-separator-2)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "12px",
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              flexWrap: "wrap",
+              position: "relative",
+            }}
+          >
+            <div
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setPopoverTriggerRect(rect);
+                setOpenFilterKey((prev) =>
+                  prev === "createdDate" ? null : "createdDate"
+                );
+              }}
+            >
+              <FilterPill
+                label="Created Date"
+                active={dateFilterType !== "all"}
+                isOpen={openFilterKey === "createdDate"}
+                count={dateFilterType !== "all" ? 1 : 0}
+              />
+            </div>
+
+            {openFilterKey ? (
+              <>
+                <div
+                  style={{ position: "fixed", inset: 0, zIndex: 80 }}
+                  onClick={() => setOpenFilterKey(null)}
+                />
+                <div
+                  style={{
+                    position: "fixed",
+                    top: popoverTriggerRect
+                      ? `${popoverTriggerRect.bottom + 8}px`
+                      : "160px",
+                    left: popoverTriggerRect ? `${popoverTriggerRect.left}px` : "0",
+                    width: "360px",
+                    background: "var(--neutral-surface-primary)",
+                    border: "1px solid var(--neutral-line-separator-1)",
+                    borderRadius: "var(--radius-card)",
+                    boxShadow: "var(--elevation-sm)",
+                    padding: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px",
+                    zIndex: 1000,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "var(--text-title-2)",
+                        fontWeight: "var(--font-weight-bold)",
+                      }}
+                    >
+                      Created Date
+                    </span>
+                    <button
+                      onClick={() => {
+                        setDateFilterType("all");
+                        setCustomDateRange({ start: "", end: "" });
+                        setOpenFilterKey(null);
+                      }}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        padding: 0,
+                        color: "var(--status-red-primary)",
+                        cursor: "pointer",
+                        fontSize: "var(--text-body)",
+                        fontWeight: "var(--font-weight-bold)",
+                      }}
+                    >
+                      Remove Filter
+                    </button>
+                  </div>
+                  {openFilterKey === "createdDate" ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "12px",
+                      }}
+                    >
+                      {[
+                        { key: "all", label: "All" },
+                        { key: "last7", label: "Last 7 days" },
+                        { key: "last30", label: "Last 30 days" },
+                        { key: "custom", label: "Custom date" },
+                      ].map((opt) => (
+                        <label
+                          key={opt.key}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            cursor: "pointer",
+                            fontSize: "var(--text-title-3)",
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            checked={dateFilterType === opt.key}
+                            onChange={() => setDateFilterType(opt.key)}
+                          />
+                          <span>{opt.label}</span>
+                        </label>
+                      ))}
+ 
+                      {dateFilterType === "custom" ? (
+                        <DateRangeInputControl
+                          value={customDateRange}
+                          onChange={(e) => setCustomDateRange(e.target.value)}
+                        />
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              </>
+            ) : null}
+          </div>
+
+          <TableSearchField
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search PO number, vendor"
+            width="360px"
+          />
+        </div>
+
+        <div
+          style={{
+            height: purchaseOrderShouldScroll
+              ? `${purchaseOrderAvailableBodyHeight}px`
+              : "auto",
+            maxHeight: purchaseOrderTableBodyMaxHeight,
+            overflowX: "auto",
+            overflowY: purchaseOrderShouldScroll ? "auto" : "visible",
+            width: "100%",
+          }}
+        >
+          <div
+            style={{
+              minWidth: "1000px",
+              width: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                background: "var(--neutral-surface-primary)",
+                borderBottom: "1px solid var(--neutral-line-separator-1)",
+                position: "sticky",
+                top: 0,
+                zIndex: 20,
+              }}
+            >
+              {tableColumns.map((col, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => (col.sortable ? toggleSort(col.key) : undefined)}
+                  style={{
+                    flex: col.flex,
+                    minWidth: 0,
+                    height: "49px",
+                    padding: "0 12px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "var(--text-title-3)",
+                    fontWeight: "var(--font-weight-bold)",
+                    color: "var(--neutral-on-surface-primary)",
+                    cursor: col.sortable ? "pointer" : "default",
+                  }}
+                >
+                  <span
+                    style={{
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {col.label}
+                  </span>
+                  {col.sortable ? (
+                    <ChevronDownIcon
+                      size={14}
+                      color={
+                        sortBy === col.key
+                          ? "var(--feature-brand-primary)"
+                          : "var(--neutral-on-surface-tertiary)"
+                      }
+                      style={{
+                        transform:
+                          sortBy === col.key && sortDirection === "asc"
+                            ? "rotate(180deg)"
+                            : "rotate(0deg)",
+                        transition: "transform 0.2s",
+                      }}
+                    />
+                  ) : null}
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                flex: filteredRows.length === 0 ? 1 : "0 0 auto",
+              }}
+            >
+              {visibleRows.map((row, rIdx) => (
+                <div
+                  key={rIdx}
+                  onClick={() => onNavigate("detail", row)}
+                  style={{
+                    display: "flex",
+                    background: "var(--neutral-surface-primary)",
+                    borderBottom: "1px solid var(--neutral-line-separator-1)",
+                    transition: "background 0.12s ease",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background =
+                      "var(--neutral-surface-grey-lighter)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background =
+                      "var(--neutral-surface-primary)")
+                  }
+                >
+                  <div
+                    style={cellStyle({
+                      flex: tableColumns[0].flex,
+                      color: "var(--feature-brand-primary)",
+                    })}
+                  >
+                    <span
+                      style={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {row.poNumber}
+                    </span>
+                  </div>
+                  <div style={cellStyle({ flex: tableColumns[1].flex })}>
+                    <span
+                      style={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {row.vendorName}
+                    </span>
+                  </div>
+                  <div style={cellStyle({ flex: tableColumns[2].flex })}>
+                    {row.amount}
+                  </div>
+                  <div style={cellStyle({ flex: tableColumns[3].flex })}>
+                    <span
+                      style={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {row.createdDate}
+                    </span>
+                  </div>
+                  <div style={cellStyle({ flex: tableColumns[4].flex })}>
+                    <StatusBadge variant={row.sBadge}>{row.status}</StatusBadge>
+                  </div>
+                </div>
+              ))}
+
+              {filteredRows.length === 0 ? (
+                <div
+                  style={{
+                    flex: 1,
+                    padding: "32px",
+                    textAlign: "center",
+                    color: "var(--neutral-on-surface-tertiary)",
+                    fontSize: "var(--text-title-3)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  No purchase orders found.
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+
+        <TablePaginationFooter
+          totalRows={filteredRows.length}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={setRowsPerPage}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      </div>
+    </div>
+  );
+};
