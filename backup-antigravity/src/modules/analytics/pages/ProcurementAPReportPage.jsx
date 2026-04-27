@@ -8,6 +8,8 @@ import {
   Building2,
   FileText,
   Calendar,
+  ShoppingCart,
+  HelpCircle,
 } from "../../../components/icons/Icons.jsx";
 const CheckCircle = CheckCircleIcon;
 const AlertCircle = Info;
@@ -75,7 +77,7 @@ const RadialBarChart = ({ items, totalValue, centerLabel, centerValue, size = 18
   );
 };
 
-const SummaryCard = ({ label, metric, valueLabel, tag, onClick }) => (
+const SummaryCard = ({ label, icon: Icon, onClick }) => (
   <div 
     onClick={onClick}
     style={{
@@ -83,54 +85,52 @@ const SummaryCard = ({ label, metric, valueLabel, tag, onClick }) => (
       borderRadius: "16px",
       border: "1px solid var(--neutral-line-separator-1)",
       display: "flex",
-      flexDirection: "column",
+      alignItems: "center",
+      padding: "16px 20px",
       flex: 1,
       cursor: onClick ? "pointer" : "default",
-      transition: "border-color 0.2s ease",
-      overflow: "hidden"
+      transition: "all 0.2s ease",
+      gap: "12px"
     }}
     onMouseEnter={(e) => {
-      if (onClick) e.currentTarget.style.borderColor = "var(--feature-brand-primary)";
+      if (onClick) {
+        e.currentTarget.style.borderColor = "var(--feature-brand-primary)";
+        e.currentTarget.style.boxShadow = "0 4px 12px rgba(0, 0, 0, 0.05)";
+      }
     }}
     onMouseLeave={(e) => {
-      if (onClick) e.currentTarget.style.borderColor = "var(--neutral-line-separator-1)";
+      if (onClick) {
+        e.currentTarget.style.borderColor = "var(--neutral-line-separator-1)";
+        e.currentTarget.style.boxShadow = "none";
+      }
     }}
   >
-    {/* Header */}
-    <div style={{ 
-      display: "flex", 
-      justifyContent: "space-between", 
-      alignItems: "center", 
-      padding: "16px 20px",
-      borderBottom: "1px solid var(--neutral-line-separator-1)"
+    <div style={{
+      width: "36px",
+      height: "36px",
+      borderRadius: "50%",
+      background: "var(--neutral-surface-grey-lighter)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0
     }}>
-      <span style={{ fontSize: "16px", color: "var(--neutral-on-surface-primary)", fontWeight: "var(--font-weight-bold)" }}>
+      <Icon size={20} color="var(--neutral-on-surface-primary)" />
+    </div>
+    
+    <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
+      <span style={{ 
+        fontSize: "14px", 
+        color: "var(--neutral-on-surface-primary)", 
+        fontWeight: "var(--font-weight-bold)" 
+      }}>
         {label}
       </span>
-      {onClick && (
-        <Button 
-          variant="tertiary" 
-          size="small" 
-          rightIcon={ChevronRight}
-          style={{ padding: "0", height: "24px", minWidth: "auto", fontSize: "12px" }}
-        >
-          See Details
-        </Button>
-      )}
     </div>
 
-    {/* Body */}
-    <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-        <span style={{ fontSize: "13px", color: "var(--neutral-on-surface-secondary)", fontWeight: "500" }}>
-          {valueLabel}
-        </span>
-        <div style={{ fontSize: "16px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
-          {metric}
-        </div>
-      </div>
-      {tag && <StatusBadge variant="blue-light">{tag}</StatusBadge>}
-    </div>
+    {onClick && (
+      <ChevronRight size={20} color="var(--neutral-on-surface-tertiary)" />
+    )}
   </div>
 );
 
@@ -297,21 +297,17 @@ const ProcurementAPReportPage = ({ onNavigate }) => {
       <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
         <SummaryCard 
           label="Purchase Order" 
-          metric={metrics.openPoCount} 
-          valueLabel="Open POs" 
+          icon={ShoppingCart}
           onClick={() => onNavigate("analytics_po_report")}
         />
         <SummaryCard 
           label="Vendor Liability" 
-          metric={formatCurrency(metrics.outstandingAp, currency)} 
-          valueLabel="Outstanding AP"
+          icon={Building2}
           onClick={() => onNavigate("analytics_vendor_liability_report")}
         />
         <SummaryCard 
           label="AP Aging" 
-          metric={formatCurrency(metrics.overdueAp, currency)} 
-          valueLabel="Overdue AP"
-          supportingAlert={metrics.criticalOverdueCount > 0 ? `${metrics.criticalOverdueCount} critical` : null}
+          icon={Calendar}
           onClick={() => onNavigate("analytics_ap_aging_report")}
         />
       </div>

@@ -10,7 +10,9 @@ import {
   Building2,
   CreditCard,
   Calendar,
-  CheckCircleIcon
+  CheckCircleIcon,
+  TrendingUp,
+  CircleDollarSign
 } from "../../../components/icons/Icons.jsx";
 import { MOCK_REPORT_POS } from "../mock/reportMocks";
 import { formatCurrency } from "../../../utils/format/formatUtils";
@@ -55,10 +57,10 @@ const APAgingReportPage = ({ onNavigate, t }) => {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
         let agingBucket = "Not Due";
-        if (diffDays > 90) agingBucket = "90+";
-        else if (diffDays > 60) agingBucket = "61-90";
-        else if (diffDays > 30) agingBucket = "31-60";
-        else if (diffDays > 0) agingBucket = "1-30";
+        if (diffDays > 90) agingBucket = "Late 90+";
+        else if (diffDays > 60) agingBucket = "Late 61-90";
+        else if (diffDays > 30) agingBucket = "Late 31-60";
+        else if (diffDays > 0) agingBucket = "Late 1-30";
 
         let status = "Unpaid";
         if (paidAmount > 0) {
@@ -69,6 +71,7 @@ const APAgingReportPage = ({ onNavigate, t }) => {
           ...inv,
           poNumber: po.poNumber,
           vendorName: po.vendorName,
+          invoiceDate: po.createdDate,
           paidAmount,
           outstanding,
           agingBucket,
@@ -115,12 +118,13 @@ const APAgingReportPage = ({ onNavigate, t }) => {
       if (curr.status === "Paid") return acc;
       
       if (curr.agingBucket === "Not Due") acc.notDue += curr.outstanding;
-      else if (curr.agingBucket === "1-30") acc.late1_30 += curr.outstanding;
-      else if (curr.agingBucket === "31-60") acc.late31_60 += curr.outstanding;
-      else acc.lateOver60 += curr.outstanding; // 61-90 and 90+
+      else if (curr.agingBucket === "Late 1-30") acc.late1_30 += curr.outstanding;
+      else if (curr.agingBucket === "Late 31-60") acc.late31_60 += curr.outstanding;
+      else if (curr.agingBucket === "Late 61-90") acc.late61_90 += curr.outstanding;
+      else if (curr.agingBucket === "Late 90+") acc.late90Plus += curr.outstanding;
       
       return acc;
-    }, { notDue: 0, late1_30: 0, late31_60: 0, lateOver60: 0 });
+    }, { notDue: 0, late1_30: 0, late31_60: 0, late61_90: 0, late90Plus: 0 });
   }, [allInvoices]);
 
   // Pagination
@@ -130,13 +134,14 @@ const APAgingReportPage = ({ onNavigate, t }) => {
   const tableColumns = [
     { label: "Vendor", flex: "1.8" },
     { label: "PO No", flex: "1.2" },
-    { label: "Inv No", flex: "1.4" },
-    { label: "Inv Date", flex: "1.2" },
+    { label: "Invoice No", flex: "1.4" },
+    { label: "Invoice Date", flex: "1.2" },
     { label: "Due Date", flex: "1.6" },
-    { label: "Inv Amount", flex: "1.4" },
+    { label: "Invoice Amount", flex: "1.4" },
     { label: "Paid Amount", flex: "1.4" },
     { label: "Outstanding", flex: "1.4" },
-    { label: "Status", flex: "1.2" },
+    { label: "Payment Status", flex: "1.2" },
+    { label: "Aging Bucket", flex: "1.4" },
   ];
 
   const handleExport = () => {
@@ -196,12 +201,13 @@ const APAgingReportPage = ({ onNavigate, t }) => {
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px", marginBottom: "32px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "24px", marginBottom: "32px" }}>
         {[
-          { label: "Not Due", value: summary.notDue, icon: CheckCircleIcon },
-          { label: "Late 1–30", value: summary.late1_30, icon: Calendar },
-          { label: "31–60", value: summary.late31_60, icon: Calendar },
-          { label: "Over 60 Days", value: summary.lateOver60, icon: Info, isCritical: true },
+          { label: "Not Due", value: summary.notDue, icon: <CheckCircleIcon /> },
+          { label: "Late 1–30", value: summary.late1_30, icon: <Calendar /> },
+          { label: "Late 31–60", value: summary.late31_60, icon: <Calendar /> },
+          { label: "Late 61–90", value: summary.late61_90, icon: <Calendar /> },
+          { label: "Late 90+", value: summary.late90Plus, icon: <Info />, isCritical: true },
         ].map((card, idx) => (
           <div 
             key={idx}
@@ -212,28 +218,29 @@ const APAgingReportPage = ({ onNavigate, t }) => {
               border: "1px solid var(--neutral-line-separator-1)",
               display: "flex",
               alignItems: "center",
-              gap: "16px"
+              justifyContent: "space-between",
+              minHeight: "92px"
             }}
           >
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontSize: "13px", color: "var(--neutral-on-surface-tertiary)", fontWeight: "500" }}>
+                {card.label}
+              </span>
+              <div style={{ fontSize: "16px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                {formatCurrency(card.value, currency)}
+              </div>
+            </div>
             <div style={{ 
-              width: "48px", 
-              height: "48px", 
-              borderRadius: "12px", 
-              background: card.isCritical ? "var(--status-red-container)" : "var(--feature-brand-container-lighter)", 
+              width: "36px", 
+              height: "36px", 
+              borderRadius: "50%", 
+              background: "#F5F5F5", 
               display: "flex", 
               alignItems: "center", 
               justifyContent: "center",
               flexShrink: 0
             }}>
-              <card.icon size={22} color={card.isCritical ? "var(--status-red-primary)" : "var(--feature-brand-primary)"} />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              <span style={{ fontSize: "13px", color: "var(--neutral-on-surface-secondary)", fontWeight: "500" }}>
-                {card.label}
-              </span>
-              <div style={{ fontSize: "20px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
-                {formatCurrency(card.value, currency)}
-              </div>
+              {React.isValidElement(card.icon) ? React.cloneElement(card.icon, { size: 18, color: card.isCritical ? "var(--status-red-primary)" : "var(--neutral-on-surface-secondary)" }) : <card.icon size={18} color={card.isCritical ? "var(--status-red-primary)" : "var(--neutral-on-surface-secondary)"} />}
             </div>
           </div>
         ))}
@@ -297,14 +304,6 @@ const APAgingReportPage = ({ onNavigate, t }) => {
               placeholder="Search invoice no. or vendor"
               style={{ width: "280px" }}
             />
-            <Button 
-              variant="outlined" 
-              size="small"
-              leftIcon={Download}
-              onClick={handleExport}
-            >
-              Download Excel
-            </Button>
           </div>
         </div>
 
@@ -352,17 +351,42 @@ const APAgingReportPage = ({ onNavigate, t }) => {
                   onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                 >
                   <div style={cellStyle({ flex: tableColumns[0].flex, fontWeight: "600" })}>{inv.vendorName}</div>
-                  <div style={cellStyle({ flex: tableColumns[1].flex, color: "var(--feature-brand-primary)", fontWeight: "500" })}>{inv.poNumber}</div>
-                  <div style={cellStyle({ flex: tableColumns[2].flex, fontWeight: "600" })}>{inv.number}</div>
-                  <div style={cellStyle({ flex: tableColumns[3].flex })}>{inv.date}</div>
+                  <div style={cellStyle({ 
+                    flex: tableColumns[1].flex, 
+                    color: "var(--feature-brand-primary)", 
+                    fontWeight: "500",
+                    position: "relative"
+                  })}>
+                    <div 
+                      style={{
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        wordBreak: "break-all",
+                        lineHeight: "1.2"
+                      }}
+                      title={inv.poNumber.length > 20 ? inv.poNumber : ""} // Simple check for tooltip
+                    >
+                      {inv.poNumber}
+                    </div>
+                  </div>
+                  <div style={cellStyle({ flex: tableColumns[2].flex, fontWeight: "400" })}>{inv.number}</div>
+                  <div style={cellStyle({ flex: tableColumns[3].flex })}>{inv.invoiceDate}</div>
                   <div style={cellStyle({ flex: tableColumns[4].flex, color: isOverdue ? "var(--status-red-primary)" : "var(--neutral-on-surface-primary)", fontWeight: isOverdue ? "700" : "400", flexDirection: "column", alignItems: "flex-start", justifyContent: "center" })}>
                     <div>{inv.dueDate}</div>
                     {isOverdue && <div style={{ fontSize: "11px", fontWeight: "600" }}>({inv.overdueDays}d overdue)</div>}
                   </div>
                   <div style={cellStyle({ flex: tableColumns[5].flex })}>{formatCurrency(inv.amount, currency)}</div>
                   <div style={cellStyle({ flex: tableColumns[6].flex })}>{formatCurrency(inv.paidAmount, currency)}</div>
-                  <div style={cellStyle({ flex: tableColumns[7].flex, fontWeight: "700", color: isOverdue ? "var(--status-red-primary)" : "var(--neutral-on-surface-primary)" })}>{formatCurrency(inv.outstanding, currency)}</div>
+                  <div style={cellStyle({ flex: tableColumns[7].flex, fontWeight: "400", color: isOverdue ? "var(--status-red-primary)" : "var(--neutral-on-surface-primary)" })}>{formatCurrency(inv.outstanding, currency)}</div>
                   <div style={cellStyle({ flex: tableColumns[8].flex })}><StatusBadge variant={statusVariant}>{inv.status}</StatusBadge></div>
+                  <div style={cellStyle({ flex: tableColumns[9].flex })}>
+                    <StatusBadge variant={inv.agingBucket === "Not Due" ? "grey-light" : (inv.agingBucket === "Late 90+" ? "red-light" : "orange-light")}>
+                      {inv.agingBucket}
+                    </StatusBadge>
+                  </div>
                 </div>
               );
             }) : (
@@ -381,6 +405,17 @@ const APAgingReportPage = ({ onNavigate, t }) => {
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
+          renderLeftActions={() => (
+            <Button 
+              variant="outlined" 
+              size="small"
+              leftIcon={Download}
+              onClick={handleExport}
+              style={{ height: "40px", borderRadius: "12px", padding: "0 16px" }}
+            >
+              Download
+            </Button>
+          )}
         />
       </div>
     </div>

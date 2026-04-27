@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   ChevronRight, 
   ChevronLeft,
@@ -8,7 +8,10 @@ import {
   Building2,
   FileText,
   CreditCard,
-  Info
+  Info,
+  Calendar,
+  TrendingUp,
+  CircleDollarSign
 } from "../../../components/icons/Icons.jsx";
 const AlertCircle = Info;
 import { MOCK_REPORT_POS } from "../mock/reportMocks";
@@ -30,6 +33,207 @@ const cellStyle = (overrides) => ({
   ...overrides,
 });
 
+const tabButtonStyle = (isActive) => ({
+  padding: "8px 24px",
+  borderRadius: "100px",
+  border: isActive ? "1px solid var(--feature-brand-primary)" : "1px solid var(--neutral-line-separator-1)",
+  background: isActive ? "var(--feature-brand-container-lighter)" : "white",
+  color: isActive ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-secondary)",
+  fontSize: "14px",
+  fontWeight: isActive ? "var(--font-weight-bold)" : "var(--font-weight-semibold)",
+  cursor: "pointer",
+  transition: "all 0.2s ease",
+  height: "44px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  whiteSpace: "nowrap"
+});
+
+const DateRangePicker = ({ startDate, endDate, onSelect, onClose }) => {
+  const pickerRef = React.useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [onClose]);
+  
+  const formatDateISO = (date) => {
+    if (!date) return "";
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const isSameDay = (d1, d2) => {
+    if (!d1 || !d2) return false;
+    return d1.getFullYear() === d2.getFullYear() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getDate() === d2.getDate();
+  };
+
+  const isInRange = (date) => {
+    if (!startDate || !endDate) return false;
+    return date > startDate && date < endDate;
+  };
+
+  const handleDateClick = (date) => {
+    if (typeof onSelect !== 'function') return;
+    
+    if (!startDate || (startDate && endDate)) {
+      onSelect(date, null);
+    } else {
+      if (date < startDate) {
+        onSelect(date, startDate);
+      } else {
+        onSelect(startDate, date);
+      }
+    }
+  };
+
+  const renderDay = (day, month, year, isGrey = false) => {
+    const date = new Date(year, month, day);
+    const start = isSameDay(date, startDate);
+    const end = isSameDay(date, endDate);
+    const range = isInRange(date);
+    
+    return (
+      <div 
+        key={`${month}-${day}-${year}`}
+        onClick={() => !isGrey && handleDateClick(date)}
+        style={{
+          height: "40px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          cursor: isGrey ? "default" : "pointer"
+        }}
+      >
+        {/* Range Background Pill */}
+        {(range || start || end) && (
+          <div style={{
+            position: "absolute",
+            left: "0",
+            right: "0",
+            top: "4px",
+            bottom: "4px",
+            background: "var(--feature-brand-container-lighter)",
+            zIndex: 0,
+            borderRadius: start ? "16px 0 0 16px" : (end ? "0 16px 16px 0" : "0")
+          }} />
+        )}
+        
+        {/* Date Circle/Text */}
+        <div style={{
+          width: "32px",
+          height: "32px",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "13px",
+          zIndex: 1,
+          background: (start || end) ? "var(--feature-brand-primary)" : "transparent",
+          color: (start || end) ? "white" : (isGrey ? "var(--neutral-on-surface-tertiary)" : "var(--neutral-on-surface-primary)"),
+          opacity: isGrey ? 0.3 : 1,
+          fontWeight: (start || end || range) ? "bold" : "500",
+          transition: "all 0.2s ease"
+        }}>
+          {day}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div 
+      ref={pickerRef}
+      style={{
+        position: "absolute",
+        top: "calc(100% + 12px)",
+        left: 0,
+        zIndex: 100,
+        background: "white",
+        borderRadius: "16px",
+        border: "1px solid var(--neutral-line-separator-1)",
+        boxShadow: "0 12px 48px rgba(0,0,0,0.15)",
+        padding: "24px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "28px",
+        minWidth: "660px"
+      }}
+    >
+      <div style={{ display: "flex", gap: "40px" }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+            <ChevronLeft size={18} style={{ cursor: "pointer" }} />
+            <span style={{ fontWeight: "700", fontSize: "14px", letterSpacing: "0.5px" }}>APR 2026</span>
+            <div style={{ width: 18 }} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center" }}>
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+              <span key={d} style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)", paddingBottom: "12px" }}>{d}</span>
+            ))}
+            {[29, 30, 31].map(d => renderDay(d, 2, 2026, true))}
+            {[...Array(30)].map((_, i) => renderDay(i + 1, 3, 2026))}
+            {[1, 2].map(d => renderDay(d, 4, 2026, true))}
+          </div>
+        </div>
+
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+            <div style={{ width: 18 }} />
+            <span style={{ fontWeight: "700", fontSize: "14px", letterSpacing: "0.5px" }}>MAY 2026</span>
+            <ChevronRight size={18} style={{ cursor: "pointer" }} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center" }}>
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+              <span key={d} style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)", paddingBottom: "12px" }}>{d}</span>
+            ))}
+            {[26, 27, 28, 29, 30].map(d => renderDay(d, 3, 2026, true))}
+            {[...Array(31)].map((_, i) => renderDay(i + 1, 4, 2026))}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "center", 
+        borderTop: "1px solid var(--neutral-line-separator-1)",
+        paddingTop: "24px"
+      }}>
+        <div style={{
+          width: "100%",
+          maxWidth: "420px",
+          height: "48px",
+          borderRadius: "10px",
+          border: "1px solid var(--feature-brand-primary)",
+          display: "flex",
+          alignItems: "center",
+          padding: "0 16px",
+          justifyContent: "space-between",
+          background: "white",
+          boxShadow: "0 2px 8px rgba(0,107,255,0.08)",
+          cursor: "pointer"
+        }} onClick={() => { if (startDate && endDate) onClose(); }}>
+          <span style={{ fontSize: "14px", fontWeight: "500", color: "var(--neutral-on-surface-primary)" }}>
+            {startDate ? formatDateISO(startDate) : "Select Start"} - {endDate ? formatDateISO(endDate) : "Select End"}
+          </span>
+          <Calendar size={18} color="var(--neutral-on-surface-secondary)" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const POReportPage = ({ onNavigate, t }) => {
   const currency = "IDR";
   const [dateFilter, setDateFilter] = useState("Last 30 Days");
@@ -39,20 +243,60 @@ const POReportPage = ({ onNavigate, t }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    return d;
+  });
+  const [endDate, setEndDate] = useState(new Date());
+
+  const getActiveRangeLabel = () => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const format = (d) => `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+    
+    if (dateFilter === "All Period") return "All Period";
+    if (!startDate || !endDate) return "";
+    return `${format(startDate)} - ${format(endDate)}`;
+  };
+
+  const handlePresetClick = (preset) => {
+    const today = new Date();
+    let start = new Date();
+    
+    if (preset === "Today") {
+      start.setHours(0,0,0,0);
+    } else if (preset === "Last 7 Days") {
+      start.setDate(today.getDate() - 7);
+    } else if (preset === "Last 14 Days") {
+      start.setDate(today.getDate() - 14);
+    } else if (preset === "Last 30 Days") {
+      start.setDate(today.getDate() - 30);
+    } else if (preset === "All Period") {
+      setDateFilter("All Period");
+      setCurrentPage(1);
+      setShowDatePicker(false);
+      return;
+    }
+    
+    setStartDate(start);
+    setEndDate(today);
+    setDateFilter(preset);
+    setCurrentPage(1);
+    setShowDatePicker(false);
+  };
 
   // Date filter logic
   const filteredByDate = useMemo(() => {
-    const today = new Date();
-    let startDate = new Date();
-
     if (dateFilter === "All Period") return MOCK_REPORT_POS;
-    if (dateFilter === "Last 30 Days") startDate.setDate(today.getDate() - 30);
-    if (dateFilter === "Last 14 Days") startDate.setDate(today.getDate() - 14);
-    if (dateFilter === "Last 7 Days") startDate.setDate(today.getDate() - 7);
-    if (dateFilter === "Today") startDate.setHours(0, 0, 0, 0);
+    if (!startDate || !endDate) return MOCK_REPORT_POS;
 
-    return MOCK_REPORT_POS.filter(po => new Date(po.createdDate) >= startDate);
-  }, [dateFilter]);
+    return MOCK_REPORT_POS.filter(po => {
+      const poDate = new Date(po.createdDate);
+      return poDate >= startDate && poDate <= endDate;
+    });
+  }, [dateFilter, startDate, endDate]);
 
   // Main filter logic
   const filteredData = useMemo(() => {
@@ -151,9 +395,19 @@ const POReportPage = ({ onNavigate, t }) => {
             margin: 0, 
             fontSize: "var(--text-large-title)", 
             fontWeight: "var(--font-weight-bold)",
-            color: "var(--neutral-on-surface-primary)"
+            color: "var(--neutral-on-surface-primary)",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px"
           }}>
             PO Report
+            <span style={{ 
+              fontSize: "16px", 
+              fontWeight: "500", 
+              color: "var(--neutral-on-surface-secondary)" 
+            }}>
+              ({getActiveRangeLabel()})
+            </span>
           </h1>
         </div>
         
@@ -176,43 +430,58 @@ const POReportPage = ({ onNavigate, t }) => {
         </div>
 
         {/* Period Filter (Tab Chips) */}
-        <div style={{ 
-          display: "inline-flex", 
-          background: "white", 
-          padding: "4px", 
-          borderRadius: "100px", 
-          border: "1px solid var(--neutral-line-separator-1)",
-          gap: "4px" 
-        }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
+          <button
+            style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              background: (showDatePicker || dateFilter === "Custom") ? "var(--feature-brand-primary)" : "white",
+              border: "1px solid " + ((showDatePicker || dateFilter === "Custom") ? "var(--feature-brand-primary)" : "var(--neutral-line-separator-1)"),
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: (showDatePicker || dateFilter === "Custom") ? "white" : "var(--neutral-on-surface-secondary)",
+              transition: "all 0.2s ease"
+            }}
+            onClick={() => setShowDatePicker(!showDatePicker)}
+          >
+            <Calendar size={18} />
+          </button>
+
           {["All Period", "Last 30 Days", "Last 14 Days", "Last 7 Days", "Today"].map(chip => (
             <button
               key={chip}
-              onClick={() => { setDateFilter(chip); setCurrentPage(1); }}
-              style={{
-                padding: "8px 20px",
-                borderRadius: "100px",
-                border: "none",
-                fontSize: "14px",
-                fontWeight: "600",
-                cursor: "pointer",
-                background: dateFilter === chip ? "var(--feature-brand-primary)" : "transparent",
-                color: dateFilter === chip ? "white" : "var(--neutral-on-surface-secondary)",
-                transition: "all 0.2s ease"
-              }}
+              onClick={() => handlePresetClick(chip)}
+              style={tabButtonStyle(dateFilter === chip && !showDatePicker)}
             >
               {chip}
             </button>
           ))}
+
+          {showDatePicker && (
+            <DateRangePicker 
+              startDate={startDate}
+              endDate={endDate}
+              onSelect={(s, e) => {
+                setStartDate(s);
+                setEndDate(e);
+                if (s && e) setDateFilter("Custom");
+              }}
+              onClose={() => setShowDatePicker(false)}
+            />
+          )}
         </div>
       </div>
 
       {/* Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "24px", marginBottom: "32px" }}>
         {[
-          { label: "Total POs", value: metrics.totalCount, icon: <FileText size={20} color="var(--feature-brand-primary)" /> },
-          { label: "Total PO Value", value: formatCurrency(metrics.totalPoValue, currency), icon: <Building2 size={20} color="var(--feature-brand-primary)" /> },
-          { label: "Invoiced Value", value: formatCurrency(metrics.invoicedValue, currency), icon: <CreditCard size={20} color="var(--feature-brand-primary)" /> },
-          { label: "Outstanding to Pay", value: formatCurrency(metrics.outstandingToPay, currency), icon: <AlertCircle size={20} color="var(--status-orange-primary)" /> },
+          { label: "Total Orders", value: metrics.totalCount, icon: <FileText /> },
+          { label: "Total Order Value", value: formatCurrency(metrics.totalOrderValue || metrics.totalPoValue, currency), icon: <TrendingUp /> },
+          { label: "Total Paid Value", value: formatCurrency(metrics.totalPaidValue || metrics.invoicedValue, currency), icon: <CreditCard /> },
+          { label: "Total Outstanding Value", value: formatCurrency(metrics.totalOutstandingValue || metrics.outstandingToPay, currency), icon: <CircleDollarSign /> },
         ].map((card, idx) => (
           <div key={idx} style={{ 
             background: "var(--neutral-surface-primary)", 
@@ -221,22 +490,24 @@ const POReportPage = ({ onNavigate, t }) => {
             border: "1px solid var(--neutral-line-separator-1)",
             display: "flex",
             alignItems: "center",
-            gap: "16px"
+            justifyContent: "space-between",
+            minHeight: "92px"
           }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ fontSize: "13px", color: "var(--neutral-on-surface-tertiary)", fontWeight: "500" }}>{card.label}</div>
+              <div style={{ fontSize: "16px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>{card.value}</div>
+            </div>
             <div style={{ 
-              width: "48px", 
-              height: "48px", 
-              borderRadius: "12px", 
-              background: "var(--feature-brand-container-lighter)", 
+              width: "36px", 
+              height: "36px", 
+              borderRadius: "50%", 
+              background: "#F5F5F5", 
               display: "flex", 
               alignItems: "center", 
-              justifyContent: "center" 
+              justifyContent: "center",
+              flexShrink: 0
             }}>
-              {card.icon}
-            </div>
-            <div>
-              <div style={{ fontSize: "13px", color: "var(--neutral-on-surface-secondary)", marginBottom: "4px" }}>{card.label}</div>
-              <div style={{ fontSize: "20px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>{card.value}</div>
+              {React.cloneElement(card.icon, { size: 18, color: "var(--neutral-on-surface-secondary)" })}
             </div>
           </div>
         ))}
@@ -287,14 +558,6 @@ const POReportPage = ({ onNavigate, t }) => {
               placeholder="Search PO no. or vendor name"
               style={{ width: "320px" }}
             />
-            <Button 
-              variant="outlined" 
-              size="small"
-              leftIcon={Download}
-              onClick={handleExport}
-            >
-              Download Excel
-            </Button>
           </div>
         </div>
 
@@ -377,6 +640,17 @@ const POReportPage = ({ onNavigate, t }) => {
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
+          renderLeftActions={() => (
+            <Button 
+              variant="outlined" 
+              size="small"
+              leftIcon={Download}
+              onClick={handleExport}
+              style={{ height: "40px", borderRadius: "12px", padding: "0 16px" }}
+            >
+              Download
+            </Button>
+          )}
         />
       </div>
     </div>

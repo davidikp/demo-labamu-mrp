@@ -12,6 +12,7 @@ const TablePaginationFooter = ({
   currentPage,
   totalPages,
   onPageChange,
+  renderLeftActions,
 }) => {
   const isPrevDisabled = currentPage <= 1;
   const isNextDisabled = currentPage >= totalPages;
@@ -19,6 +20,12 @@ const TablePaginationFooter = ({
   return (
     <div className="ds-table-pagination">
       <div className="ds-table-pagination__rows">
+        {renderLeftActions && (
+          <>
+            {renderLeftActions()}
+            <div style={{ width: "1px", height: "24px", background: "#e9e9e9", margin: "0 8px 0 4px" }} />
+          </>
+        )}
         <div className="ds-table-pagination__rows-select">
           <DropdownSelect
             value={rowsPerPage}

@@ -29,10 +29,18 @@ const DonutChart = ({ data, total, centerLabel, centerValue, size = 200, thickne
           stroke="var(--neutral-surface-grey-lighter)"
           strokeWidth={thickness}
         />
-        {/* Segments rendered in reverse z-index order */}
+        
+        {/* Segments */}
         {renderingOrder.map((segment, index) => {
-          const segmentCircumference = (segment.value / total) * circumference;
-          const dashOffset = (segment.offsetValue / total) * circumference;
+          // Calculate segment length in pixels
+          const totalPixels = circumference;
+          const segmentPixels = (segment.value / total) * totalPixels;
+          
+          // Apply a 4px gap by reducing the stroke length
+          const gapPixels = 4;
+          const displayPixels = Math.max(0, segmentPixels - gapPixels);
+          
+          const dashOffset = (segment.offsetValue / total) * totalPixels;
 
           return (
             <circle
@@ -43,9 +51,8 @@ const DonutChart = ({ data, total, centerLabel, centerValue, size = 200, thickne
               fill="transparent"
               stroke={segment.color}
               strokeWidth={thickness}
-              strokeDasharray={`${Math.max(0, segmentCircumference - 0.5)} ${circumference}`}
+              strokeDasharray={`${displayPixels} ${totalPixels}`}
               strokeDashoffset={-dashOffset}
-              strokeLinecap="round"
               style={{ transition: 'stroke-dasharray 0.3s ease' }}
             />
           );

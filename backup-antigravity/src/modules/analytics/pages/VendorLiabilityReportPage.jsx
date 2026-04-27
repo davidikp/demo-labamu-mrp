@@ -10,7 +10,9 @@ import {
   Info,
   FileText,
   Calendar,
-  CheckCircleIcon
+  CheckCircleIcon,
+  TrendingUp,
+  CircleDollarSign
 } from "../../../components/icons/Icons.jsx";
 import { MOCK_REPORT_POS } from "../mock/reportMocks";
 import { formatCurrency } from "../../../utils/format/formatUtils";
@@ -113,9 +115,9 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
     { label: "Vendor", flex: "1.8", sortKey: "name" },
     { label: "Not Due", flex: "1.2", sortKey: "notDue" },
     { label: "Late 1-30", flex: "1.2", sortKey: "late1_30" },
-    { label: "31-60", flex: "1.2", sortKey: "late31_60" },
-    { label: "61-90", flex: "1.2", sortKey: "late61_90" },
-    { label: "90+", flex: "1.2", sortKey: "late90Plus" },
+    { label: "Late 31-60", flex: "1.2", sortKey: "late31_60" },
+    { label: "Late 61-90", flex: "1.2", sortKey: "late61_90" },
+    { label: "Late 90+", flex: "1.2", sortKey: "late90Plus" },
     { label: "Total Outstanding", flex: "1.4", sortKey: "total" },
   ];
 
@@ -200,12 +202,12 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
       {/* Summary Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", marginBottom: "32px" }}>
         {[
-          { label: "Total Outstanding", value: summary.total, icon: FileText },
-          { label: "Not Due", value: summary.notDue, icon: CheckCircleIcon },
-          { label: "Late 1–30", value: summary.late1_30, icon: Calendar },
-          { label: "31–60", value: summary.late31_60, icon: Calendar },
-          { label: "61–90", value: summary.late61_90, icon: Calendar },
-          { label: "90+", value: summary.late90Plus, icon: Info },
+          { label: "Total Outstanding", value: summary.total, icon: <TrendingUp /> },
+          { label: "Not Due", value: summary.notDue, icon: <CheckCircleIcon /> },
+          { label: "Late 1–30", value: summary.late1_30, icon: <Calendar /> },
+          { label: "Late 31–60", value: summary.late31_60, icon: <Calendar /> },
+          { label: "Late 61–90", value: summary.late61_90, icon: <Calendar /> },
+          { label: "Late 90+", value: summary.late90Plus, icon: <Info /> },
         ].map((card, idx) => (
           <div 
             key={idx}
@@ -216,28 +218,29 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
               border: "1px solid var(--neutral-line-separator-1)",
               display: "flex",
               alignItems: "center",
-              gap: "16px"
+              justifyContent: "space-between",
+              minHeight: "92px"
             }}
           >
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontSize: "13px", color: "var(--neutral-on-surface-tertiary)", fontWeight: "500" }}>
+                {card.label}
+              </span>
+              <div style={{ fontSize: "16px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                {formatCurrency(card.value, currency)}
+              </div>
+            </div>
             <div style={{ 
-              width: "48px", 
-              height: "48px", 
-              borderRadius: "12px", 
-              background: "var(--feature-brand-container-lighter)", 
+              width: "36px", 
+              height: "36px", 
+              borderRadius: "50%", 
+              background: "#F5F5F5", 
               display: "flex", 
               alignItems: "center", 
               justifyContent: "center",
               flexShrink: 0
             }}>
-              <card.icon size={22} color="var(--feature-brand-primary)" />
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-              <span style={{ fontSize: "13px", color: "var(--neutral-on-surface-secondary)", fontWeight: "500" }}>
-                {card.label}
-              </span>
-              <div style={{ fontSize: "20px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
-                {formatCurrency(card.value, currency)}
-              </div>
+              {React.isValidElement(card.icon) ? React.cloneElement(card.icon, { size: 18, color: "var(--neutral-on-surface-secondary)" }) : <card.icon size={18} color="var(--neutral-on-surface-secondary)" />}
             </div>
           </div>
         ))}
@@ -272,14 +275,6 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
               placeholder="Search vendor name"
               style={{ width: "280px" }}
             />
-            <Button 
-              variant="outlined" 
-              size="small"
-              leftIcon={Download}
-              onClick={handleExport}
-            >
-              Download Excel
-            </Button>
           </div>
         </div>
 
@@ -332,7 +327,7 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
                 <div style={cellStyle({ flex: tableColumns[3].flex })}>{formatCurrency(v.late31_60, currency)}</div>
                 <div style={cellStyle({ flex: tableColumns[4].flex })}>{formatCurrency(v.late61_90, currency)}</div>
                 <div style={cellStyle({ flex: tableColumns[5].flex })}>{formatCurrency(v.late90Plus, currency)}</div>
-                <div style={cellStyle({ flex: tableColumns[6].flex, fontSize: "16px", fontWeight: "var(--font-weight-black)", color: "var(--feature-brand-primary)" })}>{formatCurrency(v.total, currency)}</div>
+                <div style={cellStyle({ flex: tableColumns[6].flex })}>{formatCurrency(v.total, currency)}</div>
               </div>
             )) : (
               <div style={{ padding: "64px 24px", textAlign: "center", color: "var(--neutral-on-surface-tertiary)", fontSize: "14px" }}>
@@ -350,6 +345,17 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
           currentPage={currentPage}
           totalPages={totalPages}
           onPageChange={setCurrentPage}
+          renderLeftActions={() => (
+            <Button 
+              variant="outlined" 
+              size="small"
+              leftIcon={Download}
+              onClick={handleExport}
+              style={{ height: "40px", borderRadius: "12px", padding: "0 16px" }}
+            >
+              Download
+            </Button>
+          )}
         />
       </div>
     </div>

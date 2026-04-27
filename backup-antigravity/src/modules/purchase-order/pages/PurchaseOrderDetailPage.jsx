@@ -312,6 +312,9 @@ const FormField = ({
   error,
   helperText,
   headerRight,
+  labelFontSize,
+  headerRightFontSize,
+  headerRightColor,
 }) => (
   <div
     style={{
@@ -328,7 +331,7 @@ const FormField = ({
             alignItems: "center",
             justifyContent: headerRight ? "space-between" : "flex-start",
             gap: "12px",
-            fontSize: headerRight ? "var(--text-desc)" : "var(--text-body)",
+            fontSize: labelFontSize ? labelFontSize : (headerRight ? "var(--text-desc)" : "var(--text-body)"),
             fontWeight: "var(--font-weight-regular)",
           }}
         >
@@ -343,8 +346,8 @@ const FormField = ({
         {headerRight ? (
           <span
             style={{
-              fontSize: "var(--text-desc)",
-              color: "var(--neutral-on-surface-tertiary)",
+              fontSize: headerRightFontSize ? headerRightFontSize : "var(--text-desc)",
+              color: headerRightColor ? headerRightColor : "var(--neutral-on-surface-tertiary)",
             }}
           >
             {headerRight}
@@ -1288,6 +1291,9 @@ const InputField = ({
   error,
   helperText,
   headerRight,
+  labelFontSize,
+  headerRightFontSize,
+  headerRightColor,
   ...rest
 }) => (
   <FormField
@@ -1296,6 +1302,9 @@ const InputField = ({
     error={error}
     helperText={helperText}
     headerRight={headerRight}
+    labelFontSize={labelFontSize}
+    headerRightFontSize={headerRightFontSize}
+    headerRightColor={headerRightColor}
   >
     <div style={{ position: "relative", width: "100%" }}>
       {multiline ? (
@@ -2421,10 +2430,10 @@ export const PurchaseOrderDetailPage = ({
     useState(null);
 
   const getAgingStatus = (dueDate, outstanding) => {
-    if (outstanding <= 0) return { text: "Settled", variant: "grey-light" };
+    if (outstanding <= 0) return { text: "Settled", variant: "green-light" };
     const today = new Date();
     const due = new Date(dueDate);
-    if (due >= today) return { text: "Not Due Yet", variant: "green-light" };
+    if (due >= today) return { text: "Not Due Yet", variant: "grey-light" };
 
     const diffTime = Math.abs(today - due);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -2448,7 +2457,7 @@ export const PurchaseOrderDetailPage = ({
       return { text: "Partially Paid", variant: "blue-light" };
     }
     if (isOverdue) return { text: "Overdue", variant: "red-light" };
-    return { text: "Open", variant: "grey-light" };
+    return { text: "Open", variant: "blue-light" };
   };
   const [invoiceSearch, setInvoiceSearch] = useState("");
   const [invoiceRowsPerPage, setInvoiceRowsPerPage] = useState(25);
@@ -2466,8 +2475,12 @@ export const PurchaseOrderDetailPage = ({
     attachments: [],
     itemLines: [{ id: "", qty: "", ocrRef: "" }],
   });
+  const [autoPrefillInvoice, setAutoPrefillInvoice] = useState(false);
+  const [autoPrefillPayment, setAutoPrefillPayment] = useState(false);
+  const [invoicePaymentLogs, setInvoicePaymentLogs] = useState([]);
 
   const simulateInvoiceOcr = (file) => {
+    if (!autoPrefillInvoice) return;
     // Simulate a delay for processing
     setTimeout(() => {
       // Pick first two items from mockLines for simulation
@@ -2480,28 +2493,39 @@ export const PurchaseOrderDetailPage = ({
         date: formatIsoDateString(new Date()),
         amount: "2500000",
         itemLines: [
-          { id: line1?.id || line1?.item || "", qty: "50", ocrRef: "Detected in doc: WOODEN CHAIR FRAME" },
-          { id: line2?.id || line2?.item || "", qty: "20", ocrRef: "Detected in doc: ALUMINIUM SHEET 2MM" }
+          { id: line1?.id || line1?.item || "", qty: "50", ocrRef: "WOODEN CHAIR FRAME" },
+          { id: line2?.id || line2?.item || "", qty: "20", ocrRef: "ALUMINIUM SHEET 2MM" }
         ]
       }));
     }, 1200);
   };
 
   const simulatePaymentOcr = (file) => {
+    if (!autoPrefillPayment) return;
     // Simulate a delay for processing
     setTimeout(() => {
-      const line1 = mockLines[0];
- 
       setPaymentFormData((prev) => ({
         ...prev,
         date: formatIsoDateString(new Date()),
         amount: "1500000",
         method: "Bank Transfer",
-        itemLines: [
-          { id: line1?.id || line1?.item || "", qty: "30", ocrRef: "Detected in doc: WOODEN CHAIR FRAME" }
-        ]
       }));
     }, 1200);
+  };
+
+  const addInvoicePaymentLog = (title, desc) => {
+    const now = new Date();
+    const dateStr = formatIsoDateString(now);
+    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    const newLog = {
+      name: "Natasha Smith",
+      email: "-",
+      title,
+      desc,
+      timestamp: `${dateStr} at ${timeStr}`,
+    };
+    setInvoicePaymentLogs(prev => [newLog, ...prev]);
   };
 
   const calculatedDueDate = useMemo(() => {
@@ -2533,6 +2557,18 @@ export const PurchaseOrderDetailPage = ({
     if (addInvoiceFormData.attachments.length === 0)
       errors.attachments = "This field cannot be empty";
 
+    const itemLineErrors = addInvoiceFormData.itemLines.map((il) => {
+      const e = {};
+      if (!il.id) e.id = "This field cannot be empty";
+      if (!il.qty || il.qty === "0") e.qty = "This field cannot be empty";
+      if (!il.ocrRef || !il.ocrRef.trim()) e.ocrRef = "This field cannot be empty";
+      return Object.keys(e).length > 0 ? e : null;
+    });
+
+    if (itemLineErrors.some((e) => e !== null)) {
+      errors.itemLines = itemLineErrors;
+    }
+
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
@@ -2548,8 +2584,12 @@ export const PurchaseOrderDetailPage = ({
       amount: parseNumberFromCommas(addInvoiceFormData.amount),
       notes: addInvoiceFormData.notes,
       attachments: addInvoiceFormData.attachments,
+      itemLines: addInvoiceFormData.itemLines
+        .filter((il) => il.id && il.qty)
+        .map((il) => ({ ...il, qty: Number(il.qty) })),
     };
     setInvoices((prev) => [newInvoice, ...prev]);
+    addInvoicePaymentLog("Invoice created", newInvoice.number);
     setShowAddInvoiceDrawer(false);
     // Reset form
     setAddInvoiceFormData({
@@ -2575,9 +2615,8 @@ export const PurchaseOrderDetailPage = ({
   const [showDeleteInvoiceConfirm, setShowDeleteInvoiceConfirm] = useState(false);
   const [paymentFormData, setPaymentFormData] = useState({
     date: formatIsoDateString(new Date()),
-    qty: "",
+    amount: "",
     method: "Bank Transfer",
-    itemLines: [{ id: "", qty: "", ocrRef: "" }],
     notes: "",
     attachments: [],
   });
@@ -2601,39 +2640,6 @@ export const PurchaseOrderDetailPage = ({
     if (paymentFormData.attachments.length === 0)
       errors.attachments = "This field cannot be empty";
 
-    // Item Line Validation
-    const itemLineErrors = [];
-    paymentFormData.itemLines.forEach((itemObj, idx) => {
-      const lineErrors = {};
-      if (!itemObj.id) lineErrors.id = "Required";
-      if (!itemObj.qty || itemObj.qty === "0") {
-        lineErrors.qty = "Required";
-      } else if (selectedInvoiceForPayment && itemObj.id) {
-        const invoicedLine = (selectedInvoiceForPayment.itemLines || []).find(il => String(il.id) === String(itemObj.id));
-        if (invoicedLine) {
-          const totalInvoiced = Number(invoicedLine.qty) || 0;
-          const alreadyPaid = payments
-            .filter(p => p.invoiceId === selectedInvoiceForPayment.id)
-            .reduce((sum, p) => {
-              const payItem = (p.itemLines || []).find(il => String(il.id) === String(itemObj.id));
-              return sum + (Number(payItem?.qty) || 0);
-            }, 0);
-          
-          const remaining = totalInvoiced - alreadyPaid;
-          if (Number(itemObj.qty) > remaining) {
-            lineErrors.qty = `Exceeds invoiced item: ${alreadyPaid}/${totalInvoiced}`;
-          }
-        }
-      }
-      if (Object.keys(lineErrors).length > 0) {
-        itemLineErrors[idx] = lineErrors;
-      }
-    });
-
-    if (itemLineErrors.length > 0) {
-      errors.itemLines = itemLineErrors;
-    }
-
     if (Object.keys(errors).length > 0) {
       setPaymentFormErrors(errors);
       return;
@@ -2647,10 +2653,10 @@ export const PurchaseOrderDetailPage = ({
       proof: paymentFormData.attachments[0]?.name || "",
       notes: paymentFormData.notes,
       invoiceId: selectedInvoiceForPayment.id,
-      itemLines: paymentFormData.itemLines.map(il => ({ id: il.id, qty: Number(il.qty) })),
     };
 
     setPayments((prev) => [...prev, newPayment]);
+    addInvoicePaymentLog("Payment created", `Paid ${formatCurrency(newPayment.amount, currency)} to ${selectedInvoiceForPayment.number}`);
 
     setInvoices((prev) =>
       prev.map((inv) =>
@@ -2667,8 +2673,7 @@ export const PurchaseOrderDetailPage = ({
     setPaymentFormErrors({});
     setPaymentFormData({
       date: formatIsoDateString(new Date()),
-      qty: "",
-      itemLines: [{ id: "", qty: "", ocrRef: "" }],
+      amount: "",
       method: "Bank Transfer",
       notes: "",
       attachments: [],
@@ -2677,6 +2682,7 @@ export const PurchaseOrderDetailPage = ({
 
   const handleDeleteInvoice = () => {
     if (selectedInvoiceForDetail) {
+      addInvoicePaymentLog("Invoice deleted", selectedInvoiceForDetail.number);
       setInvoices(prev => prev.filter(inv => inv.id !== selectedInvoiceForDetail.id));
       setShowInvoiceDetailDrawer(false);
       setShowDeleteInvoiceConfirm(false);
@@ -3652,6 +3658,7 @@ export const PurchaseOrderDetailPage = ({
     [
       ...statusActivityLogs,
       ...receiptActivityLogs,
+      ...invoicePaymentLogs,
       ...documentActivityLogs,
       ...baseActivityLogs,
     ],
@@ -4830,17 +4837,17 @@ export const PurchaseOrderDetailPage = ({
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("receipt")}
-          style={tabButtonStyle(activeTab === "receipt")}
-        >
-          Receipt
-        </button>
-        <button
-          type="button"
           onClick={() => setActiveTab("invoices")}
           style={tabButtonStyle(activeTab === "invoices")}
         >
           Invoices & Payments
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("receipt")}
+          style={tabButtonStyle(activeTab === "receipt")}
+        >
+          Receipt
         </button>
         <button
           type="button"
@@ -6067,8 +6074,8 @@ export const PurchaseOrderDetailPage = ({
                     <div style={{ textAlign: "left", justifySelf: "start" }}>Type</div>
                     <div style={{ textAlign: "left", justifySelf: "start", minWidth: 0, overflow: "hidden" }}>Item</div>
                     <div style={{ textAlign: "left", justifySelf: "start" }}>PO Qty</div>
-                    <div style={{ textAlign: "left", justifySelf: "start" }}>Received Qty</div>
                     <div style={{ textAlign: "left", justifySelf: "start" }}>Invoiced Qty</div>
+                    <div style={{ textAlign: "left", justifySelf: "start" }}>Received Qty</div>
                     <div
                       aria-hidden="true"
                       style={{
@@ -6250,8 +6257,8 @@ export const PurchaseOrderDetailPage = ({
                               justifySelf: "start"
                             }}
                           >
-                            <span style={{ whiteSpace: "nowrap" }}>{receivedLabel}</span>
-                            {isReceivedMatched ? (
+                            <span style={{ whiteSpace: "nowrap" }}>{invoicedLabel}</span>
+                            {isInvoicedMatched ? (
                               <Tooltip content="Matched with the purchase order qty">
                                 <div style={{ display: "flex", alignItems: "center" }}>
                                   <CheckCircleIcon
@@ -6283,8 +6290,8 @@ export const PurchaseOrderDetailPage = ({
                               justifySelf: "start"
                             }}
                           >
-                            <span style={{ whiteSpace: "nowrap" }}>{invoicedLabel}</span>
-                            {isInvoicedMatched ? (
+                            <span style={{ whiteSpace: "nowrap" }}>{receivedLabel}</span>
+                            {isReceivedMatched ? (
                               <Tooltip content="Matched with the purchase order qty">
                                 <div style={{ display: "flex", alignItems: "center" }}>
                                   <CheckCircleIcon
@@ -8950,20 +8957,22 @@ export const PurchaseOrderDetailPage = ({
                 gap: "24px",
               }}
             >
-              <div
-                style={{
-                  background: "var(--feature-brand-container-lighter)",
-                  padding: "12px 16px",
-                  borderRadius: "12px",
-                  display: "flex",
-                  gap: "12px",
-                  alignItems: "flex-start",
-                }}
-              >
-                <Info size={20} color="var(--feature-brand-primary)" style={{ marginTop: "2px" }} />
-                <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-primary)", lineHeight: "20px" }}>
-                  Upload your document and our system will automatically prefill the form fields for you.
-                </span>
+              {/* Auto Prefill Section */}
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0px", padding: "16px", background: "var(--feature-brand-container-lighter)", borderRadius: "16px", gap: "12px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--neutral-on-surface-primary)" }}>
+                    Auto Prefill Form
+                  </span>
+                  <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)", lineHeight: "18px" }}>
+                    Activate this feature to automatically prefill form fields based on your uploaded document.
+                  </span>
+                </div>
+                <div style={{ marginTop: "2px" }}>
+                  <ToggleSwitch 
+                    checked={autoPrefillInvoice}
+                    onChange={(val) => setAutoPrefillInvoice(val)}
+                  />
+                </div>
               </div>
  
               <FormField
@@ -9151,66 +9160,126 @@ export const PurchaseOrderDetailPage = ({
                 error={formErrors.amount}
               />
  
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {addInvoiceFormData.itemLines.map((itemObj, idx) => (
-                  <div key={idx} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                    <div style={{ flex: 1.5 }}>
-                      <FormField label={`Item Line ${idx + 1}`}>
-                        <DropdownSelect fieldHeight="48px"
-                          placeholder="Select item line..."
-                          options={(mockLines || [])
-                            .filter(it => {
-                              const itemValue = it.id || it.item;
-                              return !addInvoiceFormData.itemLines.some(il => il.id === itemValue) || itemValue === itemObj.id;
-                            })
-                            .map(it => ({ 
-                              label: it.item, 
-                              value: it.id || it.item 
-                            }))}
-                          value={itemObj.id}
-                          onChange={(val) => {
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {addInvoiceFormData.itemLines.map((itemObj, idx) => {
+                  const itemError = formErrors.itemLines ? formErrors.itemLines[idx] : null;
+                  return (
+                    <div 
+                      key={idx} 
+                      style={{ 
+                        padding: "16px", 
+                        borderRadius: "16px", 
+                        background: "var(--neutral-surface-primary)", 
+                        border: "1px solid var(--neutral-line-separator-1)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "16px",
+                        position: "relative"
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "14px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                          <span style={{ color: "var(--status-red-primary)" }}>*</span> Item Line {idx + 1}
+                        </span>
+                        {addInvoiceFormData.itemLines.length > 1 && (
+                          <IconButton
+                            icon={Trash2}
+                            size="small"
+                            color="var(--status-red-primary)"
+                            onClick={() => {
+                              const next = addInvoiceFormData.itemLines.filter((_, i) => i !== idx);
+                              setAddInvoiceFormData({ ...addInvoiceFormData, itemLines: next });
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: "12px" }}>
+                        <FormField 
+                          label="PO Item Line" 
+                          required 
+                          error={itemError?.id}
+                        >
+                          <DropdownSelect fieldHeight="48px"
+                            placeholder="Select item line..."
+                            hasError={!!itemError?.id}
+                            options={(mockLines || [])
+                              .filter(it => {
+                                const itemValue = it.id || it.item;
+                                return !addInvoiceFormData.itemLines.some((il, i) => i !== idx && il.id === itemValue);
+                              })
+                              .map(it => ({ 
+                                label: it.item, 
+                                value: it.id || it.item 
+                              }))}
+                            value={itemObj.id}
+                            onChange={(val) => {
+                              const next = [...addInvoiceFormData.itemLines];
+                              const selectedPoItem = (mockLines || []).find(it => (it.id || it.item) === val);
+                              const newOcrRef = next[idx].sameAsPo && selectedPoItem ? selectedPoItem.item : next[idx].ocrRef;
+                              next[idx] = { ...next[idx], id: val, ocrRef: newOcrRef };
+                              setAddInvoiceFormData({ ...addInvoiceFormData, itemLines: next });
+                            }}
+                          />
+                        </FormField>
+                        <InputField
+                          label="Item Quantity"
+                          required
+                          placeholder="0"
+                          value={
+                            itemObj.qty === ""
+                              ? ""
+                              : formatNumberWithCommas(itemObj.qty)
+                          }
+                          onChange={(e) => {
+                            const raw = parseNumberFromCommas(e.target.value);
                             const next = [...addInvoiceFormData.itemLines];
-                            next[idx] = { ...next[idx], id: val };
+                            next[idx] = { ...next[idx], qty: raw === 0 && e.target.value === "" ? "" : String(raw) };
                             setAddInvoiceFormData({ ...addInvoiceFormData, itemLines: next });
                           }}
+                          error={itemError?.qty}
                         />
-                      </FormField>
-                      {itemObj.ocrRef && (
-                        <div style={{ fontSize: "11px", color: "var(--neutral-on-surface-tertiary)", marginTop: "4px" }}>
-                          {itemObj.ocrRef}
-                        </div>
-                      )}
+                      </div>
+
+                        <InputField
+                          label="Item Name in Document"
+                          required
+                          labelFontSize="var(--text-body)"
+                          headerRightFontSize="var(--text-body)"
+                          headerRightColor="var(--neutral-on-surface-primary)"
+                          headerRight={
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <Checkbox 
+                                id={`sameAsPo-${idx}`}
+                                checked={!!itemObj.sameAsPo}
+                                onChange={(val) => {
+                                  const next = [...addInvoiceFormData.itemLines];
+                                  let newOcrRef = itemObj.ocrRef;
+                                  if (val) {
+                                    const selectedPoItem = (mockLines || []).find(it => (it.id || it.item) === itemObj.id);
+                                    if (selectedPoItem) newOcrRef = selectedPoItem.item;
+                                  }
+                                  next[idx] = { ...next[idx], sameAsPo: val, ocrRef: newOcrRef };
+                                  setAddInvoiceFormData({ ...addInvoiceFormData, itemLines: next });
+                                }}
+                              />
+                              <label htmlFor={`sameAsPo-${idx}`} style={{ cursor: "pointer" }}>
+                                Same with PO Item
+                              </label>
+                            </div>
+                          }
+                          placeholder="Enter item name..."
+                          value={itemObj.ocrRef || ""}
+                          onChange={(e) => {
+                            const next = [...addInvoiceFormData.itemLines];
+                            next[idx] = { ...next[idx], ocrRef: e.target.value, sameAsPo: false };
+                            setAddInvoiceFormData({ ...addInvoiceFormData, itemLines: next });
+                          }}
+                          error={itemError?.ocrRef}
+                        />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <InputField
-                        label="Item Quantity"
-                        placeholder="0"
-                        value={
-                          itemObj.qty === ""
-                            ? ""
-                            : formatNumberWithCommas(itemObj.qty)
-                        }
-                        onChange={(e) => {
-                          const raw = parseNumberFromCommas(e.target.value);
-                          const next = [...addInvoiceFormData.itemLines];
-                          next[idx] = { ...next[idx], qty: raw === 0 && e.target.value === "" ? "" : String(raw) };
-                          setAddInvoiceFormData({ ...addInvoiceFormData, itemLines: next });
-                        }}
-                      />
-                    </div>
-                    {addInvoiceFormData.itemLines.length > 1 && (
-                      <IconButton
-                        icon={DeleteIcon}
-                        color="var(--status-red-primary)"
-                        onClick={() => {
-                          const next = addInvoiceFormData.itemLines.filter((_, i) => i !== idx);
-                          setAddInvoiceFormData({ ...addInvoiceFormData, itemLines: next });
-                        }}
-                        style={{ marginTop: "28px" }}
-                      />
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
                 <Button
                   variant="outline"
                   size="small"
@@ -9347,20 +9416,22 @@ export const PurchaseOrderDetailPage = ({
                 gap: "24px",
               }}
             >
-              <div
-                style={{
-                  background: "var(--feature-brand-container-lighter)",
-                  padding: "12px 16px",
-                  borderRadius: "12px",
-                  display: "flex",
-                  gap: "12px",
-                  alignItems: "flex-start",
-                }}
-              >
-                <Info size={20} color="var(--feature-brand-primary)" style={{ marginTop: "2px" }} />
-                <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-primary)", lineHeight: "20px" }}>
-                  Upload your document and our system will automatically prefill the form fields for you.
-                </span>
+              {/* Auto Prefill Section */}
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "0px", padding: "16px", background: "var(--feature-brand-container-lighter)", borderRadius: "16px", gap: "12px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <span style={{ fontSize: "14px", fontWeight: "600", color: "var(--neutral-on-surface-primary)" }}>
+                    Auto Prefill Form
+                  </span>
+                  <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)", lineHeight: "18px" }}>
+                    Activate this feature to automatically prefill form fields based on your uploaded document.
+                  </span>
+                </div>
+                <div style={{ marginTop: "2px" }}>
+                  <ToggleSwitch 
+                    checked={autoPrefillPayment}
+                    onChange={(val) => setAutoPrefillPayment(val)}
+                  />
+                </div>
               </div>
  
               <FormField
@@ -9549,100 +9620,7 @@ export const PurchaseOrderDetailPage = ({
                 />
               </FormField>
  
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                {paymentFormData.itemLines.map((itemObj, idx) => (
-                  <div key={idx} style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
-                    <div style={{ flex: 1.5 }}>
-                      <FormField label={<span>Item Line {idx + 1} <span style={{ color: "var(--status-red-primary)" }}>*</span></span>}>
-                        <DropdownSelect fieldHeight="48px"
-                          placeholder="Select item line..."
-                          options={(mockLines || [])
-                            .filter(it => {
-                              const itemValue = it.id || it.item;
-                              const isSelectedByOther = paymentFormData.itemLines.some((il, i) => i !== idx && String(il.id) === String(itemValue));
-                              const isInInvoice = (selectedInvoiceForPayment?.itemLines || []).some(il => String(il.id) === String(itemValue));
-                              return !isSelectedByOther && isInInvoice;
-                            })
-                            .map(it => ({ 
-                              label: it.item, 
-                              value: it.id || it.item 
-                            }))}
-                          value={itemObj.id}
-                          onChange={(val) => {
-                            const next = [...paymentFormData.itemLines];
-                            next[idx] = { ...next[idx], id: val };
-                            setPaymentFormData({ ...paymentFormData, itemLines: next });
-                          }}
-                        />
-                      </FormField>
-                      {itemObj.ocrRef && (
-                        <div style={{ fontSize: "11px", color: "var(--neutral-on-surface-tertiary)", marginTop: "4px" }}>
-                          {itemObj.ocrRef}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <InputField
-                        label={<span>Item Quantity <span style={{ color: "var(--status-red-primary)" }}>*</span></span>}
-                        placeholder="0"
-                        value={
-                          itemObj.qty === ""
-                            ? ""
-                            : formatNumberWithCommas(itemObj.qty)
-                        }
-                        onChange={(e) => {
-                          const raw = parseNumberFromCommas(e.target.value);
-                          const next = [...paymentFormData.itemLines];
-                          next[idx] = { ...next[idx], qty: raw === 0 && e.target.value === "" ? "" : String(raw) };
-                          setPaymentFormData({ ...paymentFormData, itemLines: next });
-                        }}
-                        error={paymentFormErrors.itemLines?.[idx]?.qty}
-                      />
-                      {itemObj.id && !paymentFormErrors.itemLines?.[idx]?.qty && (
-                        <div style={{ fontSize: "11px", color: "var(--neutral-on-surface-tertiary)", marginTop: "4px" }}>
-                          {(() => {
-                            const invoicedLine = (selectedInvoiceForPayment.itemLines || []).find(il => String(il.id) === String(itemObj.id));
-                            if (!invoicedLine) return null;
-                            const totalInvoiced = Number(invoicedLine.qty) || 0;
-                            const alreadyPaid = payments
-                              .filter(p => p.invoiceId === selectedInvoiceForPayment.id)
-                              .reduce((sum, p) => {
-                                const payItem = (p.itemLines || []).find(il => String(il.id) === String(itemObj.id));
-                                return sum + (Number(payItem?.qty) || 0);
-                              }, 0);
-                            return `Invoiced item: ${alreadyPaid}/${totalInvoiced}`;
-                          })()}
-                        </div>
-                      )}
-                    </div>
-                    {paymentFormData.itemLines.length > 1 && (
-                      <IconButton
-                        icon={DeleteIcon}
-                        color="var(--status-red-primary)"
-                        onClick={() => {
-                          const next = paymentFormData.itemLines.filter((_, i) => i !== idx);
-                          setPaymentFormData({ ...paymentFormData, itemLines: next });
-                        }}
-                        style={{ marginTop: "28px" }}
-                      />
-                    )}
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="small"
-                  leftIcon={Plus}
-                  onClick={() => {
-                    setPaymentFormData({
-                      ...paymentFormData,
-                      itemLines: [...paymentFormData.itemLines, { id: "", qty: "", ocrRef: "" }],
-                    });
-                  }}
-                  style={{ alignSelf: "flex-start" }}
-                >
-                  Add Item Line
-                </Button>
-              </div>
+
 
               <InputField
                 label="Notes (Optional)"
@@ -9739,6 +9717,7 @@ export const PurchaseOrderDetailPage = ({
               <IconButton
                 icon={CloseIcon}
                 onClick={() => setShowInvoiceDetailDrawer(false)}
+                color="var(--neutral-on-surface-primary)"
               />
             </div>
 
@@ -9771,12 +9750,14 @@ export const PurchaseOrderDetailPage = ({
                   <span style={{ fontSize: "16px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
                     {selectedInvoiceForDetail.number}
                   </span>
-                  <StatusBadge variant={
-                    getInvoiceMetrics(selectedInvoiceForDetail).status === "Settled" ? "green" : 
-                    getInvoiceMetrics(selectedInvoiceForDetail).status === "Partially Paid" ? "orange" : "blue"
-                  }>
-                    {getInvoiceMetrics(selectedInvoiceForDetail).status}
-                  </StatusBadge>
+                  {(() => {
+                    const status = getInvoiceStatus(selectedInvoiceForDetail, getInvoiceMetrics(selectedInvoiceForDetail));
+                    return (
+                      <StatusBadge variant={status.variant}>
+                        {status.text}
+                      </StatusBadge>
+                    );
+                  })()}
                 </div>
                 
                 <div style={{ height: "1px", background: "var(--neutral-line-separator-1)", margin: "0 20px" }} />
@@ -9804,9 +9785,14 @@ export const PurchaseOrderDetailPage = ({
                   </div>
                   <div>
                     <div style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)", marginBottom: "4px" }}>Aging Status</div>
-                    <StatusBadge variant={getInvoiceMetrics(selectedInvoiceForDetail).isOverdue ? "red-light" : "blue-light"}>
-                      {getInvoiceMetrics(selectedInvoiceForDetail).isOverdue ? "Overdue" : "On Track"}
-                    </StatusBadge>
+                    {(() => {
+                      const aging = getAgingStatus(selectedInvoiceForDetail.dueDate, getInvoiceMetrics(selectedInvoiceForDetail).outstanding);
+                      return (
+                        <StatusBadge variant={aging.variant}>
+                          {aging.text}
+                        </StatusBadge>
+                      );
+                    })()}
                   </div>
 
                   {/* Row 3 items */}
@@ -9846,7 +9832,7 @@ export const PurchaseOrderDetailPage = ({
                           <span style={{ color: "white", fontSize: "6px", fontWeight: "800", letterSpacing: "0.2px" }}>PDF</span>
                         </div>
                         <div 
-                          title={selectedInvoiceForDetail.attachment?.name || "Invoice.pdf"}
+                          title={selectedInvoiceForDetail.attachments?.[0]?.name || selectedInvoiceForDetail.attachment?.name || "Invoice.pdf"}
                           style={{ 
                             fontSize: "14px", 
                             fontWeight: "var(--font-weight-bold)",
@@ -9859,7 +9845,7 @@ export const PurchaseOrderDetailPage = ({
                             textDecoration: "underline"
                           }}
                         >
-                          {selectedInvoiceForDetail.attachment?.name || "Invoice.pdf"}
+                          {selectedInvoiceForDetail.attachments?.[0]?.name || selectedInvoiceForDetail.attachment?.name || "Invoice.pdf"}
                         </div>
                       </div>
                   </div>
@@ -9931,8 +9917,7 @@ export const PurchaseOrderDetailPage = ({
               {activeInvoiceTab === "Item Lines" ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {(selectedInvoiceForDetail.itemLines || []).map((line, idx) => {
-                    const isExpanded = expandedInvoiceItems.includes(line.id);
-                    const originalLine = mockLines.find(l => l.id === line.id || l.item === line.id);
+                    const originalLine = mockLines.find(l => String(l.id) === String(line.id) || l.item === line.id);
                     return (
                       <div key={idx} style={{ 
                         background: "var(--neutral-surface-primary)", 
@@ -9941,95 +9926,21 @@ export const PurchaseOrderDetailPage = ({
                         overflow: "hidden"
                       }}>
                         <div 
-                          onClick={() => setExpandedInvoiceItems(prev => isExpanded ? prev.filter(id => id !== line.id) : [...prev, line.id])}
-                          style={{ padding: "16px", display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}
+                          style={{ padding: "16px", display: "flex", alignItems: "center", gap: "16px" }}
                         >
                           <div style={{ width: "40px", height: "40px", background: "#F5F5F5", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                             <Box size={20} color="var(--neutral-on-surface-tertiary)" />
                           </div>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: "15px", fontWeight: "var(--font-weight-bold)" }}>{originalLine?.item || line.id}</div>
-                            <div style={{ fontSize: "14px", color: "var(--neutral-on-surface-tertiary)" }}>
-                              {(() => {
-                                const paidQty = payments
-                                  .filter(p => p.invoiceId === selectedInvoiceForDetail.id)
-                                  .reduce((sum, p) => {
-                                    const payItem = (p.itemLines || []).find(il => String(il.id) === String(line.id));
-                                    return sum + (Number(payItem?.qty) || 0);
-                                  }, 0);
-                                return (
-                                  <>
-                                    Invoiced Item: <span style={{ color: "var(--feature-brand-primary)" }}>{paidQty}/{line.qty}</span>
-                                  </>
-                                );
-                              })()}
+                            <div style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)", marginTop: "2px" }}>
+                              Name in Document: {line.ocrRef && line.ocrRef !== "-" ? line.ocrRef : (originalLine?.item || line.id).toUpperCase()}
                             </div>
                           </div>
-                          {isExpanded ? <ChevronDown size={20} style={{ transform: "rotate(180deg)" }} /> : <ChevronDown size={20} />}
-                        </div>
-                        {isExpanded && (
-                          <div style={{ padding: "0 16px 16px 16px", borderTop: "1px solid var(--neutral-line-separator-1)", background: "#FAFAFA" }}>
-                             <div style={{ paddingTop: "16px", fontSize: "13px", color: "var(--neutral-on-surface-tertiary)", marginBottom: "8px" }}>Associated Payments</div>
-                             <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                               {(() => {
-                                 const associatedPayments = payments.filter(p => 
-                                   p.invoiceId === selectedInvoiceForDetail.id && 
-                                   (p.itemLines || []).some(il => String(il.id) === String(line.id))
-                                 );
-                                 
-                                 if (associatedPayments.length === 0) {
-                                   return (
-                                     <div style={{ 
-                                       padding: "20px", 
-                                       textAlign: "center", 
-                                       background: "var(--neutral-surface-primary)", 
-                                       borderRadius: "12px", 
-                                       border: "1px solid var(--neutral-line-separator-1)",
-                                       color: "var(--neutral-on-surface-tertiary)",
-                                       fontSize: "12px"
-                                     }}>
-                                       No associated payments for this item.
-                                     </div>
-                                   );
-                                 }
-
-                                 return associatedPayments.map(pay => {
-                                   const payItem = pay.itemLines.find(il => String(il.id) === String(line.id));
-                                   return (
-                                     <div key={pay.id} style={{ 
-                                       background: "var(--neutral-surface-primary)", 
-                                       padding: "12px 16px", 
-                                       borderRadius: "12px", 
-                                       border: "1px solid var(--neutral-line-separator-1)",
-                                       display: "flex",
-                                       alignItems: "center",
-                                       gap: "12px"
-                                     }}>
-                                       <div style={{ width: "32px", height: "32px", background: "var(--feature-brand-container-lighter)", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                         <CalendarIcon size={16} color="var(--feature-brand-primary)" />
-                                       </div>
-                                       <div style={{ flex: 1 }}>
-                                         <div style={{ fontSize: "14px", fontWeight: "600" }}>{pay.date}</div>
-                                         <div style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>{formatCurrency(pay.amount, currency)}</div>
-                                         {pay.proof && (
-                                           <div style={{ fontSize: "11px", color: "var(--feature-brand-primary)", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}>
-                                             <FileText size={12} />
-                                             {pay.proof}
-                                           </div>
-                                         )}
-                                       </div>
-                                       <div style={{ textAlign: "right" }}>
-                                         <div style={{ fontSize: "14px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
-                                           {payItem?.qty || 0} {originalLine?.type === "material" ? (originalLine?.uom || "Unit") : "Pcs"}
-                                         </div>
-                                       </div>
-                                     </div>
-                                   );
-                                 });
-                               })()}
-                             </div>
+                          <div style={{ fontSize: "16px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                            {line.qty} {originalLine?.type === "material" ? (originalLine?.uom || "Unit") : "Pcs"}
                           </div>
-                        )}
+                        </div>
                       </div>
                     );
                   })}
@@ -10038,7 +9949,6 @@ export const PurchaseOrderDetailPage = ({
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   {getInvoiceMetrics(selectedInvoiceForDetail).payments.length > 0 ? (
                     getInvoiceMetrics(selectedInvoiceForDetail).payments.map((pay) => {
-                      const isExpanded = expandedInvoicePayments.includes(pay.id);
                       return (
                         <div key={pay.id} style={{ 
                           background: "var(--neutral-surface-primary)", 
@@ -10047,17 +9957,21 @@ export const PurchaseOrderDetailPage = ({
                           overflow: "hidden"
                         }}>
                           <div 
-                            onClick={() => setExpandedInvoicePayments(prev => isExpanded ? prev.filter(id => id !== pay.id) : [...prev, pay.id])}
-                            style={{ padding: "16px", display: "flex", alignItems: "center", gap: "16px", cursor: "pointer" }}
+                            style={{ padding: "16px", display: "flex", alignItems: "center", gap: "16px" }}
                           >
                             <div style={{ width: "40px", height: "40px", background: "var(--feature-brand-container-lighter)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                               <CalendarIcon size={20} color="var(--feature-brand-primary)" />
                             </div>
                             <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: "15px", fontWeight: "var(--font-weight-bold)" }}>{pay.date}</div>
-                              <div style={{ fontSize: "14px", color: "var(--neutral-on-surface-tertiary)" }}>
-                                {(selectedInvoiceForDetail?.itemLines || []).length} Items • {pay.method}
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                                <div style={{ fontSize: "15px", fontWeight: "var(--font-weight-bold)" }}>{pay.date}</div>
+                                <StatusBadge variant="blue-light">{pay.method}</StatusBadge>
                               </div>
+                              {pay.notes && (
+                                <div style={{ fontSize: "14px", color: "var(--neutral-on-surface-secondary)", marginBottom: "4px" }}>
+                                  {pay.notes}
+                                </div>
+                              )}
                               {pay.proof && (
                                 <div style={{ fontSize: "13px", color: "var(--feature-brand-primary)", marginTop: "4px", display: "flex", alignItems: "center", gap: "6px" }}>
                                   <FileText size={14} />
@@ -10070,62 +9984,7 @@ export const PurchaseOrderDetailPage = ({
                                 {formatCurrency(pay.amount, currency)}
                               </div>
                             </div>
-                            {isExpanded ? <ChevronDown size={20} style={{ transform: "rotate(180deg)" }} /> : <ChevronDown size={20} />}
                           </div>
-                          {isExpanded && (
-                            <div style={{ padding: "0 16px 16px 16px", borderTop: "1px solid var(--neutral-line-separator-1)", background: "#FAFAFA" }}>
-                               <div style={{ paddingTop: "16px", fontSize: "13px", color: "var(--neutral-on-surface-tertiary)", marginBottom: "8px" }}>Items Paid</div>
-                               <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                 {(selectedInvoiceForDetail?.itemLines || []).map((line, lidx) => {
-                                   const orig = mockLines.find(l => l.id === line.id || l.item === line.id);
-                                   return (
-                                     <div key={lidx} style={{ 
-                                       display: "flex", 
-                                       alignItems: "center",
-                                       padding: "12px 16px", 
-                                       background: "var(--neutral-surface-primary)", 
-                                       borderRadius: "12px", 
-                                       border: "1px solid var(--neutral-line-separator-1)",
-                                       gap: "12px"
-                                     }}>
-                                       <div style={{ width: "32px", height: "32px", background: "#F5F5F5", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                         <Box size={16} color="var(--neutral-on-surface-tertiary)" />
-                                       </div>
-                                       <div style={{ flex: 1 }}>
-                                         <div style={{ fontSize: "14px", fontWeight: "600" }}>{orig?.item || line.id}</div>
-                                         <div style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>
-                                           {(() => {
-                                              const paidQty = payments
-                                                .filter(p => p.invoiceId === selectedInvoiceForDetail.id)
-                                                .reduce((sum, p) => {
-                                                  const payItem = (p.itemLines || []).find(il => String(il.id) === String(line.id));
-                                                  return sum + (Number(payItem?.qty) || 0);
-                                                }, 0);
-                                              return (
-                                                <>
-                                                  Invoiced Item: <span style={{ color: "var(--feature-brand-primary)" }}>{paidQty}/{line.qty}</span>
-                                                </>
-                                              );
-                                            })()}
-                                         </div>
-                                       </div>
-                                       <div style={{ textAlign: "right" }}>
-                                         {(() => {
-                                           const payItem = (pay.itemLines || []).find(il => String(il.id) === String(line.id));
-                                           const uom = orig?.type === "material" ? (orig?.uom || "Unit") : "Pcs";
-                                           return (
-                                             <div style={{ fontSize: "14px", fontWeight: "600", color: "var(--neutral-on-surface-primary)" }}>
-                                               {payItem?.qty || 0} {uom}
-                                             </div>
-                                           );
-                                         })()}
-                                       </div>
-                                     </div>
-                                   );
-                                 })}
-                               </div>
-                            </div>
-                          )}
                         </div>
                       );
                     })
@@ -10148,14 +10007,17 @@ export const PurchaseOrderDetailPage = ({
                 background: "var(--neutral-surface-primary)",
               }}
             >
-              <Button
-                variant="outline"
+              <IconButton
+                icon={Trash2}
                 size="large"
+                color="var(--status-red-primary)"
                 onClick={() => setShowDeleteInvoiceConfirm(true)}
-                style={{ flex: 1, borderColor: "var(--status-red-primary)", color: "var(--status-red-primary)" }}
-              >
-                Delete
-              </Button>
+                style={{ 
+                  borderColor: "var(--status-red-primary)", 
+                  border: "1px solid var(--status-red-primary)",
+                  borderRadius: "12px"
+                }}
+              />
               <Button
                 variant="filled"
                 size="large"
@@ -10163,7 +10025,7 @@ export const PurchaseOrderDetailPage = ({
                   setSelectedInvoiceForPayment(selectedInvoiceForDetail);
                   setPaymentFormData({
                     ...paymentFormData,
-                    qty: "",
+                    amount: "",
                   });
                   setShowAddPaymentDrawer(true);
                 }}
