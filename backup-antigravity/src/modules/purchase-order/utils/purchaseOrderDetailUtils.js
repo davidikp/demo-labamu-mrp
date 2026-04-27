@@ -132,20 +132,35 @@ export const buildReceiptStateFromLines = (
 };
 
 export const buildReceiptActivityLogs = (logs = []) => {
-  return (logs || []).map((log) => ({
-    name: log.receivedBy || "Natasha Smith",
-    email: "-",
-    title: "Receipt Confirmed",
-    desc: [
-      (log.items || [])
-        .map((item) => `${item.item}: Received ${item.receivedNow || 0} pcs`)
-        .join(", "),
-      log.notes && log.notes !== "-" ? `Notes: ${log.notes}` : "",
-    ]
-      .filter(Boolean)
-      .join(" | "),
-    timestamp: `${log.date} at ${log.time}`,
-  }));
+  return (logs || []).map((log) => {
+    if (log.title && log.title !== "Receipt Confirmed") {
+      return {
+        name: log.name || "System",
+        email: log.email || "-",
+        title: log.title,
+        desc: log.desc || "-",
+        timestamp: log.timestamp || "-",
+      };
+    }
+
+    return {
+      name: log.receivedBy || "Natasha Smith",
+      email: "-",
+      title: "Receipt Confirmed",
+      desc: [
+        (log.items || [])
+          .map((item) => `${item.item}: Received ${item.receivedNow || 0} pcs`)
+          .join(", "),
+        log.notes && log.notes !== "-" ? `Notes: ${log.notes}` : "",
+      ]
+        .filter(Boolean)
+        .join(" | "),
+      timestamp:
+        log.date && log.time
+          ? `${log.date} at ${log.time}`
+          : log.timestamp || "-",
+    };
+  });
 };
 
 export const parseActivityTimestamp = (value) => {

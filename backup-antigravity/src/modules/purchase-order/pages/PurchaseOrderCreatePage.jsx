@@ -2179,9 +2179,10 @@ const summaryTotalValueStyle = {
 
 export const PurchaseOrderCreatePage = ({
   onNavigate,
-  isSidebarCollapsed,
+  isSidebarCollapsed = false,
   initialData,
   poApprovalSettings,
+  showPoSnackbar,
 }) => {
   const scrollToTop = () => {
     if (typeof window !== "undefined") {
@@ -2230,6 +2231,7 @@ export const PurchaseOrderCreatePage = ({
   const isFromWorkOrderAssignment =
     initialData?.source === "work_order_vendor_assignment";
   const isEditMode = initialData?.source === "edit_purchase_order";
+  const isReviseMode = initialData?.source === "revise_purchase_order";
   const editFormData = initialData?.formData || null;
   const prefilledVendor = initialData?.vendorData || null;
   const linkedWorkOrder =
@@ -2309,7 +2311,7 @@ export const PurchaseOrderCreatePage = ({
   });
   const [isVendorLocked, setIsVendorLocked] = useState(
     (!!prefilledVendor && isFromWorkOrderAssignment) ||
-    (isEditMode && MOCK_VENDORS.some((v) => v.name === editFormData?.vendorName))
+    ((isEditMode || isReviseMode) && MOCK_VENDORS.some((v) => v.name === editFormData?.vendorName))
   );
   const [showVendorSuggestions, setShowVendorSuggestions] = useState(false);
   const [isVendorFieldFocused, setIsVendorFieldFocused] = useState(false);
@@ -2342,6 +2344,8 @@ export const PurchaseOrderCreatePage = ({
   const [formErrors, setFormErrors] = useState({});
   const [showEmptyDraftModal, setShowEmptyDraftModal] = useState(false);
   const [showSubmitConfirmModal, setShowSubmitConfirmModal] = useState(false);
+  const [revisionReason, setRevisionReason] = useState("");
+  const [revisionReasonError, setRevisionReasonError] = useState("");
   const [showDiscardChangesModal, setShowDiscardChangesModal] = useState(false);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [productLineType, setProductLineType] = useState("manual");
@@ -2879,8 +2883,8 @@ export const PurchaseOrderCreatePage = ({
 
     const payload = {
       ...buildPoPayload(
-        isEditMode ? (initialData?.status || "Draft") : "Draft",
-        isEditMode ? (initialData?.sBadge || "grey-light") : "grey-light"
+        isEditMode || isReviseMode ? (initialData?.status || "Draft") : "Draft",
+        isEditMode || isReviseMode ? (initialData?.sBadge || "grey-light") : "grey-light"
       ),
       showDraftToast: true,
     };
@@ -2931,6 +2935,10 @@ export const PurchaseOrderCreatePage = ({
 
   const handleSubmitClick = () => {
     if (!validateMandatoryFields()) return;
+    if (isReviseMode) {
+      setRevisionReason("");
+      setRevisionReasonError("");
+    }
     setShowSubmitConfirmModal(true);
   };
 
@@ -2979,6 +2987,52 @@ export const PurchaseOrderCreatePage = ({
 
     if (nextStatus === "Issued") {
       syncPoToStockBatches(payload);
+    }
+
+    if (isReviseMode) {
+      const existingPo = MOCK_PO_TABLE_DATA.find(p => p.poNumber === payload.poNumber);
+      if (existingPo) {
+        if (!existingPo.versions) {
+          existingPo.versions = [
+            { 
+              version: 1, 
+              date: existingPo.createdDate || existingPo.poDate || new Date().toISOString().split("T")[0],
+              data: { ...existingPo, versions: undefined } 
+            }
+          ];
+        }
+        const nextVersionNumber = existingPo.versions.length + 1;
+        const newVersionEntry = {
+          version: nextVersionNumber,
+          date: new Date().toISOString().split("T")[0],
+          data: { ...payload }
+        };
+        existingPo.versions.push(newVersionEntry);
+        payload.currentVersion = nextVersionNumber;
+        payload.versions = existingPo.versions;
+        payload.revisionReason = revisionReason;
+
+        // Add to activity log
+        if (!payload.receiptLogs) payload.receiptLogs = [];
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, "0");
+        const dd = String(now.getDate()).padStart(2, "0");
+        const hh = String(now.getHours()).padStart(2, "0");
+        const min = String(now.getMinutes()).padStart(2, "0");
+        const formattedTimestamp = `${yyyy}-${mm}-${dd} at ${hh}:${min}`;
+
+        payload.receiptLogs.unshift({
+          name: "Joko",
+          email: "joko@company.com",
+          title: "Purchase Order Revised",
+          desc: revisionReason,
+          timestamp: formattedTimestamp
+        });
+      }
+      if (showPoSnackbar) {
+        showPoSnackbar("Purchase order successfully submitted", "success");
+      }
     }
 
     // Persist to global mock data
@@ -3203,7 +3257,7 @@ export const PurchaseOrderCreatePage = ({
                 color: "var(--neutral-on-surface-primary)",
               }}
             >
-              {isEditMode ? "Edit Purchase Order" : "Add New Purchase Order"}
+              {isReviseMode ? "Revise Purchase Order" : isEditMode ? "Edit Purchase Order" : "Add New Purchase Order"}
             </h1>
           </div>
           <div
@@ -3227,7 +3281,7 @@ export const PurchaseOrderCreatePage = ({
               /
             </span>
             <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>
-              {isEditMode ? "Edit Purchase Order" : "Add New Purchase Order"}
+              {isReviseMode ? "Revise Purchase Order" : isEditMode ? "Edit Purchase Order" : "Add New Purchase Order"}
             </span>
           </div>
         </div>
@@ -3833,7 +3887,13 @@ export const PurchaseOrderCreatePage = ({
                                 variant="tertiary"
                                 size="small"
                                 onClick={() => handleEditLine(line)}
-                                style={{ color: "var(--feature-brand-primary)", padding: "0 4px" }}
+                                disabled={isReviseMode && line.type === "wo"}
+                                style={{ 
+                                  color: (isReviseMode && line.type === "wo") 
+                                    ? "var(--neutral-on-surface-tertiary)" 
+                                    : "var(--feature-brand-primary)", 
+                                  padding: "0 4px" 
+                                }}
                               >
                                 Edit
                               </Button>
@@ -3841,9 +3901,9 @@ export const PurchaseOrderCreatePage = ({
                                 variant="tertiary"
                                 size="small"
                                 onClick={() => handleRemoveLine(line.id)}
-                                disabled={isLockedWorkOrderLine}
+                                disabled={isLockedWorkOrderLine || (isReviseMode && line.type === "wo")}
                                 style={{ 
-                                  color: isLockedWorkOrderLine 
+                                  color: (isLockedWorkOrderLine || (isReviseMode && line.type === "wo")) 
                                     ? "var(--neutral-on-surface-tertiary)" 
                                     : "var(--status-red-primary)",
                                   padding: "0 4px"
@@ -4111,9 +4171,11 @@ export const PurchaseOrderCreatePage = ({
           Cancel
         </Button>
         <div style={{ display: "flex", gap: "12px" }}>
-          <Button size="medium" variant="outlined" onClick={handleSaveDraft}>
-            {isEditMode ? "Save Changes" : "Save as Draft"}
-          </Button>
+          {!isReviseMode && (
+            <Button size="medium" variant="outlined" onClick={handleSaveDraft}>
+              {isEditMode ? "Save Changes" : "Save as Draft"}
+            </Button>
+          )}
           <Button size="medium" variant="filled" onClick={handleSubmitClick}>
             Submit PO
           </Button>
@@ -5013,19 +5075,29 @@ export const PurchaseOrderCreatePage = ({
       <GeneralModal
         isOpen={showSubmitConfirmModal}
         onClose={() => setShowSubmitConfirmModal(false)}
-        title="Submit PO?"
-        width="376px"
-        description={poApprovalSettings?.isApprovalActive
-          ? "This PO will be submitted for approval."
-          : "This PO will be automatically approved upon submission."}
+        title={isReviseMode ? "Confirm Revision" : "Submit PO?"}
+        width={isReviseMode ? "480px" : "376px"}
+        description={
+          isReviseMode
+            ? "Are you sure you want to revise this purchase order? Please provide a reason below."
+            : poApprovalSettings?.isApprovalActive
+              ? "This PO will be submitted for approval."
+              : "This PO will be automatically approved upon submission."
+        }
         footer={
           <>
             <Button
               size="large"
               style={{ width: "100%" }}
-              onClick={handleConfirmSubmit}
+              onClick={() => {
+                if (isReviseMode && !revisionReason.trim()) {
+                  setRevisionReasonError("Reason is mandatory");
+                  return;
+                }
+                handleConfirmSubmit();
+              }}
             >
-              Yes, Submit
+              {isReviseMode ? "Confirm Revision" : "Yes, Submit"}
             </Button>
             <Button
               variant="outlined"
@@ -5033,11 +5105,38 @@ export const PurchaseOrderCreatePage = ({
               style={{ width: "100%" }}
               onClick={() => setShowSubmitConfirmModal(false)}
             >
-              Keep Editing
+              {isReviseMode ? "Cancel" : "Keep Editing"}
             </Button>
           </>
         }
-      />
+      >
+        {isReviseMode && (
+          <div style={{ marginTop: "16px" }}>
+            <FormField label="Reason" required error={revisionReasonError}>
+              <textarea
+                value={revisionReason}
+                onChange={(e) => {
+                  setRevisionReason(e.target.value);
+                  if (e.target.value.trim()) setRevisionReasonError("");
+                }}
+                placeholder="Input revision reason"
+                style={{
+                  width: "100%",
+                  height: "100px",
+                  padding: "12px 16px",
+                  borderRadius: "10px",
+                  border: `1px solid ${revisionReasonError ? "var(--status-red-primary)" : "var(--neutral-line-outline)"}`,
+                  outline: "none",
+                  fontSize: "var(--text-subtitle-1)",
+                  fontFamily: "Lato, sans-serif",
+                  resize: "none",
+                  boxSizing: "border-box"
+                }}
+              />
+            </FormField>
+          </div>
+        )}
+      </GeneralModal>
 
       <GeneralModal
         isOpen={showDiscardChangesModal}

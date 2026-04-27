@@ -680,6 +680,7 @@ export default function App() {
             isSidebarCollapsed={isSidebarCollapsed}
             initialData={viewState.data}
             poApprovalSettings={poApprovalSettings}
+            showPoSnackbar={showPoSnackbar}
           />
         );
       }
@@ -691,6 +692,7 @@ export default function App() {
             initialData={viewState.data}
             poApprovalSettings={poApprovalSettings}
             isSidebarCollapsed={isSidebarCollapsed}
+            showPoSnackbar={showPoSnackbar}
           />
         );
       }
@@ -730,6 +732,7 @@ export default function App() {
             isSidebarCollapsed={isSidebarCollapsed}
             initialData={viewState.data}
             poApprovalSettings={poApprovalSettings}
+            showPoSnackbar={showPoSnackbar}
           />
         );
       }
@@ -741,6 +744,7 @@ export default function App() {
             initialData={viewState.data}
             poApprovalSettings={poApprovalSettings}
             isSidebarCollapsed={isSidebarCollapsed}
+            showPoSnackbar={showPoSnackbar}
           />
         );
       }

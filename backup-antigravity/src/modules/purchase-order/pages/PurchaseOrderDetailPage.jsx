@@ -2263,12 +2263,11 @@ export const PurchaseOrderDetailPage = ({
     cb(...args);
   };
   const pageTopRef = useRef(null);
-  const resolvedPoData = useMemo(() => {
+  const basePoData = useMemo(() => {
     const pNum =
       typeof initialData === "string" ? initialData : initialData?.poNumber;
     if (pNum) {
       const mockMatch = MOCK_PO_TABLE_DATA.find((p) => p.poNumber === pNum);
-      // Prefer initialData if it is a rich object (has formData or lines)
       if (
         typeof initialData === "object" &&
         initialData !== null &&
@@ -2281,26 +2280,40 @@ export const PurchaseOrderDetailPage = ({
     return initialData;
   }, [initialData]);
 
+  const versions = basePoData?.versions || [];
+  const latestVersionNum = basePoData?.currentVersion || (versions.length > 0 ? versions.length : 1);
+  const [selectedVersionNum, setSelectedVersionNum] = useState(null);
+  const [isVersionMenuOpen, setIsVersionMenuOpen] = useState(false);
+  const displayVersionNum = selectedVersionNum || latestVersionNum;
+  const isHistoricalVersion = versions.length > 0 && displayVersionNum < latestVersionNum;
+
+  const displayData = useMemo(() => {
+    if (!isHistoricalVersion) return basePoData;
+    const versionEntry = versions.find((v) => v.version === displayVersionNum);
+    return versionEntry ? versionEntry.data : basePoData;
+  }, [isHistoricalVersion, displayVersionNum, versions, basePoData]);
+
   const poNumber = typeof initialData === 'string' ? initialData : (initialData?.poNumber || "PO-202603-0001");
   const [currentStatus, setCurrentStatus] = useState(
-    resolvedPoData?.status || "Draft"
+    displayData?.status || "Draft"
   );
   const [currentBadge, setCurrentBadge] = useState(
-    resolvedPoData?.sBadge || "grey-light"
+    displayData?.sBadge || "grey-light"
   );
-  const formData = resolvedPoData?.formData || null;
+  const formData = displayData?.formData || null;
 
   useEffect(() => {
-    if (resolvedPoData) {
-      setCurrentStatus(resolvedPoData.status || "Draft");
-      setCurrentBadge(resolvedPoData.sBadge || "grey-light");
-      setReceiptLogs(resolvedPoData.receiptLogs || []);
-      setReceiptLines(resolvedPoData.receiptLines || []);
-      setDocuments(resolvedPoData.formData?.documents || MOCK_PO_DOCUMENTS);
-      setInvoices(resolvedPoData.invoices || []);
-      setPayments(resolvedPoData.payments || []);
+    if (displayData) {
+      setCurrentStatus(displayData.status || "Draft");
+      setCurrentBadge(displayData.sBadge || "grey-light");
+      setReceiptLogs(displayData.receiptLogs || []);
+      setReceiptLines(displayData.receiptLines || []);
+      setDocuments(displayData.formData?.documents || MOCK_PO_DOCUMENTS);
+      setInvoices(displayData.invoices || []);
+      setPayments(displayData.payments || []);
     }
-  }, [resolvedPoData]);
+  }, [displayData]);
+
   const hasDraftData = !!formData;
   const currency = hasDraftData ? formData?.currency || "IDR" : "IDR";
   const displayValue = (value, fallback = "-") => {
@@ -2310,7 +2323,7 @@ export const PurchaseOrderDetailPage = ({
   };
   const createdDate = hasDraftData
     ? displayValue(formData?.poDate)
-    : resolvedPoData?.createdDate || "2026-03-20";
+    : displayData?.createdDate || "2026-03-20";
   const [showActionToast, setShowActionToast] = useState(false);
   const [actionToastMessage, setActionToastMessage] = useState("");
   const [actionToastVariant, setActionToastVariant] = useState("success");
@@ -2334,11 +2347,17 @@ export const PurchaseOrderDetailPage = ({
     poApprovalSettings?.isApprovalActive && poApprovalSettings?.requireComment
   );
   const [activeTab, setActiveTab] = useState("details");
+
+  useEffect(() => {
+    if (isHistoricalVersion && activeTab !== "details") {
+      setActiveTab("details");
+    }
+  }, [isHistoricalVersion, activeTab]);
   const [showSubmitGuardModal, setShowSubmitGuardModal] = useState(false);
   const [showDetailSubmitConfirmModal, setShowDetailSubmitConfirmModal] =
     useState(false);
   const [documents, setDocuments] = useState(
-    resolvedPoData?.formData?.documents || MOCK_PO_DOCUMENTS
+    displayData?.formData?.documents || MOCK_PO_DOCUMENTS
   );
   const [openDocumentMenuId, setOpenDocumentMenuId] = useState(null);
   const [showDocumentToast, setShowDocumentToast] = useState(false);
@@ -2375,8 +2394,8 @@ export const PurchaseOrderDetailPage = ({
   const [editDocumentDescriptionValue, setEditDocumentDescriptionValue] =
     useState("");
   const [editDocumentTypeValue, setEditDocumentTypeValue] = useState("other");
-  const [receiptLogs, setReceiptLogs] = useState(resolvedPoData?.receiptLogs || []);
-  const [receiptLines, setReceiptLines] = useState(resolvedPoData?.receiptLines || []);
+  const [receiptLogs, setReceiptLogs] = useState(displayData?.receiptLogs || []);
+  const [receiptLines, setReceiptLines] = useState(displayData?.receiptLines || []);
   const [showConfirmReceiptModal, setShowConfirmReceiptModal] = useState(false);
   const [receiptProofDocuments, setReceiptProofDocuments] = useState([]);
   const [receiptProofUploadError, setReceiptProofUploadError] = useState("");
@@ -2385,8 +2404,8 @@ export const PurchaseOrderDetailPage = ({
   const [receiptReceivedBy, setReceiptReceivedBy] = useState("Natasha Smith");
   const [receiptNotes, setReceiptNotes] = useState("");
   const [receiptErrors, setReceiptErrors] = useState({});
-  const [invoices, setInvoices] = useState(resolvedPoData?.invoices || []);
-  const [payments, setPayments] = useState(resolvedPoData?.payments || []);
+  const [invoices, setInvoices] = useState(displayData?.invoices || []);
+  const [payments, setPayments] = useState(displayData?.payments || []);
 
   const totalInvoiced = useMemo(() => {
     return invoices.reduce((sum, inv) => sum + (inv.amount || 0), 0);
@@ -2815,8 +2834,8 @@ export const PurchaseOrderDetailPage = ({
       if (hasDraftData) {
         return formData?.lines?.length ? formData.lines : [];
       }
-      if (resolvedPoData?.lines) {
-        return resolvedPoData.lines;
+      if (displayData?.lines) {
+        return displayData.lines;
       }
       return [
         {
@@ -2893,11 +2912,11 @@ export const PurchaseOrderDetailPage = ({
     if (hasDraftData) {
       return subtotal * ((parseFloat(formData?.tax) || 0) / 100);
     }
-    if (resolvedPoData?.tax !== undefined) {
-      return resolvedPoData.tax;
+    if (displayData?.tax !== undefined) {
+      return displayData.tax;
     }
     return subtotal * 0.11;
-  }, [hasDraftData, formData, subtotal, resolvedPoData]);
+  }, [hasDraftData, formData, subtotal, displayData]);
 
   const fees = useMemo(() => {
     if (hasDraftData) {
@@ -2906,11 +2925,11 @@ export const PurchaseOrderDetailPage = ({
         0
       );
     }
-    if (resolvedPoData?.fees !== undefined) {
-      return resolvedPoData.fees;
+    if (displayData?.fees !== undefined) {
+      return displayData.fees;
     }
     return 150000;
-  }, [hasDraftData, formData, resolvedPoData]);
+  }, [hasDraftData, formData, displayData]);
   const summaryFeeRows = hasDraftData
     ? (formData?.feeLines || []).length > 0
       ? (formData?.feeLines || []).map((fee, index) => ({
@@ -3326,6 +3345,65 @@ export const PurchaseOrderDetailPage = ({
             mockLines.find((line) => line.type === "wo")?.qty || 0,
           outsourceSteps: initialData?.returnTo?.data?.outsourceSteps || [],
         }
+        : {}),
+      formData: {
+        vendorName: vendorInfo.name !== "-" ? vendorInfo.name : "",
+        vendorDetails: {
+          phone: vendorInfo.phone !== "-" ? vendorInfo.phone : "",
+          email: vendorInfo.email !== "-" ? vendorInfo.email : "",
+          address: vendorInfo.address !== "-" ? vendorInfo.address : "",
+        },
+        poDate: createdDate !== "-" ? createdDate : "",
+        deliveryDate: expectedDeliveryDate ?? "",
+        currency: hasDraftData ? formData?.currency : "IDR",
+        shipTo: {
+          name: shipToInfo.name !== "-" ? shipToInfo.name : "",
+          phone: shipToInfo.phone !== "-" ? shipToInfo.phone : "",
+          email: shipToInfo.email !== "-" ? shipToInfo.email : "",
+          address: shipToInfo.address !== "-" ? shipToInfo.address : "",
+        },
+        lines: mockLines,
+        tax: hasDraftData ? formData?.tax || 0 : 11,
+        feeLines: hasDraftData ? formData?.feeLines || [] : [],
+        notes: detailNotes !== "-" ? detailNotes : "",
+        terms: detailTerms !== "-" ? detailTerms : "",
+      },
+    });
+  };
+
+  const handleRevisePo = () => {
+    scrollToTop();
+    onNavigate("create", {
+      source: "revise_purchase_order",
+      poNumber,
+      status: currentStatus,
+      sBadge: currentBadge,
+      ...(initialData?.from ? { from: initialData.from } : {}),
+      ...(initialData?.returnTo ? { returnTo: initialData.returnTo } : {}),
+      ...(initialData?.from === "work_order_detail"
+        ? {
+            workOrder: {
+              wo:
+                initialData?.returnTo?.data?.wo ||
+                mockLines.find((line) => line.type === "wo")?.woRef ||
+                "-",
+              product:
+                initialData?.returnTo?.data?.product ||
+                mockLines.find((line) => line.type === "wo")?.item ||
+                "",
+              sku:
+                initialData?.returnTo?.data?.sku ||
+                mockLines.find((line) => line.type === "wo")?.code ||
+                "",
+              image:
+                initialData?.returnTo?.data?.image ||
+                mockLines.find((line) => line.type === "wo")?.image ||
+                "",
+            },
+            assignedOutput:
+              mockLines.find((line) => line.type === "wo")?.qty || 0,
+            outsourceSteps: initialData?.returnTo?.data?.outsourceSteps || [],
+          }
         : {}),
       formData: {
         vendorName: vendorInfo.name !== "-" ? vendorInfo.name : "",
@@ -4792,15 +4870,103 @@ export const PurchaseOrderDetailPage = ({
             alignItems: "center",
           }}
         >
-          <span
-            style={{
-              fontSize: "var(--text-headline)",
-              fontWeight: "var(--font-weight-bold)",
-              color: "var(--neutral-on-surface-primary)",
-            }}
-          >
-            {poNumber}
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <span
+              style={{
+                fontSize: "var(--text-headline)",
+                fontWeight: "var(--font-weight-bold)",
+                color: "var(--neutral-on-surface-primary)",
+              }}
+            >
+              {poNumber}
+            </span>
+            {versions.length > 0 && (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  position: "relative",
+                }}
+              >
+                <StatusBadge variant="grey-light">
+                  Version {displayVersionNum}
+                </StatusBadge>
+                <div
+                  style={{
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "4px",
+                    borderRadius: "4px",
+                    background: isVersionMenuOpen
+                      ? "var(--neutral-surface-grey-lighter)"
+                      : "transparent",
+                  }}
+                  onClick={() => setIsVersionMenuOpen(!isVersionMenuOpen)}
+                >
+                  <ChevronDownIcon
+                    size={16}
+                    color="var(--neutral-on-surface-secondary)"
+                  />
+                </div>
+                {isVersionMenuOpen && (
+                  <>
+                    <div
+                      style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 999,
+                        background: "transparent",
+                      }}
+                      onClick={() => setIsVersionMenuOpen(false)}
+                    />
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 8px)",
+                        left: 0,
+                        background: "var(--neutral-surface-primary)",
+                        borderRadius: "12px",
+                        boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.12)",
+                        border: "1px solid var(--neutral-line-separator-1)",
+                        zIndex: 1000,
+                        width: "200px",
+                        overflow: "hidden",
+                      }}
+                    >
+                      {[...versions].reverse().map((v) => (
+                        <div
+                          key={v.version}
+                          style={{
+                            padding: "12px 16px",
+                            cursor: "pointer",
+                            background:
+                              displayVersionNum === v.version
+                                ? "var(--feature-brand-container-lighter)"
+                                : "transparent",
+                            color:
+                              displayVersionNum === v.version
+                                ? "var(--feature-brand-primary)"
+                                : "var(--neutral-on-surface-primary)",
+                            fontSize: "var(--text-title-3)",
+                            borderBottom:
+                              "1px solid var(--neutral-line-separator-1)",
+                          }}
+                          onClick={() => {
+                            setSelectedVersionNum(v.version);
+                            setIsVersionMenuOpen(false);
+                          }}
+                        >
+                          Version {v.version} ({v.date})
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
           <StatusBadge variant={currentBadge}>{currentStatus}</StatusBadge>
         </div>
         <div
@@ -4827,46 +4993,77 @@ export const PurchaseOrderDetailPage = ({
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "12px",
+          alignItems: "center",
+        }}
+      >
         <button
           type="button"
           onClick={() => setActiveTab("details")}
           style={tabButtonStyle(activeTab === "details")}
         >
-          PO Details
+          PO Detail
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("invoices")}
-          style={tabButtonStyle(activeTab === "invoices")}
+          disabled={isHistoricalVersion}
+          onClick={() => !isHistoricalVersion && setActiveTab("invoices")}
+          style={{
+            ...tabButtonStyle(activeTab === "invoices"),
+            opacity: isHistoricalVersion ? 0.5 : 1,
+            cursor: isHistoricalVersion ? "not-allowed" : "pointer"
+          }}
         >
           Invoices & Payments
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("receipt")}
-          style={tabButtonStyle(activeTab === "receipt")}
+          disabled={isHistoricalVersion}
+          onClick={() => !isHistoricalVersion && setActiveTab("receipt")}
+          style={{
+            ...tabButtonStyle(activeTab === "receipt"),
+            opacity: isHistoricalVersion ? 0.5 : 1,
+            cursor: isHistoricalVersion ? "not-allowed" : "pointer"
+          }}
         >
           Receipt
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("3-ways-match")}
-          style={tabButtonStyle(activeTab === "3-ways-match")}
+          disabled={isHistoricalVersion}
+          onClick={() => !isHistoricalVersion && setActiveTab("3-ways-match")}
+          style={{
+            ...tabButtonStyle(activeTab === "3-ways-match"),
+            opacity: isHistoricalVersion ? 0.5 : 1,
+            cursor: isHistoricalVersion ? "not-allowed" : "pointer"
+          }}
         >
           3-Ways Match
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("documents")}
-          style={tabButtonStyle(activeTab === "documents")}
+          disabled={isHistoricalVersion}
+          onClick={() => !isHistoricalVersion && setActiveTab("documents")}
+          style={{
+            ...tabButtonStyle(activeTab === "documents"),
+            opacity: isHistoricalVersion ? 0.5 : 1,
+            cursor: isHistoricalVersion ? "not-allowed" : "pointer"
+          }}
         >
           Documents
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("logs")}
-          style={tabButtonStyle(activeTab === "logs")}
+          disabled={isHistoricalVersion}
+          onClick={() => !isHistoricalVersion && setActiveTab("logs")}
+          style={{
+            ...tabButtonStyle(activeTab === "logs"),
+            opacity: isHistoricalVersion ? 0.5 : 1,
+            cursor: isHistoricalVersion ? "not-allowed" : "pointer"
+          }}
         >
           Logs
         </button>
@@ -7991,7 +8188,10 @@ export const PurchaseOrderDetailPage = ({
         </Card>
       )}
 
-      {showFooterSubmit || showFooterApprovalActions || showFooterIssuedCancel ? (
+      {!isHistoricalVersion &&
+      (showFooterSubmit ||
+        showFooterApprovalActions ||
+        showFooterIssuedCancel) ? (
         <div
           style={{
             position: "fixed",
@@ -8044,13 +8244,22 @@ export const PurchaseOrderDetailPage = ({
               </>
             ) : null}
             {showFooterIssuedCancel ? (
-              <Button
-                size="medium"
-                variant="danger"
-                onClick={() => openDecisionModal("cancel")}
-              >
-                Cancel PO
-              </Button>
+              <>
+                <Button
+                  size="medium"
+                  variant="danger"
+                  onClick={() => openDecisionModal("cancel")}
+                >
+                  Cancel PO
+                </Button>
+                <Button
+                  size="medium"
+                  variant="outlined"
+                  onClick={handleRevisePo}
+                >
+                  Revise PO
+                </Button>
+              </>
             ) : null}
           </div>
         </div>

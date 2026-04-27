@@ -1,5 +1,5 @@
 import { formatCurrency, formatNumberWithCommas, parseNumberFromCommas } from "../../../utils/format/formatUtils.js";
-import labamuWordmarkSrc from "../../../labamu-wordmark.svg";
+const GENERIC_LOGO_SRC = "https://placehold.co/400x120/f3f4f6/1f2937?text=LOGO";
 
 const CSS_DPI = 96;
 const PDF_DPI = 180;
@@ -29,7 +29,7 @@ const DIMENSIONS = {
   marginX: px(44),
   marginTop: px(30),
   marginBottom: px(34),
-  footerHeight: px(60),
+  footerHeight: px(20), // Reduced since footer is removed
   sectionGap: px(14),
   pageGap: px(12),
   headerLogoWidth: px(184),
@@ -270,7 +270,7 @@ const drawWrappedText = (ctx, text, x, y, maxWidth, font, color, options = {}) =
   return cursorY - y;
 };
 
-const drawImageCover = (ctx, image, x, y, width, height) => {
+const drawImageCover = (ctx, image, x, y, width, height, align = "center") => {
   if (!image) return false;
   const sourceWidth = image.naturalWidth || image.width || 0;
   const sourceHeight = image.naturalHeight || image.height || 0;
@@ -279,7 +279,12 @@ const drawImageCover = (ctx, image, x, y, width, height) => {
   const ratio = Math.max(width / sourceWidth, height / sourceHeight);
   const drawWidth = sourceWidth * ratio;
   const drawHeight = sourceHeight * ratio;
-  const offsetX = x + (width - drawWidth) / 2;
+  
+  let offsetX = x;
+  if (align === "center") {
+    offsetX = x + (width - drawWidth) / 2;
+  }
+  
   const offsetY = y + (height - drawHeight) / 2;
   ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
   return true;
@@ -354,15 +359,32 @@ const measureMetaBlockHeight = (ctx, data, width) => {
   return height;
 };
 
+const COMPANY_INFO_LINE_HEIGHT = Math.round(FONTS.body.size * 1.3);
+
+const measureCompanyInfoHeaderHeight = (ctx, data, width) => {
+  let height = px(22); // Start with name height
+  height += measureLines(ctx, data.company?.address || "-", width, FONTS.tiny).length * COMPANY_INFO_LINE_HEIGHT;
+  height += COMPANY_INFO_LINE_HEIGHT; // Contact line
+  return height + px(10);
+};
+
 const measureAssignmentFieldHeight = () => ASSIGNMENT_BLOCK_HEIGHT;
 
 const measureHeaderHeight = (ctx, data, pageType) => {
+  const isFirst = pageType === "first";
   const logoY = DIMENSIONS.marginTop;
-  const metaY = pageType === "first" ? logoY + px(34) : logoY + px(4);
+  const logoHeight = Math.round((isFirst ? DIMENSIONS.headerLogoWidth : DIMENSIONS.continuationLogoWidth) * 0.35);
+  
+  let headerContentHeight = logoHeight;
+  if (isFirst) {
+    headerContentHeight += measureCompanyInfoHeaderHeight(ctx, data, DIMENSIONS.headerLogoWidth * 1.8);
+  }
+
+  const metaY = logoY + px(4); // Align top with logo or slightly below title
   const metaHeight = measureMetaBlockHeight(ctx, data, DIMENSIONS.topMetaWidth);
-  const paddingAfterMeta = pageType === "first" ? px(10) : px(8);
-  const paddingAfterLine = pageType === "first" ? px(14) : px(10);
-  return metaY + metaHeight + paddingAfterMeta + paddingAfterLine;
+  
+  const totalHeaderHeight = Math.max(logoY + headerContentHeight, metaY + metaHeight + px(12));
+  return totalHeaderHeight + px(20);
 };
 
 export const buildPurchaseOrderPdfExportData = ({
@@ -603,27 +625,39 @@ const drawHeader = async (ctx, pageType, data, assets) => {
   const logoY = DIMENSIONS.marginTop;
 
   if (assets.logo) {
-    drawImageCover(ctx, assets.logo, logoX, logoY, logoWidth, logoHeight);
+    drawImageCover(ctx, assets.logo, logoX, logoY, logoWidth, logoHeight, "left");
   } else {
     drawText(ctx, data.company?.name || "Labamu Manufacturing", logoX, logoY + px(22), FONTS.title, COLORS.text);
   }
 
+  let cursorY = logoY + logoHeight + px(8);
+
   if (isFirst) {
-    const titleX = PAGE_WIDTH - DIMENSIONS.marginX - DIMENSIONS.topMetaWidth;
-    drawText(ctx, "Purchase Order", titleX, logoY + px(12), FONTS.title, COLORS.text);
-    const metaY = logoY + px(34);
-    const metaHeight = drawMetaBlock(ctx, data, titleX, metaY, DIMENSIONS.topMetaWidth);
-    const metaBottom = metaY + metaHeight + px(10);
-    drawLine(ctx, DIMENSIONS.marginX, metaBottom, PAGE_WIDTH - DIMENSIONS.marginX, metaBottom, COLORS.line, px(0.8));
-    return metaBottom + px(14);
+    // Draw company info below logo
+    drawText(ctx, data.company?.name || "Labamu Manufacturing", logoX, cursorY, FONTS.bodyBold, COLORS.text, { baseline: "top" });
+    cursorY += px(18);
+    
+    const addressWidth = logoWidth * 2.2;
+    const addressHeight = drawWrappedText(ctx, data.company?.address || "-", logoX, cursorY, addressWidth, FONTS.tiny, COLORS.muted, { baseline: "top", lineHeight: COMPANY_INFO_LINE_HEIGHT });
+    cursorY += addressHeight + px(2);
+
+    const contactLine = [data.company?.phone, data.company?.email].filter(Boolean).join(" | ");
+    drawText(ctx, contactLine || "-", logoX, cursorY, FONTS.tiny, COLORS.muted, { baseline: "top" });
+    cursorY += COMPANY_INFO_LINE_HEIGHT;
   }
 
   const titleX = PAGE_WIDTH - DIMENSIONS.marginX - DIMENSIONS.topMetaWidth;
-  const metaY = logoY + px(4);
+  if (isFirst) {
+    drawText(ctx, "Purchase Order", titleX, logoY + px(12), FONTS.title, COLORS.text);
+  }
+
+  const metaY = logoY + (isFirst ? px(34) : px(4));
   const metaHeight = drawMetaBlock(ctx, data, titleX, metaY, DIMENSIONS.topMetaWidth);
-  const metaBottom = metaY + metaHeight + px(8);
-  drawLine(ctx, DIMENSIONS.marginX, metaBottom, PAGE_WIDTH - DIMENSIONS.marginX, metaBottom, COLORS.line, px(0.8));
-  return metaBottom + px(10);
+  
+  const headerBottom = Math.max(cursorY + px(10), metaY + metaHeight + px(14));
+  drawLine(ctx, DIMENSIONS.marginX, headerBottom, PAGE_WIDTH - DIMENSIONS.marginX, headerBottom, COLORS.line, px(0.8));
+  
+  return headerBottom + px(14);
 };
 
 const drawInfoColumns = (ctx, data, y) => {
@@ -949,68 +983,28 @@ const drawAssignmentField = (ctx, value, x, y, width) => {
   return ASSIGNMENT_BLOCK_HEIGHT;
 };
 
-const drawDisclaimer = (ctx, y) => {
-  const text =
-    "This document is issued by Labamu Manufacturing. Labamu is not responsible for its content.";
-  drawText(ctx, text, PAGE_WIDTH / 2, y, FONTS.disclaimer, COLORS.light, {
+const drawDisclaimer = (ctx, y, pageIndex, pageCount) => {
+  const disclaimerText = "This document is issued by Labamu Manufacturing. Labamu is not responsible for its content.";
+  const paginationText = `Page ${pageIndex + 1} of ${pageCount}`;
+  
+  const marginX = DIMENSIONS.marginX;
+  const contentWidth = PAGE_WIDTH - marginX * 2;
+  
+  // Draw disclaimer centered
+  drawText(ctx, disclaimerText, PAGE_WIDTH / 2, y, FONTS.disclaimer, COLORS.light, {
     align: "center",
+    baseline: "top",
+  });
+
+  // Draw pagination on the right, same line
+  drawText(ctx, paginationText, PAGE_WIDTH - marginX, y, FONTS.disclaimer, COLORS.light, {
+    align: "right",
     baseline: "top",
   });
 };
 
 const drawFooter = (ctx, data, footerY, pageIndex, pageCount) => {
-  drawLine(
-    ctx,
-    DIMENSIONS.marginX,
-    footerY,
-    PAGE_WIDTH - DIMENSIONS.marginX,
-    footerY,
-    COLORS.footerLine,
-    px(0.8)
-  );
-
-  const leftX = DIMENSIONS.marginX;
-  const rightX = PAGE_WIDTH - DIMENSIONS.marginX;
-  const footerTop = footerY + px(10);
-
-  drawText(ctx, data.company?.name || "Labamu Manufacturing", leftX, footerTop + px(10), FONTS.footerHeading, COLORS.text);
-  drawText(
-    ctx,
-    data.company?.address || "-",
-    leftX,
-    footerTop + px(28),
-    FONTS.footerBody,
-    COLORS.muted
-  );
-  const contactLine = [data.company?.phone, data.company?.email].filter(Boolean).join(" | ");
-  drawText(
-    ctx,
-    contactLine || "-",
-    leftX,
-    footerTop + px(42),
-    FONTS.footerBody,
-    COLORS.muted
-  );
-
-  drawText(
-    ctx,
-    `Purchase Order ${data.poNumber || "-"}`,
-    rightX,
-    footerTop + px(12),
-    FONTS.footerHeading,
-    COLORS.text,
-    { align: "right" }
-  );
-
-  drawText(
-    ctx,
-    `Page ${pageIndex + 1} of ${pageCount}`,
-    rightX,
-    footerTop + px(30),
-    FONTS.footerBody,
-    COLORS.muted,
-    { align: "right" }
-  );
+  // Empty since company info moved to header and pagination moved to disclaimer
 };
 
 const buildPdfBlobFromCanvases = async (pages) => {
@@ -1200,7 +1194,7 @@ const renderPurchaseOrderPage = async ({
     pageIndex,
     pageCount
   );
-  drawDisclaimer(ctx, PAGE_HEIGHT - px(18));
+  drawDisclaimer(ctx, PAGE_HEIGHT - px(18), pageIndex, pageCount);
   return { canvas, ctx };
 };
 
@@ -1298,7 +1292,7 @@ export const generatePurchaseOrderPdfBlob = async (data) => {
   }
 
   const assets = {
-    logo: await loadImage(labamuWordmarkSrc),
+    logo: await loadImage(GENERIC_LOGO_SRC),
     images: {},
   };
 
