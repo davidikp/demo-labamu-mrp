@@ -4794,7 +4794,7 @@ export const PurchaseOrderDetailPage = ({
             <Button
               variant="outlined"
               leftIcon={FileText}
-              disabled={isExportingPdf}
+              disabled={isExportingPdf || isHistoricalVersion}
               onClick={handleExportPdf}
             >
               {isExportingPdf ? "Exporting PDF..." : "Export as PDF"}
@@ -4890,7 +4890,7 @@ export const PurchaseOrderDetailPage = ({
                 }}
               >
                 <StatusBadge variant="grey-light">
-                  Version {displayVersionNum}
+                  Version {displayVersionNum}.0
                 </StatusBadge>
                 <div
                   style={{
@@ -4958,7 +4958,7 @@ export const PurchaseOrderDetailPage = ({
                             setIsVersionMenuOpen(false);
                           }}
                         >
-                          Version {v.version} ({v.date})
+                          Version {v.version}.0 ({v.date})
                         </div>
                       ))}
                     </div>
@@ -4993,81 +4993,75 @@ export const PurchaseOrderDetailPage = ({
         </div>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          alignItems: "center",
-        }}
-      >
-        <button
-          type="button"
-          onClick={() => setActiveTab("details")}
-          style={tabButtonStyle(activeTab === "details")}
-        >
-          PO Detail
-        </button>
-        <button
-          type="button"
-          disabled={isHistoricalVersion}
-          onClick={() => !isHistoricalVersion && setActiveTab("invoices")}
+      {!isHistoricalVersion ? (
+        <div
           style={{
-            ...tabButtonStyle(activeTab === "invoices"),
-            opacity: isHistoricalVersion ? 0.5 : 1,
-            cursor: isHistoricalVersion ? "not-allowed" : "pointer"
+            display: "flex",
+            gap: "12px",
+            alignItems: "center",
           }}
         >
-          Invoices & Payments
-        </button>
-        <button
-          type="button"
-          disabled={isHistoricalVersion}
-          onClick={() => !isHistoricalVersion && setActiveTab("receipt")}
+          <button
+            type="button"
+            onClick={() => setActiveTab("details")}
+            style={tabButtonStyle(activeTab === "details")}
+          >
+            PO Detail
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("invoices")}
+            style={tabButtonStyle(activeTab === "invoices")}
+          >
+            Invoices & Payments
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("receipt")}
+            style={tabButtonStyle(activeTab === "receipt")}
+          >
+            Receipt
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("3-ways-match")}
+            style={tabButtonStyle(activeTab === "3-ways-match")}
+          >
+            3-Ways Match
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("documents")}
+            style={tabButtonStyle(activeTab === "documents")}
+          >
+            Documents
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("logs")}
+            style={tabButtonStyle(activeTab === "logs")}
+          >
+            Logs
+          </button>
+        </div>
+      ) : (
+        <div
           style={{
-            ...tabButtonStyle(activeTab === "receipt"),
-            opacity: isHistoricalVersion ? 0.5 : 1,
-            cursor: isHistoricalVersion ? "not-allowed" : "pointer"
+            background: "var(--feature-brand-container-lighter)",
+            padding: "12px 20px",
+            borderRadius: "12px",
+            border: "1px solid var(--feature-brand-primary-light)",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            color: "var(--feature-brand-primary)",
+            fontSize: "var(--text-body)",
           }}
         >
-          Receipt
-        </button>
-        <button
-          type="button"
-          disabled={isHistoricalVersion}
-          onClick={() => !isHistoricalVersion && setActiveTab("3-ways-match")}
-          style={{
-            ...tabButtonStyle(activeTab === "3-ways-match"),
-            opacity: isHistoricalVersion ? 0.5 : 1,
-            cursor: isHistoricalVersion ? "not-allowed" : "pointer"
-          }}
-        >
-          3-Ways Match
-        </button>
-        <button
-          type="button"
-          disabled={isHistoricalVersion}
-          onClick={() => !isHistoricalVersion && setActiveTab("documents")}
-          style={{
-            ...tabButtonStyle(activeTab === "documents"),
-            opacity: isHistoricalVersion ? 0.5 : 1,
-            cursor: isHistoricalVersion ? "not-allowed" : "pointer"
-          }}
-        >
-          Documents
-        </button>
-        <button
-          type="button"
-          disabled={isHistoricalVersion}
-          onClick={() => !isHistoricalVersion && setActiveTab("logs")}
-          style={{
-            ...tabButtonStyle(activeTab === "logs"),
-            opacity: isHistoricalVersion ? 0.5 : 1,
-            cursor: isHistoricalVersion ? "not-allowed" : "pointer"
-          }}
-        >
-          Logs
-        </button>
-      </div>
+          <Info size={20} />
+          <span>You are viewing Version {displayVersionNum}.0 (view only). To see the current version, select Version {latestVersionNum}.0 in the version selector.</span>
+        </div>
+      )}
 
       {activeTab === "details" ? (
         <>

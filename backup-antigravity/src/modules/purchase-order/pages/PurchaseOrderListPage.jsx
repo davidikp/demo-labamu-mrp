@@ -35,6 +35,7 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
     { label: "PO Number", key: "poNumber", flex: "1.5", sortable: true },
     { label: "Vendor Name", key: "vendorName", flex: "2", sortable: true },
     { label: "Total Amount", key: "amount", flex: "1.5", sortable: false },
+    { label: "PO Date", key: "poDate", flex: "1.2", sortable: true },
     { label: "Created Date", key: "createdDate", flex: "1.2", sortable: true },
     { label: "Status", key: "status", flex: "1.2", sortable: false },
   ];
@@ -498,7 +499,7 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
                       size={14}
                       color={
                         sortBy === col.key
-                          ? "var(--feature-brand-primary)"
+                          ? (col.key === "createdDate" ? "var(--neutral-on-surface-tertiary)" : "var(--feature-brand-primary)")
                           : "var(--neutral-on-surface-tertiary)"
                       }
                       style={{
@@ -547,15 +548,31 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
                       color: "var(--feature-brand-primary)",
                     })}
                   >
-                    <span
+                    <div
                       style={{
-                        whiteSpace: "nowrap",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        width: "100%",
                         overflow: "hidden",
-                        textOverflow: "ellipsis",
                       }}
                     >
-                      {row.poNumber}
-                    </span>
+                      <span
+                        style={{
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          flexShrink: 1,
+                        }}
+                      >
+                        {row.poNumber}
+                      </span>
+                      {row.versions?.length > 0 && (
+                        <StatusBadge variant="grey-light" style={{ flexShrink: 0 }}>
+                          V {row.currentVersion || row.versions.length}.0
+                        </StatusBadge>
+                      )}
+                    </div>
                   </div>
                   <div style={cellStyle({ flex: tableColumns[1].flex })}>
                     <span
@@ -579,10 +596,21 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
                         textOverflow: "ellipsis",
                       }}
                     >
-                      {row.createdDate}
+                      {row.poDate || row.createdDate}
                     </span>
                   </div>
                   <div style={cellStyle({ flex: tableColumns[4].flex })}>
+                    <span
+                      style={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {row.createdDate}
+                    </span>
+                  </div>
+                  <div style={cellStyle({ flex: tableColumns[5].flex })}>
                     <StatusBadge variant={row.sBadge}>{row.status}</StatusBadge>
                   </div>
                 </div>

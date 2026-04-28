@@ -29,6 +29,7 @@ const DropdownSelect = ({
   searchable = false,
   searchPlaceholder = "Search...",
   hideSearchIcon = false,
+  showDivider = false,
 }) => {
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
@@ -381,7 +382,14 @@ const DropdownSelect = ({
                   String(option.value ?? "") !== "";
                 const optionDisabled = !!option.disabled;
                 return (
-                  <div key={String(option.value ?? `option-${index}`)}>
+                  <div 
+                    key={String(option.value ?? `option-${index}`)}
+                    style={{
+                      borderTop: showDivider && index !== 0 ? "1px solid var(--neutral-line-separator-2)" : "none",
+                      paddingTop: showDivider && index !== 0 ? "4px" : "0",
+                      marginTop: showDivider && index !== 0 ? "4px" : "0",
+                    }}
+                  >
                     <button
                       type="button"
                       disabled={optionDisabled}
