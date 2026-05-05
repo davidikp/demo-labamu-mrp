@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
+  useNavigate,
+  useLocation,
+  useParams,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import {
   Check,
   ChevronRight,
   Info,
@@ -154,6 +162,25 @@ const TRANSLATIONS = {
     },
   },
 };
+
+const MODULE_TO_ROUTE = {
+  work_order: "work-order",
+  purchase_order: "purchase-order",
+  materials: "materials",
+  analytics: "analytics",
+  administration: "administration",
+  user_management: "user-management",
+  notification_settings: "notification-settings",
+  user_guide: "user-guide",
+  procurement_ap_report: "procurement-ap-report",
+  po_report: "po-report",
+  vendor_liability_report: "vendor-liability-report",
+  ap_aging_report: "ap-aging-report"
+};
+
+const ROUTE_TO_MODULE = Object.fromEntries(
+  Object.entries(MODULE_TO_ROUTE).map(([k, v]) => [v, k])
+);
 
 
 // --- DESIGN SYSTEM ---
@@ -321,8 +348,8 @@ const LabamuStyles = () => (
 );
 
 export default function App() {
-  const [activeModule, setActiveModule] = useState("work_order");
-  const [viewState, setViewState] = useState({ view: "list", data: null });
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const appRootRef = useRef(null);
   const isApplyingLocalizationRef = useRef(false);
@@ -343,6 +370,7 @@ export default function App() {
     DEFAULT_SYSTEM_NOTIFICATIONS
   );
   const [poSnackbar, setPoSnackbar] = useState({ open: false, message: "", variant: "success" });
+  
   const showPoSnackbar = (message, variant = "success") => {
     setPoSnackbar({ open: true, message, variant });
     setTimeout(() => setPoSnackbar({ open: false, message: "", variant: "success" }), 3000);
@@ -392,58 +420,130 @@ export default function App() {
     return () => observer.disconnect();
   }, [language]);
 
-  const navigateToView = (view, data = null) => {
+  const onNavigate = (view, data = null) => {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "auto" });
     }
 
-    if (view && typeof view === "string") {
+    if (!view) return;
+
+    // Handle string-based legacy navigation
+    if (typeof view === "string") {
       if (view.startsWith("work_order_")) {
-        setActiveModule("work_order");
-        setViewState({ view: view.replace("work_order_", ""), data });
+        const subView = view.replace("work_order_", "");
+        const path = subView === "list" ? "/work-order" : `/work-order/${subView}`;
+        navigate(path, { state: data });
         return;
       }
       if (view.startsWith("purchase_order_")) {
-        setActiveModule("purchase_order");
-        setViewState({ view: view.replace("purchase_order_", ""), data });
+        const subView = view.replace("purchase_order_", "");
+        const path = subView === "list" ? "/purchase-order" : `/purchase-order/${subView}`;
+        navigate(path, { state: data });
         return;
       }
       if (view.startsWith("materials_")) {
-        setActiveModule("materials");
-        setViewState({ view: view.replace("materials_", ""), data });
+        let subView = view.replace("materials_", "");
+        if (subView === "settings") subView = "manage";
+        const path = subView === "list" ? "/materials" : `/materials/${subView}`;
+        navigate(path, { state: data });
         return;
       }
       if (view.startsWith("analytics_")) {
-        setActiveModule("analytics");
-        setViewState({ view: view.replace("analytics_", ""), data });
+        const subView = view.replace("analytics_", "");
+        if (["po_report", "vendor_liability_report", "ap_aging_report"].includes(subView)) {
+          navigate(`/procurement-ap-report/${subView.replace(/_/g, "-")}`, { state: data });
+        } else {
+          const route = MODULE_TO_ROUTE[view] || MODULE_TO_ROUTE[subView] || subView.replace(/_/g, '-');
+          navigate(`/${route}`, { state: data });
+        }
+        return;
+      }
+
+      // Contextual navigation
+      const pathParts = location.pathname.split("/").filter(Boolean);
+      const currentModuleRoute = pathParts[0];
+      
+      if (view === "list") {
+        navigate(`/${currentModuleRoute}`, { state: data });
+        return;
+      }
+      if (view === "detail" || view === "po_detail") {
+        const id = (data?.sku || data?.poNumber || data?.wo || data?.id || "detail");
+        navigate(`/${currentModuleRoute}/${id}`, { state: data });
+        return;
+      }
+      if (view === "create" || view === "settings") {
+        const id = data?.poNumber || data?.wo || data?.sku || data?.id;
+        if (view === "create" && id) {
+          navigate(`/${currentModuleRoute}/${id}/edit`, { state: data });
+        } else {
+          const subRoute = (view === "settings" && currentModuleRoute === "materials") ? "manage" : view;
+          navigate(`/${currentModuleRoute}/${subRoute}`, { state: data });
+        }
         return;
       }
     }
-    setViewState({ view, data });
+    
+    // Fallback or explicit path
+    navigate(view, { state: data });
   };
 
   const handleModuleChange = (moduleId) => {
-    if (moduleId.startsWith("analytics_")) {
-      setActiveModule("analytics");
-      setViewState({ view: moduleId.replace("analytics_", ""), data: null });
-      return;
+    const route = MODULE_TO_ROUTE[moduleId];
+    if (route) {
+      navigate(`/${route}`);
+    } else if (moduleId.startsWith("analytics_")) {
+      const subRoute = moduleId.replace("analytics_", "").replace(/_/g, '-');
+      if (["po-report", "vendor-liability-report", "ap-aging-report"].includes(subRoute)) {
+        navigate(`/procurement-ap-report/${subRoute}`);
+      } else {
+        navigate(`/${subRoute}`);
+      }
+    } else {
+      // Direct moduleId as route if not mapped
+      navigate(`/${moduleId.replace(/_/g, '-')}`);
     }
-    setActiveModule(moduleId);
-    navigateToView("list");
   };
 
-  const renderContent = () => {
-    if (activeModule === "procurement_ap_report" || (activeModule === "analytics" && viewState.view === "procurement_ap_report")) {
-      return <ProcurementAPReportPage onNavigate={navigateToView} />;
+  const ModuleRenderer = () => {
+    const { module: moduleRoute, id, subview } = useParams();
+    const activeModule = ROUTE_TO_MODULE[moduleRoute] || moduleRoute?.replace(/-/g, '_');
+    const viewState = { view: (id || "list").replace(/-/g, '_'), data: location.state };
+
+    if (subview === "edit") {
+      viewState.view = "create";
     }
-    if (activeModule === "po_report" || (activeModule === "analytics" && viewState.view === "po_report")) {
-      return <POReportPage onNavigate={navigateToView} t={t} />;
+
+    // Normalize viewState based on known routes
+    const isSpecialView = ["list", "create", "settings", "manage"].includes(viewState.view) || 
+                          activeModule === "analytics" || 
+                          activeModule === "administration" ||
+                          activeModule === "procurement_ap_report" ||
+                          activeModule === "po_report" ||
+                          activeModule === "vendor_liability_report" ||
+                          activeModule === "ap_aging_report";
+
+    if (id && !viewState.data) {
+      viewState.data = { id, poNumber: id, wo: id, material: { sku: id } };
     }
-    if (activeModule === "vendor_liability_report" || (activeModule === "analytics" && viewState.view === "vendor_liability_report")) {
-      return <VendorLiabilityReportPage onNavigate={navigateToView} t={t} />;
+
+    if (id && !isSpecialView && !subview) {
+      viewState.view = "detail";
+    } else if (viewState.view === "manage" && activeModule === "materials") {
+      viewState.view = "settings";
     }
-    if (activeModule === "ap_aging_report" || (activeModule === "analytics" && viewState.view === "ap_aging_report")) {
-      return <APAgingReportPage onNavigate={navigateToView} t={t} />;
+
+    if (activeModule === "procurement_ap_report") {
+      if (viewState.view === "po_report") {
+        return <POReportPage onNavigate={onNavigate} t={t} />;
+      }
+      if (viewState.view === "vendor_liability_report") {
+        return <VendorLiabilityReportPage onNavigate={onNavigate} t={t} />;
+      }
+      if (viewState.view === "ap_aging_report") {
+        return <APAgingReportPage onNavigate={onNavigate} t={t} />;
+      }
+      return <ProcurementAPReportPage onNavigate={onNavigate} />;
     }
 
     if (activeModule === "user_guide") {
@@ -586,7 +686,7 @@ export default function App() {
             {/* Step 5 */}
             <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "18px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyCenter: "center", width: "28px", height: "28px", borderRadius: "50%", border: "2px solid #4F70E2", flexShrink: 0, padding: "4px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "50%", border: "2px solid #4F70E2", flexShrink: 0, padding: "4px" }}>
                   <Check size={14} color="#4F70E2" />
                 </div>
                 <h2 style={{ fontSize: "18px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 5: Create Products</h2>
@@ -615,7 +715,7 @@ export default function App() {
             {/* Step 8 & 9 */}
             <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "18px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyCenter: "center", width: "28px", height: "28px", borderRadius: "50%", border: "2px solid #4F70E2", flexShrink: 0, padding: "4px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "50%", border: "2px solid #4F70E2", flexShrink: 0, padding: "4px" }}>
                   <Check size={14} color="#4F70E2" />
                 </div>
                 <h2 style={{ fontSize: "18px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Execution: Orders & Work Orders</h2>
@@ -654,7 +754,7 @@ export default function App() {
       if (viewState.view === "list") {
         return (
           <WorkOrderListPage
-            onNavigate={navigateToView}
+            onNavigate={onNavigate}
             t={t}
           />
         );
@@ -663,12 +763,13 @@ export default function App() {
         return (
           <WorkOrderDetailPage
             key={viewState.data?.wo || "work-order-detail"}
-            onNavigate={navigateToView}
+            onNavigate={onNavigate}
             isSidebarCollapsed={isSidebarCollapsed}
             initialData={viewState.data}
           />
         );
       }
+      // PurchaseOrderCreatePage is also used by WorkOrder
       if (viewState.view === "create") {
         return (
           <PurchaseOrderCreatePage
@@ -677,7 +778,7 @@ export default function App() {
               viewState.data?.workOrder?.wo ||
               "purchase-order-create"
             }
-            onNavigate={navigateToView}
+            onNavigate={onNavigate}
             isSidebarCollapsed={isSidebarCollapsed}
             initialData={viewState.data}
             poApprovalSettings={poApprovalSettings}
@@ -689,7 +790,7 @@ export default function App() {
         return (
           <PurchaseOrderDetailPage
             key={(typeof viewState.data === "string" ? viewState.data : viewState.data?.poNumber) || "purchase-order-detail"}
-            onNavigate={navigateToView}
+            onNavigate={onNavigate}
             initialData={viewState.data}
             poApprovalSettings={poApprovalSettings}
             isSidebarCollapsed={isSidebarCollapsed}
@@ -702,7 +803,7 @@ export default function App() {
       if (viewState.view === "list") {
         return (
           <PurchaseOrderListPage
-            onNavigate={navigateToView}
+            onNavigate={onNavigate}
             t={t}
           />
         );
@@ -710,13 +811,13 @@ export default function App() {
       if (viewState.view === "settings") {
         return (
           <PurchaseOrderSettingsPage
-            onNavigate={navigateToView}
+            onNavigate={onNavigate}
             isSidebarCollapsed={isSidebarCollapsed}
             poApprovalSettings={poApprovalSettings}
             onSaveSettings={(settings) => {
               setPoApprovalSettings(settings);
               showPoSnackbar("Purchase order settings successfully saved", "success");
-              navigateToView("list");
+              onNavigate("list");
             }}
           />
         );
@@ -729,7 +830,7 @@ export default function App() {
               viewState.data?.workOrder?.wo ||
               "purchase-order-create"
             }
-            onNavigate={navigateToView}
+            onNavigate={onNavigate}
             isSidebarCollapsed={isSidebarCollapsed}
             initialData={viewState.data}
             poApprovalSettings={poApprovalSettings}
@@ -740,8 +841,8 @@ export default function App() {
       if (viewState.view === "detail" || viewState.view === "po_detail") {
         return (
           <PurchaseOrderDetailPage
-            key={viewState.data?.poNumber || "purchase-order-detail"}
-            onNavigate={navigateToView}
+            key={viewState.data?.poNumber || viewState.view || "purchase-order-detail"}
+            onNavigate={onNavigate}
             initialData={viewState.data}
             poApprovalSettings={poApprovalSettings}
             isSidebarCollapsed={isSidebarCollapsed}
@@ -750,14 +851,14 @@ export default function App() {
         );
       }
     }
-    if (activeModule === "user_management") {
+    if (activeModule === "user_management" || (activeModule === "administration" && viewState.view === "user_management")) {
       return (
         <UserManagementPage
           isSidebarCollapsed={isSidebarCollapsed}
         />
       );
     }
-    if (activeModule === "notification_settings") {
+    if (activeModule === "notification_settings" || (activeModule === "administration" && viewState.view === "notification_settings")) {
       return (
         <NotificationSettingsPage
           isSidebarCollapsed={isSidebarCollapsed}
@@ -772,32 +873,33 @@ export default function App() {
       if (viewState.view === "list") {
         return (
           <MaterialsListPage
-            onNavigate={navigateToView}
+            onNavigate={onNavigate}
             showSnackbar={showPoSnackbar}
             t={t}
           />
         );
       }
-      if (viewState.view === "settings") {
+      if (viewState.view === "settings" || viewState.view === "manage") {
         return (
           <MaterialManagePage
-            onNavigate={navigateToView}
+            onNavigate={onNavigate}
             showSnackbar={showPoSnackbar}
             t={t}
           />
         );
       }
-      if (viewState.view === "detail") {
+      if (viewState.view !== "list") {
         return (
           <MaterialDetailPage
             material={viewState.data}
-            onNavigate={navigateToView}
+            onNavigate={onNavigate}
             showSnackbar={showPoSnackbar}
             t={t}
           />
         );
       }
     }
+
     return (
       <div
         style={{
@@ -820,6 +922,11 @@ export default function App() {
     );
   };
 
+  const pathParts = location.pathname.split("/").filter(Boolean);
+  const currentModuleRoute = pathParts[0] || "work-order";
+  const currentActiveModule = ROUTE_TO_MODULE[currentModuleRoute] || currentModuleRoute.replace(/-/g, '_');
+  const currentView = (pathParts[1] || "list").replace(/-/g, '_');
+
   return (
     <div
       ref={appRootRef}
@@ -835,8 +942,8 @@ export default function App() {
         <Sidebar
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          activeModule={activeModule}
-          viewState={viewState}
+          activeModule={currentActiveModule}
+          viewState={{ view: currentView }}
           onModuleChange={handleModuleChange}
           language={language}
           onLanguageChange={setLanguage}
@@ -863,7 +970,7 @@ export default function App() {
             onNotificationsChange={setSystemNotifications}
             onOpenNotificationSettings={() => handleModuleChange("notification_settings")}
           />
-          {["purchase_order", "materials"].includes(activeModule) && poSnackbar.open && (
+          {poSnackbar.open && (
             <div
               style={{
                 position: "fixed",
@@ -872,9 +979,11 @@ export default function App() {
                 background:
                   poSnackbar.variant === "error"
                     ? "var(--status-red-primary)"
+                    : poSnackbar.variant === "black"
+                    ? "var(--neutral-on-surface-primary)"
                     : "var(--status-green-primary)",
                 color:
-                  poSnackbar.variant === "error"
+                  poSnackbar.variant === "error" || poSnackbar.variant === "black"
                     ? "#FFFFFF"
                     : "var(--status-green-on-primary)",
                 padding: "12px 16px",
@@ -906,7 +1015,7 @@ export default function App() {
                   fontFamily: "inherit",
                   lineHeight: "1.5",
                   color:
-                    poSnackbar.variant === "error"
+                    poSnackbar.variant === "error" || poSnackbar.variant === "black"
                       ? "#FFFFFF"
                       : "var(--status-green-on-primary)",
                   padding: 0,
@@ -917,7 +1026,18 @@ export default function App() {
               </button>
             </div>
           )}
-          {renderContent()}
+          <Routes>
+            <Route path="/" element={<Navigate to="/work-order" replace />} />
+            <Route path="/:module" element={<ModuleRenderer />} />
+            <Route path="/:module/:id" element={<ModuleRenderer />} />
+            <Route path="/:module/:id/:subview" element={<ModuleRenderer />} />
+            <Route path="*" element={
+              <div style={{ padding: "40px", textAlign: "center" }}>
+                <h2>404 - Page Not Found</h2>
+                <button onClick={() => navigate("/")}>Go Home</button>
+              </div>
+            } />
+          </Routes>
         </div>
       </div>
     </div>

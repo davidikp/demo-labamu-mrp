@@ -10,11 +10,15 @@ import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { StockBatchesTab } from "../components/StockBatchesTab.jsx";
 import { StockTransactionsTab } from "../components/StockTransactionsTab.jsx";
 import { MaterialCreateDrawer } from "../components/MaterialCreateDrawer.jsx";
+import { MOCK_STOCK_BATCHES } from "../mock/batchesMocks.js";
+import { MOCK_STOCK_TRANSACTIONS } from "../mock/transactionsMocks.js";
 
 export const MaterialDetailPage = ({ material, onNavigate, showSnackbar, t }) => {
   const [activeTab, setActiveTab] = useState("stock_batches");
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [currentMaterial, setCurrentMaterial] = useState(material);
+  const [localBatches, setLocalBatches] = useState(MOCK_STOCK_BATCHES);
+  const [localTransactions, setLocalTransactions] = useState(MOCK_STOCK_TRANSACTIONS);
 
   const handleBack = () => {
     if (material?.returnTo) {
@@ -267,9 +271,20 @@ export const MaterialDetailPage = ({ material, onNavigate, showSnackbar, t }) =>
           minHeight: "200px"
         }}>
           {activeTab === "stock_batches" ? (
-            <StockBatchesTab materialId={currentMaterial.id} />
+            <StockBatchesTab 
+              materialId={currentMaterial.id} 
+              localBatches={localBatches}
+              setLocalBatches={setLocalBatches}
+              localTransactions={localTransactions}
+              setLocalTransactions={setLocalTransactions}
+              showSnackbar={showSnackbar}
+            />
           ) : (
-            <StockTransactionsTab materialId={currentMaterial.id} onNavigate={onNavigate} />
+            <StockTransactionsTab 
+              materialId={currentMaterial.id} 
+              onNavigate={onNavigate} 
+              localTransactions={localTransactions}
+            />
           )}
         </div>
       </div>
