@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { AddIcon, ChevronDownIcon, Download, Settings } from "../../../components/icons/Icons.jsx";
+import { AddIcon, ChevronDownIcon, Settings } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
 import { FilterPill } from "../../../components/common/FilterPill.jsx";
@@ -28,8 +28,6 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
   const [viewportHeight, setViewportHeight] = useState(() =>
     typeof window !== "undefined" ? window.innerHeight : 900
   );
-  const [showActionToast, setShowActionToast] = useState(false);
-  const [actionToastMessage, setActionToastMessage] = useState("");
 
   const tableColumns = [
     { label: "PO Number", key: "poNumber", flex: "1.5", sortable: true },
@@ -161,12 +159,6 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  useEffect(() => {
-    if (!showActionToast) return undefined;
-    const timer = setTimeout(() => setShowActionToast(false), 3000);
-    return () => clearTimeout(timer);
-  }, [showActionToast]);
-
   return (
     <div
       style={{
@@ -180,53 +172,6 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
         minHeight: 0,
       }}
     >
-      {showActionToast ? (
-        <div
-          style={{
-            position: "fixed",
-            top: "84px",
-            right: "24px",
-            width: "335px",
-            minHeight: "51px",
-            background: "var(--status-green-primary)",
-            color: "var(--status-green-on-primary)",
-            padding: "12px 20px",
-            borderRadius: "8px",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.2)",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <span style={{ fontSize: "var(--text-body)", lineHeight: "1.5" }}>
-              {actionToastMessage}
-            </span>
-          </div>
-          <button
-            type="button"
-            data-no-localize
-            translate="no"
-            style={{
-              border: "none",
-              background: "transparent",
-              fontSize: "var(--text-body)",
-              fontWeight: "var(--font-weight-bold)",
-              cursor: "pointer",
-              color: "var(--status-green-on-primary)",
-              marginLeft: "12px",
-              padding: 0,
-              fontFamily: "inherit",
-              lineHeight: "1.5",
-            }}
-            onClick={() => setShowActionToast(false)}
-          >
-            Okay
-          </button>
-        </div>
-      ) : null}
-
       <div
         style={{
           display: "flex",
@@ -244,16 +189,6 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
           {t("purchase_order.title")}
         </h1>
         <div style={{ display: "flex", gap: "12px" }}>
-          <Button
-            variant="outlined"
-            leftIcon={Download}
-            onClick={() => {
-              setActionToastMessage("Report successfully downloaded");
-              setShowActionToast(true);
-            }}
-          >
-            Download Report
-          </Button>
           <Button variant="outlined" leftIcon={Settings} onClick={() => onNavigate("settings")}>
             {t("purchase_order.settings")}
           </Button>

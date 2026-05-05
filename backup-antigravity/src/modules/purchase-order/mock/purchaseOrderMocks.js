@@ -214,6 +214,72 @@ export const MOCK_PO_TABLE_DATA = [
       { id: "pay-7-2", amount: 5000000, date: "2026-04-18", method: "Bank Transfer", invoiceId: "inv-7-2", itemLines: [{ id: 2, qty: 20 }], proof: "receipt-partial-inv11.pdf" }
     ]
   },
+  {
+    poNumber: "PO-202603-0008",
+    vendorName: "PT Mitra Sejahtera",
+    amount: "IDR 12,000,000",
+    createdDate: "2026-03-26",
+    status: "Draft",
+    statusKey: "draft",
+    sBadge: "grey-light",
+    invoices: [],
+    payments: []
+  },
+  {
+    poNumber: "PO-202603-0009",
+    vendorName: "Bintang Sejahtera",
+    amount: "IDR 8,000,000",
+    createdDate: "2026-03-27",
+    status: "Need Revision",
+    statusKey: "need_revision",
+    sBadge: "yellow-light",
+    invoices: [],
+    payments: []
+  },
+  {
+    poNumber: "PO-202603-0010",
+    vendorName: "PT Cahaya Abadi",
+    amount: "IDR 15,500,000",
+    createdDate: "2026-03-28",
+    status: "Draft",
+    statusKey: "draft",
+    sBadge: "grey-light",
+    invoices: [],
+    payments: []
+  },
+  {
+    poNumber: "PO-202603-0011",
+    vendorName: "CV Kayu Makmur",
+    amount: "IDR 9,200,000",
+    createdDate: "2026-03-29",
+    status: "Need Revision",
+    statusKey: "need_revision",
+    sBadge: "yellow-light",
+    invoices: [],
+    payments: []
+  },
+  {
+    poNumber: "PO-202603-0012",
+    vendorName: "PT Sumber Berkah",
+    amount: "IDR 6,000,000",
+    createdDate: "2026-03-30",
+    status: "Draft",
+    statusKey: "draft",
+    sBadge: "grey-light",
+    invoices: [],
+    payments: []
+  },
+  {
+    poNumber: "PO-202603-0013",
+    vendorName: "CV Maju Terus",
+    amount: "IDR 25,000,000",
+    createdDate: "2026-03-31",
+    status: "Draft",
+    statusKey: "draft",
+    sBadge: "grey-light",
+    invoices: [],
+    payments: []
+  }
 ];
 
 export const MOCK_ACTIVITIES = [

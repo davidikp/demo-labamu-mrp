@@ -381,7 +381,7 @@ export const StockTransactionsTab = ({ materialId, onNavigate }) => {
           <TableSearchField 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by keyword..."
+            placeholder="Search Batch No"
             width="280px"
           />
         </div>

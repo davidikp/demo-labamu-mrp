@@ -30,6 +30,8 @@ const DropdownSelect = ({
   searchPlaceholder = "Search...",
   hideSearchIcon = false,
   showDivider = false,
+  footer = null,
+  maxOptionsVisible = null,
 }) => {
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
@@ -70,10 +72,17 @@ const DropdownSelect = ({
     if (!triggerRef.current || typeof window === "undefined") return;
     const rect = triggerRef.current.getBoundingClientRect();
     const width = Number(menuWidth) || rect.width;
-    const estimatedMenuHeight = Math.min(
-      16 + Math.max(visibleOptions.length, 1) * 41,
-      284
-    );
+    
+    let estimatedMenuHeight;
+    if (maxOptionsVisible) {
+      estimatedMenuHeight = 4 + (maxOptionsVisible * 40) + (footer ? 48 : 0);
+    } else {
+      estimatedMenuHeight = Math.min(
+        16 + Math.max(visibleOptions.length, 1) * 41 + (footer ? 48 : 0),
+        284
+      );
+    }
+
     const shouldOpenAbove =
       window.innerHeight - rect.bottom < estimatedMenuHeight + 16 &&
       rect.top > estimatedMenuHeight + 16;
@@ -118,7 +127,7 @@ const DropdownSelect = ({
       window.removeEventListener("resize", handleViewportChange);
       window.removeEventListener("scroll", handleViewportChange, true);
     };
-  }, [isOpen, menuWidth]);
+  }, [isOpen, menuWidth, visibleOptions.length]);
 
   useEffect(() => {
     if (
@@ -322,7 +331,9 @@ const DropdownSelect = ({
             borderRadius: "12px",
             boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.08)",
             overflow: "hidden",
-            zIndex: 10000,
+            zIndex: 15000, // Increased z-index to be above modals if needed, but modals should be even higher
+            display: "flex",
+            flexDirection: "column",
             ...menuStyle,
           }}
         >
@@ -368,15 +379,16 @@ const DropdownSelect = ({
             </div>
           )}
 
-          {visibleOptions.length > 0 ? (
-            <div
-              style={{
-                padding: "4px 8px 8px",
-                maxHeight: "284px",
-                overflowY: "auto",
-              }}
-            >
-              {visibleOptions.map((option, index) => {
+          <div
+            style={{
+              padding: "4px 8px 8px",
+              maxHeight: maxOptionsVisible ? `${maxOptionsVisible * 40 + 4}px` : "284px",
+              overflowY: "auto",
+              flex: 1,
+            }}
+          >
+            {visibleOptions.length > 0 ? (
+              visibleOptions.map((option, index) => {
                 const optionSelected =
                   String(option.value) === String(value) &&
                   String(option.value ?? "") !== "";
@@ -492,21 +504,34 @@ const DropdownSelect = ({
                     </button>
                   </div>
                 );
-              })}
-            </div>
-          ) : (
-            <div style={{ padding: "16px" }}>
-              <span
-                style={{
-                  display: "block",
-                  textAlign: "center",
-                  fontSize: "var(--text-title-3)",
-                  lineHeight: "20px",
-                  color: "var(--neutral-on-surface-secondary)",
-                }}
-              >
-                {emptyText}
-              </span>
+              })
+            ) : (
+              <div style={{ padding: "16px" }}>
+                <span
+                  style={{
+                    display: "block",
+                    textAlign: "center",
+                    fontSize: "var(--text-title-3)",
+                    lineHeight: "20px",
+                    color: "var(--neutral-on-surface-secondary)",
+                  }}
+                >
+                  {emptyText}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {footer && (
+            <div style={{
+              borderTop: "1px solid var(--neutral-line-separator-2)",
+              padding: "4px 8px 8px",
+              background: "var(--neutral-surface-primary)",
+              position: "sticky",
+              bottom: 0,
+              zIndex: 1
+            }}>
+              {footer}
             </div>
           )}
         </div>

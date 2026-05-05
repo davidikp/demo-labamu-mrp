@@ -247,7 +247,6 @@ const Tooltip = ({ content, children, style = {}, checkTruncation = false }) => 
               fontSize: "var(--text-desc)",
               lineHeight: "1.6",
               boxShadow: "var(--elevation-sm)",
-              zIndex: 10000,
               textAlign: "left",
               pointerEvents: "none",
             }}
@@ -6981,19 +6980,12 @@ export const PurchaseOrderDetailPage = ({
                       >
                         <span
                           style={{
-                            fontSize: "var(--text-title-2)",
-                            fontWeight: "var(--font-weight-bold)",
-                          }}
-                        >
-                          No documents found
-                        </span>
-                        <span
-                          style={{
-                            fontSize: "var(--text-title-3)",
+                            fontSize: "14px",
+                            fontWeight: "var(--font-weight-regular)",
                             color: "var(--neutral-on-surface-secondary)",
                           }}
                         >
-                          Try changing your search or filter.
+                          No documents added
                         </span>
                       </div>
                     )}
@@ -7174,19 +7166,12 @@ export const PurchaseOrderDetailPage = ({
                   >
                     <span
                       style={{
-                        fontSize: "var(--text-title-2)",
-                        fontWeight: "var(--font-weight-bold)",
-                      }}
-                    >
-                      No documents found
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "var(--text-title-3)",
+                        fontSize: "14px",
+                        fontWeight: "var(--font-weight-regular)",
                         color: "var(--neutral-on-surface-secondary)",
                       }}
                     >
-                      Try changing your search or filter.
+                      No documents added
                     </span>
                   </div>
                 )}
@@ -7668,6 +7653,19 @@ export const PurchaseOrderDetailPage = ({
                         </div>
                       );
                     })}
+                    {receiptLines.length === 0 && (
+                      <div
+                        style={{
+                          padding: "48px 24px",
+                          textAlign: "center",
+                          color: "var(--neutral-on-surface-secondary)",
+                          fontSize: "14px",
+                          fontWeight: "var(--font-weight-regular)",
+                        }}
+                      >
+                        No purchase order lines added
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
