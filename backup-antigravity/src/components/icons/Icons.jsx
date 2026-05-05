@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Copy,
   CreditCard,
   File,
   FileImage,
@@ -345,6 +346,7 @@ const CalendarIcon = Calendar;
 const UserGuideIcon = HelpCircle;
 const CheckIcon = Check;
 const CloseIcon = X;
+const CopyIcon = Copy;
 
 const NotificationCenterIcon = ({ kind = "system_updates", unread = false }) => {
   const iconMap = {
@@ -540,6 +542,7 @@ export {
   CloudUploadIcon,
   CheckCircleIcon,
   CanceledCircleIcon,
+  CopyIcon,
   ShoppingCart,
   TrendingUp,
   CircleDollarSign,

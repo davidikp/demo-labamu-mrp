@@ -15,7 +15,8 @@ import {
   CheckIcon,
   CloudUploadIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  CopyIcon
 } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
@@ -24,6 +25,7 @@ import { IconButton } from "../../../components/common/IconButton.jsx";
 import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
+import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
 import { FilterPill } from "../../../components/common/FilterPill.jsx";
 import { MOCK_STOCK_BATCHES } from "../mock/batchesMocks.js";
 import { MOCK_VENDORS } from "../../../data/vendors.js";
@@ -90,9 +92,9 @@ const Tooltip = ({ content, children }) => {
       ref={triggerRef}
       style={{
         position: "relative",
-        display: "block",
-        width: "100%",
-        minWidth: 0,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center"
       }}
       onMouseEnter={() => setIsVisible(true)}
       onMouseLeave={() => setIsVisible(false)}
@@ -526,7 +528,13 @@ const DateInputControl = ({
   );
 };
 
-export const StockBatchesTab = ({ materialId }) => {
+export const StockBatchesTab = ({ 
+  materialId, 
+  localBatches, 
+  setLocalBatches, 
+  setLocalTransactions, 
+  showSnackbar 
+}) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showEmptyBatches, setShowEmptyBatches] = useState(false);
   const [activeFilters, setActiveFilters] = useState({
@@ -538,8 +546,9 @@ export const StockBatchesTab = ({ materialId }) => {
   const [openFilterKey, setOpenFilterKey] = useState(null);
   const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   
-  const [localBatches, setLocalBatches] = useState(MOCK_STOCK_BATCHES);
+  // localBatches and localTransactions are now passed as props
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [successToastMessage, setSuccessToastMessage] = useState("Batch successfully saved");
   const [drawerMode, setDrawerMode] = useState(null); // 'add' | 'edit' | null
   const [formData, setFormData] = useState({
     id: null,
@@ -555,6 +564,12 @@ export const StockBatchesTab = ({ materialId }) => {
     attachments: []
   });
   const [errors, setErrors] = useState({});
+  
+  // Dispose Modal State
+  const [showDisposeModal, setShowDisposeModal] = useState(false);
+  const [batchToDispose, setBatchToDispose] = useState(null);
+  const [disposalReason, setDisposalReason] = useState("");
+  const [disposeError, setDisposeError] = useState("");
 
   const scrollerRef = useRef(null);
   const [scrollShadows, setScrollShadows] = useState({ left: false, right: false });
@@ -578,6 +593,62 @@ export const StockBatchesTab = ({ materialId }) => {
   };
 
   const openAddDrawer = () => setDrawerMode("add");
+
+  const openDisposeModal = (batch) => {
+    setBatchToDispose(batch);
+    setDisposalReason("");
+    setDisposeError("");
+    setShowDisposeModal(true);
+  };
+
+  const handleDispose = () => {
+    if (!disposalReason.trim()) {
+      setDisposeError("Reason is required");
+      return;
+    }
+
+    if (batchToDispose) {
+      // 1. Update batch quantity to 0
+      setLocalBatches(prev => prev.map(b => 
+        b.id === batchToDispose.id 
+          ? { ...b, currentQty: 0, status: "Disposed" } 
+          : b
+      ));
+
+      // 2. Add transaction record
+      const now = new Date();
+      const newTransaction = {
+        id: `tx-dispose-${Date.now()}`,
+        materialId: materialId,
+        date: now.toISOString(),
+        batchNo: batchToDispose.batchNo,
+        type: "Write Off",
+        quantity: -batchToDispose.currentQty,
+        unit: "pcs", 
+        workOrder: null,
+        product: "-",
+        reason: disposalReason,
+        actionBy: "Admin User"
+      };
+
+      if (setLocalTransactions) {
+        setLocalTransactions(prev => [newTransaction, ...prev]);
+      }
+
+      // 3. Close modal and show snackbar
+      setShowDisposeModal(false);
+      setBatchToDispose(null);
+      setDisposalReason("");
+      
+      if (showSnackbar) {
+        showSnackbar("Batch successfully disposed", "black");
+      } else {
+        setSuccessToastMessage("Batch successfully disposed");
+        setShowSuccessToast(true);
+        setTimeout(() => setShowSuccessToast(false), 3000);
+      }
+    }
+  };
 
   const openEditDrawer = (batch) => {
     setFormData({
@@ -633,6 +704,8 @@ export const StockBatchesTab = ({ materialId }) => {
         setLocalBatches(prev => prev.map(b => b.id === formData.id ? newBatch : b));
       }
 
+      setShowSuccessToast(false);
+      setSuccessToastMessage("Batch successfully saved");
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
       closeDrawer();
@@ -1078,6 +1151,7 @@ export const StockBatchesTab = ({ materialId }) => {
                       row.status === "Received" ? "green-light" : 
                       row.status === "Delayed" ? "red" : 
                       row.status === "Requested" ? "blue-light" : 
+                      row.status === "Disposed" ? "grey-light" :
                       "grey"
                     }>
                       {row.status}
@@ -1112,7 +1186,7 @@ export const StockBatchesTab = ({ materialId }) => {
                     <Tooltip content="Dispose">
                       <IconButton 
                         icon={DisposeIcon} 
-                        onClick={() => {}} 
+                        onClick={() => openDisposeModal(row)} 
                         size="small" 
                         color="var(--status-red-primary)" 
                       />
@@ -1346,9 +1420,127 @@ export const StockBatchesTab = ({ materialId }) => {
           fontWeight: "var(--font-weight-bold)"
         }}>
           <CheckIcon size={20} color="var(--status-green-primary)" />
-          Batch successfully saved
+          {successToastMessage}
         </div>
       )}
+      {/* Dispose Confirmation Modal */}
+      <GeneralModal
+        isOpen={showDisposeModal}
+        onClose={() => setShowDisposeModal(false)}
+        title="Dispose Batch?"
+        description={`This will permanently remove ${batchToDispose?.batchNo || ""} from inventory.`}
+        width="440px"
+        footer={
+          <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+            <Button 
+              variant="outlined" 
+              size="large"
+              onClick={() => setShowDisposeModal(false)} 
+              style={{ flex: 1 }}
+            >
+              Back
+            </Button>
+            <Button 
+              variant="filled" 
+              size="large"
+              onClick={handleDispose} 
+              style={{ flex: 1 }}
+            >
+              Submit
+            </Button>
+          </div>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          {batchToDispose?.reservedQty > 0 && (
+            <div style={{
+              background: "var(--neutral-surface-primary)",
+              borderRadius: "12px",
+              padding: "16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "8px",
+              border: "1px solid var(--neutral-line-separator-1)"
+            }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                  It affects 1 ongoing material request.
+                </span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                  <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>
+                    Request ID: MR-202403-042
+                  </span>
+                  <Button 
+                    variant="tertiary" 
+                    size="small" 
+                    leftIcon={CopyIcon}
+                    onClick={() => {
+                      navigator.clipboard.writeText("MR-202403-042");
+                      alert("Request ID copied to clipboard");
+                    }}
+                    style={{ color: "var(--feature-brand-primary)", padding: "0 8px", height: "28px" }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <span style={{ color: "var(--status-red-primary)", fontSize: "var(--text-body)" }}>*</span>
+                <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                  Reason
+                </span>
+              </div>
+              <span style={{ fontSize: "var(--text-desc)", color: "var(--neutral-on-surface-tertiary)" }}>
+                {disposalReason.length}/400
+              </span>
+            </div>
+            <textarea
+              value={disposalReason}
+              onChange={(e) => {
+                const val = e.target.value.slice(0, 400);
+                setDisposalReason(val);
+                if (val.trim()) setDisposeError("");
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "var(--feature-brand-primary)";
+                e.target.style.boxShadow = "0 0 0 3px rgba(0, 104, 255, 0.08)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = disposeError ? "var(--status-red-primary)" : "var(--neutral-line-separator-2)";
+                e.target.style.boxShadow = "none";
+              }}
+              placeholder="Input disposal reason"
+              maxLength={400}
+              style={{
+                width: "100%",
+                minHeight: "120px",
+                borderRadius: "12px",
+                border: disposeError ? "1px solid var(--status-red-primary)" : "1px solid var(--neutral-line-separator-2)",
+                padding: "12px 16px",
+                fontSize: "var(--text-subtitle-1)",
+                outline: "none",
+                resize: "none",
+                boxSizing: "border-box",
+                background: "var(--neutral-surface-primary)",
+                color: "var(--neutral-on-surface-primary)",
+                fontFamily: "Lato, sans-serif",
+                transition: "border-color 0.2s ease, box-shadow 0.2s ease"
+              }}
+            />
+            {disposeError && (
+              <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>
+                {disposeError}
+              </span>
+            )}
+          </div>
+        </div>
+      </GeneralModal>
     </div>
   );
 };
+

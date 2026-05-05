@@ -55,9 +55,15 @@ const DropdownSelect = ({
       : normalizedOptions;
 
   const visibleOptions = searchable && searchTerm
-    ? initialOptions.filter(option =>
-        String(option.label || "").toLowerCase().includes(searchTerm.toLowerCase())
-      )
+    ? initialOptions.filter(option => {
+        const lowerSearch = searchTerm.toLowerCase();
+        return (
+          String(option.label || "").toLowerCase().includes(lowerSearch) ||
+          String(option.code || "").toLowerCase().includes(lowerSearch) ||
+          String(option.sku || "").toLowerCase().includes(lowerSearch) ||
+          String(option.woRef || "").toLowerCase().includes(lowerSearch)
+        );
+      })
     : initialOptions;
   const selectedOption = normalizedOptions.find(
     (option) => String(option.value) === String(value)

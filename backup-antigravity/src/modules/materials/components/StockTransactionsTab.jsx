@@ -120,7 +120,7 @@ const formatQuantity = (val, unit) => {
   return `${prefix}${val.toLocaleString('en-US')} ${unit || ""}`;
 };
 
-export const StockTransactionsTab = ({ materialId, onNavigate }) => {
+export const StockTransactionsTab = ({ materialId, onNavigate, localTransactions = [] }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
@@ -158,7 +158,7 @@ export const StockTransactionsTab = ({ materialId, onNavigate }) => {
   };
 
   const getFilterOptions = (key) => {
-    const all = MOCK_STOCK_TRANSACTIONS.filter(t => t.materialId === materialId);
+    const all = localTransactions.filter(t => t.materialId === materialId);
     switch (key) {
       case "type":
         return [...new Set(all.map(t => t.type).filter(Boolean))];
@@ -168,7 +168,7 @@ export const StockTransactionsTab = ({ materialId, onNavigate }) => {
   };
 
   const transactions = React.useMemo(() => {
-    let result = MOCK_STOCK_TRANSACTIONS.filter(t => t.materialId === materialId);
+    let result = localTransactions.filter(t => t.materialId === materialId);
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -507,6 +507,8 @@ export const StockTransactionsTab = ({ materialId, onNavigate }) => {
                     <StatusBadge variant={
                       row.type === "In" ? "green-light" : 
                       row.type === "Out" ? "red-light" : 
+                      row.type === "Write Off" ? "orange-light" :
+                      row.type === "Adjustment" ? "blue-light" :
                       "grey-light"
                     }>
                       {row.type}
