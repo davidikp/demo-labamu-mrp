@@ -29,7 +29,7 @@ export const MOCK_MATERIALS_DATA = [
     type: "Raw",
     onHandStock: 45,
     unit: "Meter",
-    stockRisk: "Low Stock",
+    stockRisk: "Batch is expired",
     averageCost: 120000,
     status: "Active",
     description: "Galvanized steel pipe, 1/2 inch diameter. Ideal for plumbing and industrial fluid transport. High pressure resistance and durability.",
@@ -154,4 +154,20 @@ export const MOCK_MATERIALS_DATA = [
     description: "High density foam padding roll. Durable cushioning material for upholstery and protective packaging.",
     gallery: []
   },
+  {
+    id: "mat-010",
+    image: "https://images.unsplash.com/photo-1581244277943-fe4a9c777189?auto=format&fit=crop&q=80&w=300&h=300",
+    name: "Steel Bolt M8",
+    sku: "STL-BOLT-M8",
+    category: "Fasteners",
+    abcClassification: "B",
+    type: "Component",
+    onHandStock: 120,
+    unit: "Pcs",
+    stockRisk: "Expired Batches",
+    averageCost: 800,
+    status: "Active",
+    description: "Industrial grade M8 steel bolt. Zinc plated for corrosion resistance. Optimized for high-torque applications.",
+    gallery: []
+  }
 ];

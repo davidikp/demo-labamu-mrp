@@ -1003,6 +1003,36 @@ const drawDisclaimer = (ctx, y, pageIndex, pageCount) => {
   });
 };
 
+const drawWatermark = (ctx, status) => {
+  if (!status) return;
+
+  let watermarkText = "";
+  const statusLower = String(status).toLowerCase();
+
+  if (statusLower === "rejected" || statusLower === "canceled") {
+    watermarkText = "Canceled";
+  } else if (statusLower === "completed") {
+    watermarkText = "Completed";
+  } else if (statusLower === "ready_to_send" || statusLower === "waiting for approval") {
+    watermarkText = "Waiting for Approval";
+  }
+
+  if (!watermarkText) return;
+
+  ctx.save();
+  ctx.translate(PAGE_WIDTH / 2, PAGE_HEIGHT / 2);
+  ctx.rotate(-Math.PI / 4);
+  
+  // Responsive font size based on text length
+  const fontSize = watermarkText.length > 15 ? px(70) : px(100);
+  ctx.font = `bold ${fontSize}px Arial, Helvetica, sans-serif`;
+  ctx.fillStyle = "rgba(180, 180, 180, 0.22)";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(watermarkText, 0, 0);
+  ctx.restore();
+};
+
 const drawFooter = (ctx, data, footerY, pageIndex, pageCount) => {
   // Empty since company info moved to header and pagination moved to disclaimer
 };
@@ -1195,6 +1225,10 @@ const renderPurchaseOrderPage = async ({
     pageCount
   );
   drawDisclaimer(ctx, PAGE_HEIGHT - px(18), pageIndex, pageCount);
+
+  // Draw watermark last so it appears on top with transparency
+  drawWatermark(ctx, data.currentStatus);
+
   return { canvas, ctx };
 };
 

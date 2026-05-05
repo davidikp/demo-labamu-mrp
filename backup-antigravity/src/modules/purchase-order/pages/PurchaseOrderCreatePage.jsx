@@ -2234,13 +2234,11 @@ export const PurchaseOrderCreatePage = ({
       return;
     }
     if (
-      initialData?.source === "edit_purchase_order" &&
+      (initialData?.source === "edit_purchase_order" ||
+        initialData?.source === "revise_purchase_order") &&
       initialData?.poNumber
     ) {
-      onNavigate("po_detail", {
-        ...buildPoPayload("Draft", "grey-light"),
-        poNumber: initialData.poNumber,
-      });
+      onNavigate("po_detail", initialData);
       return;
     }
     onNavigate("list");
@@ -2609,6 +2607,7 @@ export const PurchaseOrderCreatePage = ({
       notes,
       terms,
       shipTo: shipToInfo,
+      documents: initialData?.formData?.documents || [],
     },
   });
 
@@ -2634,6 +2633,7 @@ export const PurchaseOrderCreatePage = ({
         address: exactMatch.address,
       });
       setIsVendorLocked(true);
+      setIsVendorEditingEnabled(false);
       return;
     }
 
@@ -2662,6 +2662,7 @@ export const PurchaseOrderCreatePage = ({
       address: vendor.address,
     });
     setIsVendorLocked(true);
+    setIsVendorEditingEnabled(false);
     setIsVendorFieldFocused(false);
     setShowVendorSuggestions(false);
   };
@@ -2936,17 +2937,22 @@ export const PurchaseOrderCreatePage = ({
         isEditMode || isReviseMode ? (initialData?.status || "Draft") : "Draft",
         isEditMode || isReviseMode ? (initialData?.sBadge || "grey-light") : "grey-light"
       ),
-      showDraftToast: true,
     };
     const poLinkSnapshot = buildPoLinkSnapshot(payload);
 
-    // Persist to global mock data
+    // Persist to global mock data (WITHOUT the toast flag)
     const existingIndex = MOCK_PO_TABLE_DATA.findIndex(p => p.poNumber === payload.poNumber);
     if (existingIndex !== -1) {
       MOCK_PO_TABLE_DATA[existingIndex] = payload;
     } else {
       MOCK_PO_TABLE_DATA.push(payload);
     }
+
+    // Use a separate payload for navigation that includes the toast flag
+    const navigationPayload = {
+      ...payload,
+      showDraftToast: true,
+    };
 
     if (
       initialData?.source === "work_order_vendor_assignment" &&
@@ -2972,15 +2978,15 @@ export const PurchaseOrderCreatePage = ({
         }),
       };
 
-      payload.from = "work_order_detail";
-      payload.returnTo = {
+      navigationPayload.from = "work_order_detail";
+      navigationPayload.returnTo = {
         ...initialData.returnTo,
         data: updatedReturnData,
       };
     }
 
     scrollToTop();
-    onNavigate("po_detail", payload);
+    onNavigate("po_detail", navigationPayload);
   };
 
   const handleSubmitClick = () => {
@@ -3543,7 +3549,7 @@ export const PurchaseOrderCreatePage = ({
                   onChange={(nextValue) =>
                     setVendorDetails({ ...vendorDetails, phone: nextValue })
                   }
-                  disabled={(isFromWorkOrderAssignment || isEditMode || isReviseMode) && !isVendorEditingEnabled}
+                  disabled={((isFromWorkOrderAssignment || isEditMode || isReviseMode) && !isVendorEditingEnabled) || isVendorLocked}
                 />
               </div>
 
@@ -3557,7 +3563,7 @@ export const PurchaseOrderCreatePage = ({
                       email: e.target.value,
                     })
                   }
-                  disabled={(isFromWorkOrderAssignment || isEditMode || isReviseMode) && !isVendorEditingEnabled}
+                  disabled={((isFromWorkOrderAssignment || isEditMode || isReviseMode) && !isVendorEditingEnabled) || isVendorLocked}
                   placeholder="Input email"
                 />
               </div>
@@ -3575,7 +3581,7 @@ export const PurchaseOrderCreatePage = ({
                       address: e.target.value,
                     })
                   }
-                  disabled={(isFromWorkOrderAssignment || isEditMode || isReviseMode) && !isVendorEditingEnabled}
+                  disabled={((isFromWorkOrderAssignment || isEditMode || isReviseMode) && !isVendorEditingEnabled) || isVendorLocked}
                   placeholder="Input vendor address"
                 />
               </div>

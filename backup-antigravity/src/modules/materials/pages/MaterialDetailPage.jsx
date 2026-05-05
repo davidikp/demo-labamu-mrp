@@ -9,9 +9,12 @@ import { Button } from "../../../components/common/Button.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { StockBatchesTab } from "../components/StockBatchesTab.jsx";
 import { StockTransactionsTab } from "../components/StockTransactionsTab.jsx";
+import { MaterialCreateDrawer } from "../components/MaterialCreateDrawer.jsx";
 
-export const MaterialDetailPage = ({ material, onNavigate, t }) => {
+export const MaterialDetailPage = ({ material, onNavigate, showSnackbar, t }) => {
   const [activeTab, setActiveTab] = useState("stock_batches");
+  const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
+  const [currentMaterial, setCurrentMaterial] = useState(material);
 
   const handleBack = () => {
     if (material?.returnTo) {
@@ -38,12 +41,21 @@ export const MaterialDetailPage = ({ material, onNavigate, t }) => {
     }).format(val);
   };
 
+  const formatType = (type) => {
+    const typeMap = {
+      "Raw": "Raw Material",
+      "Component": "Semi-Finished Material",
+      "Consumable": "Finished Material"
+    };
+    return typeMap[type] || type;
+  };
+
   const getABCBadge = (classification) => {
     let color = "var(--status-red-primary)";
     let bgColor = "var(--status-red-container)";
     if (classification === "B") {
-      color = "var(--status-orange-primary)";
-      bgColor = "var(--status-orange-container)";
+      color = "var(--feature-brand-primary)";
+      bgColor = "var(--feature-brand-container-lighter)";
     } else if (classification === "C") {
       color = "var(--status-green-primary)";
       bgColor = "var(--status-green-container)";
@@ -153,7 +165,7 @@ export const MaterialDetailPage = ({ material, onNavigate, t }) => {
             <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>Material Detail</span>
           </div>
         </div>
-        <Button variant="outlined" leftIcon={EditIcon}>
+        <Button variant="outlined" leftIcon={EditIcon} onClick={() => setIsEditDrawerOpen(true)}>
           Edit Material
         </Button>
       </div>
@@ -199,10 +211,10 @@ export const MaterialDetailPage = ({ material, onNavigate, t }) => {
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "20px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
             <h2 style={{ margin: 0, fontSize: "var(--text-headline)", fontWeight: "var(--font-weight-bold)" }}>
-              {material.name}
+              {currentMaterial.name}
             </h2>
-            <StatusBadge variant={material.status === "Active" ? "green" : "grey"}>
-              {material.status}
+            <StatusBadge variant={currentMaterial.status === "Active" ? "green" : "grey"}>
+              {currentMaterial.status}
             </StatusBadge>
           </div>
 
@@ -213,19 +225,19 @@ export const MaterialDetailPage = ({ material, onNavigate, t }) => {
             gridTemplateColumns: "repeat(3, 1fr)", 
             gap: "24px 32px" 
           }}>
-            <DetailField label="SKU" value={material.sku} />
-            <DetailField label="Category" value={material.category} />
-            <DetailField label="Type" value={material.type} />
+            <DetailField label="SKU" value={currentMaterial.sku} />
+            <DetailField label="Category" value={currentMaterial.category} />
+            <DetailField label="Type" value={formatType(currentMaterial.type)} />
             
-            <DetailField label="ABC Classification" value={material.abcClassification} isABC />
-            <DetailField label="Unit of Measure" value={material.unit} />
-            <DetailField label="On-Hand Stock" value={`${material.onHandStock} ${material.unit}`} />
+            <DetailField label="ABC Classification" value={currentMaterial.abcClassification} isABC />
+            <DetailField label="Unit of Measure" value={currentMaterial.unit} />
+            <DetailField label="On-Hand Stock" value={`${currentMaterial.onHandStock} ${currentMaterial.unit}`} />
             
-            <DetailField label="Average Cost" value={formatCurrency(material.averageCost)} />
+            <DetailField label="Average Cost" value={formatCurrency(currentMaterial.averageCost)} />
             
             <DetailField 
               label="Description" 
-              value={material.description} 
+              value={currentMaterial.description} 
               fullWidth 
             />
           </div>
@@ -255,12 +267,29 @@ export const MaterialDetailPage = ({ material, onNavigate, t }) => {
           minHeight: "200px"
         }}>
           {activeTab === "stock_batches" ? (
-            <StockBatchesTab materialId={material.id} />
+            <StockBatchesTab materialId={currentMaterial.id} />
           ) : (
-            <StockTransactionsTab materialId={material.id} onNavigate={onNavigate} />
+            <StockTransactionsTab materialId={currentMaterial.id} onNavigate={onNavigate} />
           )}
         </div>
       </div>
+
+      <MaterialCreateDrawer
+        isOpen={isEditDrawerOpen}
+        onClose={() => setIsEditDrawerOpen(false)}
+        initialData={currentMaterial}
+        onSave={(data) => {
+          setCurrentMaterial(prev => ({
+            ...prev,
+            ...data,
+            type: data.materialType,
+            unit: data.uom,
+            onHandStock: prev.onHandStock, // Preserve stock
+            averageCost: prev.averageCost // Preserve cost
+          }));
+          showSnackbar?.("Material successfully saved", "success");
+        }}
+      />
     </div>
   );
 };

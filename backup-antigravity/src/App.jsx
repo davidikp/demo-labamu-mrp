@@ -15,6 +15,7 @@ import { UserManagementPage } from "./modules/administration/pages/UserManagemen
 import { NotificationSettingsPage } from "./modules/administration/pages/NotificationSettingsPage.jsx";
 import { MaterialsListPage } from "./modules/materials/pages/MaterialsListPage.jsx";
 import { MaterialDetailPage } from "./modules/materials/pages/MaterialDetailPage.jsx";
+import { MaterialManagePage } from "./modules/materials/pages/MaterialManagePage.jsx";
 import { ProcurementAPReportPage } from "./modules/analytics/pages/ProcurementAPReportPage.jsx";
 import { POReportPage } from "./modules/analytics/pages/POReportPage.jsx";
 import { VendorLiabilityReportPage } from "./modules/analytics/pages/VendorLiabilityReportPage.jsx";
@@ -772,6 +773,16 @@ export default function App() {
         return (
           <MaterialsListPage
             onNavigate={navigateToView}
+            showSnackbar={showPoSnackbar}
+            t={t}
+          />
+        );
+      }
+      if (viewState.view === "settings") {
+        return (
+          <MaterialManagePage
+            onNavigate={navigateToView}
+            showSnackbar={showPoSnackbar}
             t={t}
           />
         );
@@ -781,6 +792,7 @@ export default function App() {
           <MaterialDetailPage
             material={viewState.data}
             onNavigate={navigateToView}
+            showSnackbar={showPoSnackbar}
             t={t}
           />
         );
@@ -851,7 +863,7 @@ export default function App() {
             onNotificationsChange={setSystemNotifications}
             onOpenNotificationSettings={() => handleModuleChange("notification_settings")}
           />
-          {activeModule === "purchase_order" && poSnackbar.open && (
+          {["purchase_order", "materials"].includes(activeModule) && poSnackbar.open && (
             <div
               style={{
                 position: "fixed",

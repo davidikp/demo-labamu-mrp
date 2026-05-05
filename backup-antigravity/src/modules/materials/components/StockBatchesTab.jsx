@@ -813,9 +813,6 @@ export const StockBatchesTab = ({ materialId }) => {
           flexWrap: "wrap"
         }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center", flex: 1, position: "relative" }}>
-            <div onClick={(e) => handleFilterClick("location", e)}>
-              <FilterPill label="Storage Location" count={activeFilters.location.length} active={activeFilters.location.length > 0} isOpen={openFilterKey === "location"} />
-            </div>
             <div onClick={(e) => handleFilterClick("status", e)}>
               <FilterPill label="Batch Status" count={activeFilters.status.length} active={activeFilters.status.length > 0} isOpen={openFilterKey === "status"} />
             </div>
@@ -850,8 +847,7 @@ export const StockBatchesTab = ({ materialId }) => {
                   }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>
-                        {openFilterKey === "location" ? "Storage Location" : 
-                         openFilterKey === "status" ? "Batch Status" : 
+                        {openFilterKey === "status" ? "Batch Status" : 
                          openFilterKey === "vendor" ? "Vendor" : "Expiration Status"}
                       </span>
                       <button 
@@ -890,7 +886,7 @@ export const StockBatchesTab = ({ materialId }) => {
             <TableSearchField 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by keyword..."
+              placeholder="Search Batch No, Storage Loc"
               width="240px"
             />
             <Button 

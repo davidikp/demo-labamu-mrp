@@ -4181,152 +4181,198 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         </div>
       ) : null}
 
-      <GeneralModal
-        isOpen={isSelectExistingPoModalOpen}
-        onClose={() => setIsSelectExistingPoModalOpen(false)}
-        title="Select Existing Purchase Order"
-        width={selectedExistingPoNumber ? "1000px" : "480px"}
-        transition="width 0.3s ease"
-      >
+      {isSelectExistingPoModalOpen ? (
         <div
           style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0, 0, 0, 0.5)",
             display: "flex",
-            flexDirection: "row",
-            width: "100%",
-            height: "600px",
-            overflow: "hidden",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
           }}
         >
           <div
             style={{
-              flex: selectedExistingPoNumber ? "0 0 456px" : "1",
-              padding: "8px",
+              width: selectedExistingPoNumber ? "900px" : "450px",
+              maxWidth: "calc(100vw - 32px)",
+              background: "var(--neutral-surface-primary)",
+              borderRadius: "var(--radius-card)",
               display: "flex",
-              flexDirection: "column",
-              gap: "24px",
+              flexDirection: "row",
+              position: "relative",
+              boxShadow: "var(--elevation-sm)",
               overflow: "hidden",
+              maxHeight: "90vh",
+              transition: "width 0.3s ease",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-              <span
-                style={{
-                  fontSize: "var(--text-body)",
-                  color: "var(--neutral-on-surface-tertiary)",
-                }}
-              >
-                Vendor
-              </span>
-              <span
-                style={{
-                  fontSize: "var(--text-title-2)",
-                  fontWeight: "bold",
-                  color: "var(--neutral-on-surface-primary)",
-                }}
-              >
-                {selectedVendorForPoAction?.name}
-              </span>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-              <label
-                style={{
-                  fontSize: "var(--text-body)",
-                  fontWeight: "var(--font-weight-regular)",
-                  color: "var(--neutral-on-surface-primary)",
-                }}
-              >
-                <span style={{ color: "var(--status-red-primary)" }}>*</span> Purchase Order
-              </label>
-              <DropdownSelect
-                value={selectedExistingPoNumber}
-                onChange={(nextValue) => setSelectedExistingPoNumber(nextValue)}
-                placeholder="Select purchase order"
-                options={MOCK_PO_TABLE_DATA.filter(
-                  (po) =>
-                    po.vendorName === selectedVendorForPoAction?.name &&
-                    !["issued", "completed"].includes(po.statusKey)
-                ).map((po) => ({
-                  value: po.poNumber,
-                  label: `${po.poNumber} (${po.status})`,
-                }))}
-              />
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                marginTop: "auto",
-                paddingTop: "24px",
-              }}
-            >
-              <Button
-                variant="outlined"
-                size="large"
-                style={{ flex: 1 }}
-                onClick={() => setIsSelectExistingPoModalOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="filled"
-                size="large"
-                style={{ flex: 1 }}
-                disabled={!selectedExistingPoNumber}
-                onClick={handleAttachExistingPo}
-              >
-                Assign PO
-              </Button>
-            </div>
-          </div>
-
-          {selectedExistingPoNumber && (
+            <IconButton
+              icon={CloseIcon}
+              size="large"
+              onClick={() => setIsSelectExistingPoModalOpen(false)}
+              style={{ position: "absolute", top: "16px", right: "16px", zIndex: 2 }}
+              color="var(--neutral-on-surface-primary)"
+            />
             <div
               style={{
                 flex: "1",
-                background: "var(--neutral-surface-grey-lighter)",
-                borderLeft: "1px solid var(--neutral-line-separator-1)",
+                padding: "64px 32px 32px",
                 display: "flex",
                 flexDirection: "column",
-                overflow: "hidden",
+                gap: "24px",
+                overflowY: "auto",
               }}
             >
               <div
                 style={{
-                  padding: "24px 32px",
-                  borderBottom: "1px solid var(--neutral-line-separator-1)",
-                  background: "var(--neutral-surface-primary)",
+                  position: "relative",
+                  minHeight: "40px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                <h3
+                <h2
                   style={{
                     margin: 0,
-                    fontSize: "var(--text-title-2)",
+                    fontSize: "var(--text-headline)",
                     fontWeight: "var(--font-weight-bold)",
+                    textAlign: "center",
                     color: "var(--neutral-on-surface-primary)",
                   }}
                 >
-                  Purchase Order Preview
-                </h3>
+                  Select Existing Purchase Order
+                </h2>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <span
+                    style={{
+                      fontSize: "var(--text-body)",
+                      color: "var(--neutral-on-surface-primary)",
+                    }}
+                  >
+                    Vendor Name
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "var(--text-title-2)",
+                      fontWeight: "bold",
+                      color: "var(--neutral-on-surface-primary)",
+                    }}
+                  >
+                    {selectedVendorForPoAction?.name}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <label
+                    style={{
+                      fontSize: "var(--text-body)",
+                      fontWeight: "var(--font-weight-regular)",
+                      color: "var(--neutral-on-surface-primary)",
+                    }}
+                  >
+                    <span style={{ color: "var(--status-red-primary)" }}>*</span> Purchase Order
+                  </label>
+                  <DropdownSelect
+                    value={selectedExistingPoNumber}
+                    onChange={(nextValue) => setSelectedExistingPoNumber(nextValue)}
+                    placeholder="Select purchase order"
+                    options={MOCK_PO_TABLE_DATA.filter(
+                      (po) =>
+                        po.vendorName === selectedVendorForPoAction?.name &&
+                        ["draft", "need_revision"].includes(po.statusKey)
+                    ).map((po) => ({
+                      value: po.poNumber,
+                      label: `${po.poNumber} (${po.status})`,
+                    }))}
+                  />
+                </div>
               </div>
 
               <div
                 style={{
-                  padding: "24px 32px",
                   display: "flex",
-                  flexDirection: "column",
-                  gap: "24px",
-                  overflowY: "auto",
-                  flex: 1,
+                  gap: "12px",
+                  marginTop: "auto",
+                  paddingTop: "12px",
                 }}
               >
-                {renderPoPreviewContent(selectedPoDetail)}
+                <Button
+                  variant="outlined"
+                  size="large"
+                  style={{ flex: 1 }}
+                  onClick={() => setIsSelectExistingPoModalOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="filled"
+                  size="large"
+                  style={{ flex: 1 }}
+                  disabled={!selectedExistingPoNumber}
+                  onClick={handleAttachExistingPo}
+                >
+                  Assign PO
+                </Button>
               </div>
             </div>
-          )}
-        </div>
 
-      </GeneralModal>
+            {selectedExistingPoNumber && (
+              <div
+                style={{
+                  flex: "1",
+                  background: "var(--neutral-surface-grey-lighter)",
+                  borderLeft: "1px solid var(--neutral-line-separator-1)",
+                  display: "flex",
+                  flexDirection: "column",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    padding: "24px 32px",
+                    borderBottom: "1px solid var(--neutral-line-separator-1)",
+                    background: "var(--neutral-surface-primary)",
+                  }}
+                >
+                  <h3
+                    style={{
+                      margin: 0,
+                      fontSize: "var(--text-title-2)",
+                      fontWeight: "var(--font-weight-bold)",
+                      color: "var(--neutral-on-surface-primary)",
+                    }}
+                  >
+                    Purchase Order Preview
+                  </h3>
+                </div>
+
+                <div
+                  style={{
+                    padding: "24px 32px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "24px",
+                    overflowY: "auto",
+                    flex: 1,
+                  }}
+                >
+                  {renderPoPreviewContent(selectedPoDetail)}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : null}
+
       {isSingleVendorModalOpen ? (
         <div
           style={{
