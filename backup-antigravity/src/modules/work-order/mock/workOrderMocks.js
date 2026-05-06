@@ -384,4 +384,38 @@ export const MOCK_WO_TABLE_DATA = [
       { step: 5, route: "Shipping Preparation", op: "Final Packing & Labeling", prog: 0, comp: 15 },
     ],
   },
+  {
+    wo: "WO-202603-099",
+    ord: "ORD-202603-099",
+    product: "Luxury Cabinet Canceled",
+    sku: "CAB-LUX-CAN",
+    qty: 50,
+    priority: "Low",
+    pColor: "var(--neutral-on-surface-tertiary)",
+    pBadge: "grey-light",
+    start: "2026-03-01",
+    end: "2026-03-10",
+    createdBy: "System",
+    status: "Canceled",
+    statusKey: "canceled",
+    sBadge: "red",
+    outsourceSteps: [1, 2],
+    vendors: [
+      {
+        id: 1,
+        name: "PT Mitra Sejahtera",
+        output: "50",
+        receivedOutput: 0,
+        date: "2026-03-10",
+        status: "Canceled",
+        poNumber: "PO-202603-0099",
+        isPoApproved: false,
+        receipts: [],
+      }
+    ],
+    routingStages: [
+      { step: 1, route: "Prep", op: "Cutting", prog: 0, comp: 0 },
+      { step: 2, route: "Main", op: "Assembly", prog: 0, comp: 0 },
+    ],
+  },
 ];

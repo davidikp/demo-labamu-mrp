@@ -512,6 +512,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
   const [woStatus, setWoStatus] = useState(
     initialData?.statusKey || "not_started"
   );
+  const isCanceled = woStatus === "canceled";
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
@@ -2067,7 +2068,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
               </span>
             </div>
           </div>
-          <Button variant="outlined">Edit Work Order</Button>
+          {!isCanceled && <Button variant="outlined">Edit Work Order</Button>}
         </div>
 
         <Card>
@@ -2097,6 +2098,9 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
             ) : null}
             {woStatus === "completed" ? (
               <StatusBadge variant="green">Completed</StatusBadge>
+            ) : null}
+            {woStatus === "canceled" ? (
+              <StatusBadge variant="red">Canceled</StatusBadge>
             ) : null}
           </div>
           <div
@@ -2267,7 +2271,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 {initialData?.product || "Wooden Chair"} Classic Model BOM
               </span>
             </div>
-            {woStatus !== "not_started" ? (
+            {woStatus !== "not_started" && !isCanceled ? (
               <Button variant="outlined" leftIcon={AddIcon}>
                 Request Material
               </Button>
@@ -2770,7 +2774,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                           >
                             Waiting for items
                           </span>
-                        ) : canManage ? (
+                        ) : canManage && !isCanceled ? (
                           <Button
                             variant="outlined"
                             size="small"
@@ -2814,7 +2818,9 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                               lineHeight: "1.2",
                             }}
                           >
-                            {(row.totalComp || 0) >= TOTAL_QTY
+                            {isCanceled
+                              ? "Canceled"
+                              : (row.totalComp || 0) >= TOTAL_QTY
                               ? "Completed"
                               : "Waiting for items"}
                           </span>
@@ -2849,15 +2855,17 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   Outsource Detail
                 </span>
               </div>
-              <Button
-                variant="outlined"
-                size="small"
-                leftIcon={AddIcon}
-                onClick={handleOpenAddVendor}
-                disabled={isFirstOutsourceCompleted}
-              >
-                Assign Vendor
-              </Button>
+              {!isCanceled && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  leftIcon={AddIcon}
+                  onClick={handleOpenAddVendor}
+                  disabled={isFirstOutsourceCompleted}
+                >
+                  Assign Vendor
+                </Button>
+              )}
             </div>
 
             <div
@@ -2963,7 +2971,9 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
               ) : (
                 vendors.map((vendor, i) => {
                   const isInternal = vendor.name === "Internal";
-                  const resolvedVendorStatus = isInternal
+                  const resolvedVendorStatus = isCanceled
+                    ? "Canceled"
+                    : isInternal
                     ? internalStatusInfo.text
                     : resolveVendorProgressStatus(vendor);
                   const isCompleted = resolvedVendorStatus === "Completed";
@@ -2971,8 +2981,9 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   const isVendorInProgress =
                     resolvedVendorStatus === "In Progress";
                   const showEditVendorAction =
-                    isInternal || (!isVendorInProgress && !isPoApproved);
+                    !isCanceled && (isInternal || (!isVendorInProgress && !isPoApproved));
                   const showRemoveVendorAction =
+                    !isCanceled &&
                     !isVendorInProgress &&
                     !(
                       isInternal &&
@@ -3070,28 +3081,30 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                             </>
                           ) : (
                             <>
-                              <Button
-                                variant="tertiary"
-                                size="small"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setPoPopoverPosition(
-                                    getPoPopoverPosition(
-                                      e.currentTarget.getBoundingClientRect()
-                                    )
-                                  );
-                                  handleOpenPoAction(vendor);
-                                }}
-                                style={{
-                                  padding: 0,
-                                  margin: 0,
-                                  height: "auto",
-                                  minHeight: "unset",
-                                }}
-                              >
-                                Add Purchase Order
-                              </Button>
-
+                              {!isCanceled && (
+                                <Button
+                                  variant="tertiary"
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setPoPopoverPosition(
+                                      getPoPopoverPosition(
+                                        e.currentTarget.getBoundingClientRect()
+                                      )
+                                    );
+                                    handleOpenPoAction(vendor);
+                                  }}
+                                  style={{
+                                    padding: 0,
+                                    margin: 0,
+                                    height: "auto",
+                                    minHeight: "unset",
+                                  }}
+                                >
+                                  Add Purchase Order
+                                </Button>
+                              )}
+                              {isCanceled && "-"}
                               {openPoPopoverVendorId === vendor.id &&
                                 selectedVendorForPoAction?.id === vendor.id ? (
                                 <>

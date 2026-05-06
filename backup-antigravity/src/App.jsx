@@ -19,6 +19,8 @@ import { PurchaseOrderCreatePage } from "./modules/purchase-order/pages/Purchase
 import { PurchaseOrderSettingsPage } from "./modules/purchase-order/pages/PurchaseOrderSettingsPage.jsx";
 import { WorkOrderListPage } from "./modules/work-order/pages/WorkOrderListPage.jsx";
 import { WorkOrderDetailPage } from "./modules/work-order/pages/WorkOrderDetailPage.jsx";
+import { OrderListPage } from "./modules/orders/pages/OrderListPage.jsx";
+import { OrderDetailPage } from "./modules/orders/pages/OrderDetailPage.jsx";
 import { UserManagementPage } from "./modules/administration/pages/UserManagementPage.jsx";
 import { NotificationSettingsPage } from "./modules/administration/pages/NotificationSettingsPage.jsx";
 import { MaterialsListPage } from "./modules/materials/pages/MaterialsListPage.jsx";
@@ -166,6 +168,7 @@ const TRANSLATIONS = {
 const MODULE_TO_ROUTE = {
   work_order: "work-order",
   purchase_order: "purchase-order",
+  orders: "orders",
   materials: "materials",
   analytics: "analytics",
   administration: "administration",
@@ -469,7 +472,16 @@ export default function App() {
       }
       if (view === "detail" || view === "po_detail") {
         const id = (data?.sku || data?.poNumber || data?.wo || data?.id || "detail");
-        navigate(`/${currentModuleRoute}/${id}`, { state: data });
+        let targetModule = currentModuleRoute;
+        
+        // Ensure POs always use the purchase-order module route
+        if (view === "po_detail" || (typeof id === "string" && id.startsWith("PO-"))) {
+          targetModule = "purchase-order";
+        } else if (view === "detail" && (typeof id === "string" && id.startsWith("WO-"))) {
+          targetModule = "work-order";
+        }
+        
+        navigate(`/${targetModule}/${id}`, { state: data });
         return;
       }
       if (view === "create" || view === "settings") {
@@ -847,6 +859,24 @@ export default function App() {
             poApprovalSettings={poApprovalSettings}
             isSidebarCollapsed={isSidebarCollapsed}
             showPoSnackbar={showPoSnackbar}
+          />
+        );
+      }
+    }
+    if (activeModule === "orders") {
+      if (viewState.view === "list") {
+        return (
+          <OrderListPage
+            onNavigate={onNavigate}
+            t={t}
+          />
+        );
+      }
+      if (viewState.view === "detail") {
+        return (
+          <OrderDetailPage
+            onNavigate={onNavigate}
+            initialData={viewState.data}
           />
         );
       }

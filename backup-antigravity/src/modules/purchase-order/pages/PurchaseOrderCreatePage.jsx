@@ -258,6 +258,7 @@ const FormField = ({
   children,
   error,
   helperText,
+  headerRight,
 }) => (
   <div
     style={{
@@ -267,22 +268,31 @@ const FormField = ({
       width: "100%",
     }}
   >
-    {label ? (
+    {label || headerRight ? (
       <div
         style={{
           display: "flex",
           alignItems: "center",
-          gap: "2px",
+          justifyContent: "space-between",
           fontSize: "var(--text-body)",
           fontWeight: "var(--font-weight-regular)",
         }}
       >
-        {required ? (
-          <span style={{ color: "var(--status-red-primary)" }}>*</span>
-        ) : null}
-        <span style={{ color: "var(--neutral-on-surface-primary)" }}>
-          {label}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
+          {required ? (
+            <span style={{ color: "var(--status-red-primary)" }}>*</span>
+          ) : null}
+          {label && (
+            <span style={{ color: "var(--neutral-on-surface-primary)" }}>
+              {label}
+            </span>
+          )}
+        </div>
+        {headerRight && (
+          <span style={{ color: "var(--neutral-on-surface-tertiary)", fontSize: "12px" }}>
+            {headerRight}
+          </span>
+        )}
       </div>
     ) : null}
     {children}
@@ -1227,6 +1237,7 @@ const InputField = ({
   multiline = false,
   error,
   helperText,
+  headerRight,
   ...rest
 }) => (
   <FormField
@@ -1234,6 +1245,7 @@ const InputField = ({
     required={required}
     error={error}
     helperText={helperText}
+    headerRight={headerRight}
   >
     <div style={{ position: "relative", width: "100%" }}>
       {multiline ? (
@@ -2327,7 +2339,20 @@ export const PurchaseOrderCreatePage = ({
   const [vendorSearch, setVendorSearch] = useState(
     editFormData?.vendorName || prefilledVendor?.name || ""
   );
+  const [lastConfirmedVendorName, setLastConfirmedVendorName] = useState(
+    editFormData?.vendorName || prefilledVendor?.name || ""
+  );
+  const [lastConfirmedVendorLocked, setLastConfirmedVendorLocked] = useState(
+    (!!prefilledVendor && isFromWorkOrderAssignment) ||
+    ((isEditMode || isReviseMode) && MOCK_VENDORS.some((v) => v.name === editFormData?.vendorName))
+  );
   const [vendorDetails, setVendorDetails] = useState({
+    phone: editFormData?.vendorDetails?.phone || prefilledVendor?.phone || "",
+    email: editFormData?.vendorDetails?.email || prefilledVendor?.email || "",
+    address:
+      editFormData?.vendorDetails?.address || prefilledVendor?.address || "",
+  });
+  const [lastConfirmedVendorDetails, setLastConfirmedVendorDetails] = useState({
     phone: editFormData?.vendorDetails?.phone || prefilledVendor?.phone || "",
     email: editFormData?.vendorDetails?.email || prefilledVendor?.email || "",
     address:
@@ -2374,6 +2399,7 @@ export const PurchaseOrderCreatePage = ({
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [isVendorEditingEnabled, setIsVendorEditingEnabled] = useState(false);
   const [showVendorEditConfirm, setShowVendorEditConfirm] = useState(false);
+  const [pendingVendorAction, setPendingVendorAction] = useState(null);
   const [productLineType, setProductLineType] = useState("manual");
   const [productModalForm, setProductModalForm] = useState({
     manualName: "",
@@ -2580,7 +2606,8 @@ export const PurchaseOrderCreatePage = ({
 
   const buildPoPayload = (status, badge) => ({
     poNumber:
-      initialData?.poNumber ||
+      (initialData?.poNumber && initialData.poNumber.startsWith("PO-")) ? 
+      initialData.poNumber : 
       `PO-202603-${String(Math.floor(1000 + Math.random() * 9000))}`,
     vendorName: vendorSearch || "-",
     amount: formatCurrency(total),
@@ -2647,21 +2674,44 @@ export const PurchaseOrderCreatePage = ({
   const handleAddNewVendorOption = () => {
     const trimmedValue = vendorSearch.trim();
     if (!trimmedValue) return;
+
+    const hasWoLines = lines.some((line) => line.type === "wo");
+    if (hasWoLines) {
+      setPendingVendorAction({ type: "add_new", value: trimmedValue });
+      setShowVendorEditConfirm(true);
+      return;
+    }
+
     setVendorSearch(trimmedValue);
-    setVendorDetails({ phone: "", email: "", address: "" });
+    setLastConfirmedVendorName(trimmedValue);
+    const emptyDetails = { phone: "", email: "", address: "" };
+    setVendorDetails(emptyDetails);
+    setLastConfirmedVendorDetails(emptyDetails);
     setIsVendorLocked(false);
+    setLastConfirmedVendorLocked(false);
     setIsVendorFieldFocused(false);
     setShowVendorSuggestions(false);
   };
 
   const handleSelectVendorSuggestion = (vendor) => {
+    const hasWoLines = lines.some((line) => line.type === "wo");
+    if (hasWoLines) {
+      setPendingVendorAction({ type: "select", vendor });
+      setShowVendorEditConfirm(true);
+      return;
+    }
+
     setVendorSearch(vendor.name);
-    setVendorDetails({
+    setLastConfirmedVendorName(vendor.name);
+    const details = {
       phone: vendor.phone,
       email: vendor.email,
       address: vendor.address,
-    });
+    };
+    setVendorDetails(details);
+    setLastConfirmedVendorDetails(details);
     setIsVendorLocked(true);
+    setLastConfirmedVendorLocked(true);
     setIsVendorEditingEnabled(false);
     setIsVendorFieldFocused(false);
     setShowVendorSuggestions(false);
@@ -2724,7 +2774,39 @@ export const PurchaseOrderCreatePage = ({
 
   const handleConfirmVendorEdit = () => {
     setLines(lines.filter((line) => line.type !== "wo"));
-    setIsVendorEditingEnabled(true);
+
+    if (pendingVendorAction) {
+      if (pendingVendorAction.type === "select") {
+        const { vendor } = pendingVendorAction;
+        setVendorSearch(vendor.name);
+        setLastConfirmedVendorName(vendor.name);
+        const details = {
+          phone: vendor.phone,
+          email: vendor.email,
+          address: vendor.address,
+        };
+        setVendorDetails(details);
+        setLastConfirmedVendorDetails(details);
+        setIsVendorLocked(true);
+        setLastConfirmedVendorLocked(true);
+        setIsVendorEditingEnabled(false);
+        setIsVendorFieldFocused(false);
+        setShowVendorSuggestions(false);
+      } else if (pendingVendorAction.type === "add_new") {
+        setVendorSearch(pendingVendorAction.value);
+        setLastConfirmedVendorName(pendingVendorAction.value);
+        const emptyDetails = { phone: "", email: "", address: "" };
+        setVendorDetails(emptyDetails);
+        setLastConfirmedVendorDetails(emptyDetails);
+        setIsVendorLocked(false);
+        setLastConfirmedVendorLocked(false);
+        setIsVendorFieldFocused(false);
+        setShowVendorSuggestions(false);
+      }
+      setPendingVendorAction(null);
+    } else {
+      setIsVendorEditingEnabled(true);
+    }
     setShowVendorEditConfirm(false);
   };
 
@@ -2985,7 +3067,7 @@ export const PurchaseOrderCreatePage = ({
       };
     }
 
-    scrollToTop();
+    showPoSnackbar("Purchase order successfully saved", "success");
     onNavigate("po_detail", navigationPayload);
   };
 
@@ -3329,10 +3411,26 @@ export const PurchaseOrderCreatePage = ({
                 color: "var(--neutral-on-surface-secondary)",
                 cursor: "pointer",
               }}
-              onClick={handleBackNavigation}
+              onClick={() => onNavigate("list")}
             >
               Purchase Order
             </span>
+            {(isEditMode || isReviseMode) && (
+              <>
+                <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>
+                  /
+                </span>
+                <span
+                  style={{
+                    color: "var(--neutral-on-surface-secondary)",
+                    cursor: "pointer",
+                  }}
+                  onClick={handleBackNavigation}
+                >
+                  Purchase Order Detail
+                </span>
+              </>
+            )}
             <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>
               /
             </span>
@@ -3399,7 +3497,7 @@ export const PurchaseOrderCreatePage = ({
                       maxLength={40}
                       style={{
                         ...fieldStyle(
-                          isFromWorkOrderAssignment || (isEditMode && !isVendorEditingEnabled),
+                          (isFromWorkOrderAssignment || isEditMode || isReviseMode) && !isVendorEditingEnabled,
                           !!vendorSearch,
                           false
                         ),
@@ -3449,6 +3547,10 @@ export const PurchaseOrderCreatePage = ({
                       <div
                         style={{ position: "fixed", inset: 0, zIndex: 29 }}
                         onClick={() => {
+                          setVendorSearch(lastConfirmedVendorName);
+                          setVendorDetails(lastConfirmedVendorDetails);
+                          setIsVendorLocked(lastConfirmedVendorLocked);
+                          setIsVendorEditingEnabled(false);
                           setShowVendorSuggestions(false);
                           setIsVendorFieldFocused(false);
                         }}
@@ -4518,7 +4620,7 @@ export const PurchaseOrderCreatePage = ({
                       required
                       value={productModalForm.manualName}
                       maxLength={100}
-                      showCounter
+                      headerRight={`${String(productModalForm.manualName || "").length}/100`}
                       onChange={(e) => {
                         setProductModalForm({
                           ...productModalForm,
@@ -4590,7 +4692,7 @@ export const PurchaseOrderCreatePage = ({
                       multiline
                       value={productModalForm.manualDesc}
                       maxLength={1000}
-                      showCounter
+                      headerRight={`${String(productModalForm.manualDesc || "").length}/1000`}
                       onChange={(e) =>
                         setProductModalForm({
                           ...productModalForm,
@@ -5309,7 +5411,10 @@ export const PurchaseOrderCreatePage = ({
       {showVendorEditConfirm && (
         <GeneralModal
           isOpen={showVendorEditConfirm}
-          onClose={() => setShowVendorEditConfirm(false)}
+          onClose={() => {
+            setShowVendorEditConfirm(false);
+            setPendingVendorAction(null);
+          }}
           title="Confirm Edit Vendor"
           width="376px"
           description="Editing the vendor information will remove all linked work order lines in this purchase order. Are you sure you want to proceed?"
@@ -5326,7 +5431,10 @@ export const PurchaseOrderCreatePage = ({
                 variant="outlined"
                 size="large"
                 style={{ width: "100%" }}
-                onClick={() => setShowVendorEditConfirm(false)}
+                onClick={() => {
+                  setShowVendorEditConfirm(false);
+                  setPendingVendorAction(null);
+                }}
               >
                 Cancel
               </Button>

@@ -2785,6 +2785,7 @@ export const PurchaseOrderDetailPage = ({
     };
   }, [showDocumentFilterMenu]);
 
+  // Redundant toast logic removed, now handled by showPoSnackbar in PurchaseOrderCreatePage
   useEffect(() => {
     if (initialData?.showDraftToast) {
       if (pageTopRef.current) {
@@ -2792,10 +2793,6 @@ export const PurchaseOrderDetailPage = ({
       } else if (typeof window !== "undefined") {
         window.scrollTo({ top: 0, behavior: "auto" });
       }
-      setActionToastMessage("Purchase order successfully saved");
-      setShowActionToast(true);
-      const timer = setTimeout(() => setShowActionToast(false), 4000);
-      return () => clearTimeout(timer);
     }
   }, [initialData]);
 

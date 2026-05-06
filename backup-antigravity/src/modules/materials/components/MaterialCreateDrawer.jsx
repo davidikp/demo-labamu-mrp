@@ -446,13 +446,17 @@ export const MaterialCreateDrawer = ({ isOpen, onClose, onSave, initialData }) =
               <ImageUpload value={formData.image} onChange={(val) => handleFieldChange("image", val)} />
             </FormField>
 
-            <FormField label="Material Name" required error={errors.name}>
+            <FormField 
+              label="Material Name" 
+              required 
+              error={errors.name}
+              headerRight={`${String(formData.name || "").length}/100`}
+            >
               <InputField 
                 value={formData.name} 
                 onChange={(e) => handleFieldChange("name", e.target.value)} 
                 placeholder="Input material name"
                 maxLength={100}
-                showCounter
                 error={errors.name}
               />
             </FormField>
@@ -553,13 +557,15 @@ export const MaterialCreateDrawer = ({ isOpen, onClose, onSave, initialData }) =
               </FormField>
             </div>
 
-            <FormField label="Description">
+            <FormField 
+              label="Description"
+              headerRight={`${String(formData.description || "").length}/1000`}
+            >
               <TextAreaField 
                 value={formData.description}
                 onChange={(e) => handleFieldChange("description", e.target.value)}
                 placeholder="Input material description"
                 maxLength={1000}
-                showCounter
               />
             </FormField>
           </div>
