@@ -331,7 +331,7 @@ export const MaterialManagePage = ({ onNavigate, showSnackbar, t }) => {
 
   const uomColumns = [
     { label: "UOM Name", flex: "2" },
-    { label: "Vendor Alias", flex: "2" },
+    { label: "UOM Alias", flex: "2" },
     { label: "Status", flex: "1" },
     { label: "", flex: "1" },
   ];
@@ -690,7 +690,7 @@ export const MaterialManagePage = ({ onNavigate, showSnackbar, t }) => {
           </FormField>
 
           <FormField 
-            label="Vendor Alias" 
+            label="UOM Alias" 
             headerRight={`${uomForm.alias.length}/100`}
           >
             <InputField 

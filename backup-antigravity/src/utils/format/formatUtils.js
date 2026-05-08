@@ -6,7 +6,7 @@ export const formatNumberWithCommas = (val) => {
 };
 
 export const parseNumberFromCommas = (val) => {
-  if (val === null || val === undefined || val === "") return 0;
+  if (val === null || val === undefined || val === "") return "";
   const numeric = Number(String(val).replace(/,/g, ""));
   return Number.isNaN(numeric) ? 0 : numeric;
 };

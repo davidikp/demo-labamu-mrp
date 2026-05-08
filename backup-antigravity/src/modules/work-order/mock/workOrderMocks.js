@@ -181,6 +181,8 @@ export const MOCK_WO_TABLE_DATA = [
     status: "Not Started",
     statusKey: "not_started",
     sBadge: "grey",
+    orderStart: "2026-05-01",
+    orderEnd: "2026-05-31",
     image: null,
   },
   {

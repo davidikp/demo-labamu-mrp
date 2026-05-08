@@ -221,7 +221,7 @@ export const MOCK_PO_TABLE_DATA = [
     createdDate: "2026-03-26",
     status: "Draft",
     statusKey: "draft",
-    sBadge: "grey-light",
+    sBadge: "grey",
     invoices: [],
     payments: []
   },
@@ -232,7 +232,7 @@ export const MOCK_PO_TABLE_DATA = [
     createdDate: "2026-03-27",
     status: "Need Revision",
     statusKey: "need_revision",
-    sBadge: "yellow-light",
+    sBadge: "yellow",
     invoices: [],
     payments: []
   },
@@ -243,7 +243,7 @@ export const MOCK_PO_TABLE_DATA = [
     createdDate: "2026-03-28",
     status: "Draft",
     statusKey: "draft",
-    sBadge: "grey-light",
+    sBadge: "grey",
     invoices: [],
     payments: []
   },
@@ -254,7 +254,7 @@ export const MOCK_PO_TABLE_DATA = [
     createdDate: "2026-03-29",
     status: "Need Revision",
     statusKey: "need_revision",
-    sBadge: "yellow-light",
+    sBadge: "yellow",
     invoices: [],
     payments: []
   },
@@ -265,7 +265,7 @@ export const MOCK_PO_TABLE_DATA = [
     createdDate: "2026-03-30",
     status: "Draft",
     statusKey: "draft",
-    sBadge: "grey-light",
+    sBadge: "grey",
     invoices: [],
     payments: []
   },
@@ -276,7 +276,7 @@ export const MOCK_PO_TABLE_DATA = [
     createdDate: "2026-03-31",
     status: "Draft",
     statusKey: "draft",
-    sBadge: "grey-light",
+    sBadge: "grey",
     invoices: [],
     payments: []
   }

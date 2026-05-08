@@ -161,6 +161,7 @@ export const MOCK_ORDER_MATERIALS_DATA = [
     status: "Covered",
     sVariant: "green-light",
     incomingPO: 20,
+    averageCost: 150000,
     incomingPOBreakdown: [
       { poNo: "PO-202604-001", qty: 10 },
       { poNo: "PO-202604-005", qty: 10 }
@@ -171,6 +172,7 @@ export const MOCK_ORDER_MATERIALS_DATA = [
     name: "Steel Pipe 1/2 inch",
     sku: "STL-PIPE-05",
     uom: "M",
+    averageCost: 45000,
     usedIn: [
       { 
         wo: "WO-202604-002", 
@@ -199,6 +201,7 @@ export const MOCK_ORDER_MATERIALS_DATA = [
     name: "Plastic Granules HDPE",
     sku: "PLAS-HDPE-GR",
     uom: "KG",
+    averageCost: 12000,
     usedIn: [
       { 
         wo: "WO-202604-003", 
@@ -225,6 +228,7 @@ export const MOCK_ORDER_MATERIALS_DATA = [
     name: "Copper Wire 1.5mm",
     sku: "COP-W-15",
     uom: "ROL",
+    averageCost: 850000,
     usedIn: [
       { 
         wo: "WO-202604-004", 
@@ -253,6 +257,7 @@ export const MOCK_ORDER_MATERIALS_DATA = [
     name: "M6 Hex Bolt",
     sku: "FAST-M6-HEX",
     uom: "PCS",
+    averageCost: 800,
     usedIn: [
       { 
         wo: "WO-202604-006", 

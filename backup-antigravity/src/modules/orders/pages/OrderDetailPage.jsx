@@ -4,7 +4,8 @@ import {
   ChevronLeftIcon, EditIcon, Box, ChevronDownIcon, ChevronUpIcon, 
   UploadIcon, DownloadIcon, Trash2, MoreVerticalIcon, FileIcon, 
   ImageAssetIcon, ListViewIcon, GridViewIcon, SearchIcon, CloseIcon,
-  Pencil, DeleteIcon, CloudUploadIcon, Info, TrendingUp, ChevronRightIcon
+  Pencil, DeleteIcon, CloudUploadIcon, Info, TrendingUp, ChevronRightIcon,
+  AddIcon
 } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
@@ -26,6 +27,8 @@ import {
 } from "../../../utils/upload/uploadUtils.js";
 import { MOCK_WO_TABLE_DATA } from "../../work-order/mock/workOrderMocks.js";
 import { MOCK_ORDER_MATERIALS_DATA } from "../mock/orderMocks.js";
+import { MOCK_PO_TABLE_DATA } from "../../../modules/purchase-order/mock/purchaseOrderMocks.js";
+import { TraceabilityTab } from "../components/TraceabilityTab.jsx";
 
 
 // Mock Data for Attachments (Updated to match PO screenshot)
@@ -1014,7 +1017,446 @@ const AttachmentsTab = ({ onNavigate }) => {
   );
 };
 
-const MaterialsTab = ({ orderNo, onNavigate }) => {
+const POPreview = ({ po }) => {
+  if (!po) return null;
+
+  return (
+    <div style={{ width: "440px", background: "#F9FAFB", borderLeft: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "40px 24px 20px", display: "flex", alignItems: "center", background: "white", flexShrink: 0 }}>
+        <span style={{ fontSize: "18px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Purchase Order Preview</span>
+      </div>
+      
+      <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px", overflowY: "auto", flex: 1 }}>
+        {/* PO Header area */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "4px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+            <span style={{ fontSize: "18px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{po.poNumber}</span>
+            <span style={{ fontSize: "14px", color: "var(--neutral-on-surface-tertiary)" }}>{po.vendorName}</span>
+          </div>
+          <StatusBadge variant={
+            po.status === "Draft" ? "grey" : 
+            po.status === "Need Revision" ? "yellow" : 
+            po.status === "Issued" ? "green" : "grey"
+          }>
+            {po.status}
+          </StatusBadge>
+        </div>
+
+        {/* Purchase Order Information */}
+        <div style={{ background: "white", padding: "20px", borderRadius: "16px", border: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column", gap: "20px" }}>
+          <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Purchase Order Information</span>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>PO Date</span>
+              <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{po.createdDate}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Expected Delivery Date</span>
+              <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{po.expectedDelivery || "2026-04-10"}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Currency</span>
+              <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>IDR</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Created By</span>
+              <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Joko</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Vendor Information */}
+        <div style={{ background: "white", padding: "20px", borderRadius: "16px", border: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column", gap: "20px" }}>
+          <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Vendor Information</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Vendor Name</span>
+                <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{po.vendorName}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Phone Number</span>
+                <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>08123456789</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Email address</span>
+              <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>contact@mitra.com</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Address</span>
+              <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)", lineHeight: "1.4" }}>Jl. Sudirman No.1, Jakarta Pusat, 10220</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Purchase Order Lines */}
+        <div style={{ background: "white", padding: "20px", borderRadius: "16px", border: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column", gap: "20px" }}>
+          <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Purchase Order Lines</span>
+          <div style={{ padding: "16px", borderRadius: "12px", border: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Cabinet Premium</span>
+                <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>CAB-PR-9921</span>
+              </div>
+              <div style={{ padding: "2px 8px", background: "rgba(0, 107, 255, 0.1)", color: "#006BFF", fontSize: "11px", fontWeight: "bold", borderRadius: "4px" }}>WO</div>
+            </div>
+            
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontSize: "11px", color: "var(--neutral-on-surface-tertiary)" }}>Description</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)", lineHeight: "1.4" }}>
+                Generated from WO-2026-03-025-00008 including Advanced Assembly, Premium Painting
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "var(--neutral-on-surface-tertiary)" }}>WO Ref</span>
+                <span style={{ fontSize: "13px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>WO-2026-03-025-00008</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "var(--neutral-on-surface-tertiary)" }}>Quantity</span>
+                <span style={{ fontSize: "13px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>1 pcs</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "var(--neutral-on-surface-tertiary)" }}>Unit Price</span>
+                <span style={{ fontSize: "13px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>IDR 250,000</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "11px", color: "var(--neutral-on-surface-tertiary)" }}>Subtotal</span>
+                <span style={{ fontSize: "13px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>IDR 250,000</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Summary */}
+        <div style={{ background: "white", padding: "20px", borderRadius: "16px", border: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column", gap: "16px" }}>
+          <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Summary</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "13px", color: "var(--neutral-on-surface-tertiary)" }}>Subtotal</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>IDR 250,000</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "13px", color: "var(--neutral-on-surface-tertiary)" }}>Tax (11%)</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>IDR 27,500</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "13px", color: "var(--neutral-on-surface-tertiary)" }}>Fees</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>IDR 150,000</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", paddingTop: "12px", borderTop: "1px solid var(--neutral-line-separator-1)" }}>
+              <span style={{ fontSize: "18px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Total</span>
+              <span style={{ fontSize: "18px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>IDR 427,500</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Notes & Terms */}
+        <div style={{ background: "white", padding: "20px", borderRadius: "16px", border: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column", gap: "16px" }}>
+          <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Notes & Terms</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontSize: "11px", color: "var(--neutral-on-surface-tertiary)" }}>Notes</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)", lineHeight: "1.4" }}>Dummy PO detail generated from outsource detail table click.</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <span style={{ fontSize: "11px", color: "var(--neutral-on-surface-tertiary)" }}>Terms</span>
+              <span style={{ fontSize: "13px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Payment within 30 days from invoice date.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const NewPOModal = ({ isOpen, onClose, selectedMaterials, onNavigate, showSnackbar, onAddSuccess, initialData }) => {
+  const [poOption, setPoOption] = useState("create");
+  const [selectedPO, setSelectedPO] = useState("");
+  const [poError, setPoError] = useState("");
+  const [purchaseQtys, setPurchaseQtys] = useState({});
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setPoOption("create");
+      setSelectedPO("");
+      setPoError("");
+      
+      if (selectedMaterials.length > 0) {
+        const initialQtys = {};
+        selectedMaterials.forEach(m => {
+          initialQtys[m.id] = Math.max(0, m.remaining - m.availableStock - (m.incomingPO || 0));
+        });
+        setPurchaseQtys(initialQtys);
+      }
+    }
+  }, [isOpen, selectedMaterials]);
+
+  const handleQtyChange = (id, val) => {
+    setPurchaseQtys(prev => ({ ...prev, [id]: val }));
+  };
+
+  const validateAndSubmit = () => {
+    if (poOption === "select" && !selectedPO) {
+      setPoError("Field cannot be empty");
+      return;
+    }
+    setPoError("");
+
+    const hasZero = selectedMaterials.some(m => !purchaseQtys[m.id] || Number(purchaseQtys[m.id]) === 0);
+    if (hasZero) {
+      setShowConfirmModal(true);
+    } else {
+      processSubmit();
+    }
+  };
+
+  const processSubmit = () => {
+    const activeMaterials = selectedMaterials.filter(m => purchaseQtys[m.id] && Number(purchaseQtys[m.id]) > 0);
+    
+    if (poOption === "create") {
+      onNavigate("/purchase-order/create", { 
+        source: "order_detail_material_add",
+        returnTo: {
+          view: "detail",
+          data: { ...(initialData || {}), activeTab: "materials", orderNo: initialData?.orderNo || initialData?.id }
+        },
+        materials: activeMaterials.map(m => ({
+          ...m,
+          purchaseQty: Number(purchaseQtys[m.id]),
+          price: m.averageCost || m.price || 0
+        }))
+      });
+      onClose();
+    } else {
+      const addedData = activeMaterials.map(m => ({
+        id: m.id,
+        qty: Number(purchaseQtys[m.id])
+      }));
+      
+      // Update the mock data to include these lines in the target PO
+      const poToUpdate = MOCK_PO_TABLE_DATA.find(po => po.poNumber === selectedPO);
+      if (poToUpdate) {
+        if (!poToUpdate.lines) poToUpdate.lines = [];
+        activeMaterials.forEach(m => {
+          poToUpdate.lines.push({
+            id: `line-${Date.now()}-${m.id}`,
+            type: "material",
+            item: m.name || m.item,
+            code: m.sku || m.code,
+            qty: Number(purchaseQtys[m.id]),
+            price: m.averageCost || m.price || 0,
+            uom: m.uom || m.unit
+          });
+        });
+      }
+      
+      if (onAddSuccess) {
+        onAddSuccess(addedData);
+      }
+      
+      onNavigate("po_detail", { 
+        poNumber: selectedPO,
+        from: "order_detail",
+        returnTo: {
+          view: "detail",
+          data: { ...(initialData || {}), activeTab: "materials", orderNo: initialData?.orderNo || initialData?.id }
+        }
+      });
+
+      if (showSnackbar) {
+        showSnackbar("Material successfully added to purchase order", "success");
+      }
+      
+      onClose();
+    }
+  };
+
+  const poOptions = MOCK_PO_TABLE_DATA
+    .filter(po => po.status === "Draft")
+    .map(po => ({ value: po.poNumber, label: `${po.poNumber} - ${po.vendorName}` }));
+
+  const showPreview = poOption === "select" && selectedPO;
+
+  return (
+    <GeneralModal
+      isOpen={isOpen}
+      onClose={onClose}
+      width={showPreview ? "1080px" : "640px"}
+      noPadding={true}
+    >
+      <div style={{ display: "flex", height: "80vh" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          <div style={{ padding: "64px 24px 24px", background: "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <span style={{ fontSize: "20px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Add New Purchase Order</span>
+          </div>
+
+          <div style={{ flex: 1, padding: "24px", display: "flex", flexDirection: "column", gap: "24px", overflowY: "auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              {[
+                { id: "create", title: "Create New PO", desc: "Create a new draft PO using selected material lines." },
+                { id: "select", title: "Select Existing PO", desc: "Append selected materials into an existing editable PO." }
+              ].map(opt => (
+                <div 
+                  key={opt.id}
+                  onClick={() => {
+                    setPoOption(opt.id);
+                    setSelectedPO("");
+                    setPoError("");
+                  }}
+                  style={{ 
+                    padding: "24px", 
+                    borderRadius: "20px", 
+                    border: `1.5px solid ${poOption === opt.id ? "#006BFF" : "#E5E7EB"}`,
+                    background: poOption === opt.id ? "rgba(0, 107, 255, 0.05)" : "white",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "16px",
+                    transition: "all 0.2s ease"
+                  }}
+                >
+                  <div style={{ 
+                    width: "22px", 
+                    height: "22px", 
+                    borderRadius: "50%", 
+                    border: `1.5px solid ${poOption === opt.id ? "#006BFF" : "#D1D5DB"}`, 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    marginTop: "2px",
+                    background: "white"
+                  }}>
+                    {poOption === opt.id && <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#006BFF" }} />}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                    <span style={{ fontSize: "16px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{opt.title}</span>
+                    <span style={{ fontSize: "14px", color: "var(--neutral-on-surface-tertiary)", lineHeight: "1.4" }}>{opt.desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {poOption === "select" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <span style={{ fontSize: "14px", color: "var(--neutral-on-surface-primary)" }}>
+                  <span style={{ color: "var(--feature-brand-red-primary)" }}>*</span> Purchase Order
+                </span>
+                <DropdownSelect 
+                  value={selectedPO}
+                  onChange={(val) => { setSelectedPO(val); setPoError(""); }}
+                  options={poOptions}
+                  placeholder="Select Purchase Order"
+                  hasError={!!poError}
+                  fieldHeight="44px"
+                  borderRadius="12px"
+                  showDivider={true}
+                />
+                {poError && (
+                  <span style={{ fontSize: "12px", color: "var(--status-red-primary)", marginTop: "-4px" }}>{poError}</span>
+                )}
+              </div>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", borderBottom: "1px solid var(--neutral-line-separator-1)", padding: "12px 0", gap: "16px" }}>
+                <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Material</span>
+                <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Shortage Qty</span>
+                <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Qty to Purchase</span>
+              </div>
+              
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {selectedMaterials.map(m => (
+                  <div key={m.id} style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", padding: "16px 0", borderBottom: "1px solid var(--neutral-line-separator-1)", alignItems: "center", gap: "16px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{m.name}</span>
+                      <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>{m.sku}</span>
+                    </div>
+                    <span style={{ fontSize: "14px", color: "var(--neutral-on-surface-primary)" }}>{Math.max(0, m.remaining - m.availableStock - (m.incomingPO || 0))} {m.uom}</span>
+                    <div style={{ 
+                      display: "flex", 
+                      alignItems: "center", 
+                      gap: "0", 
+                      border: "1px solid var(--neutral-line-separator-1)", 
+                      borderRadius: "10px", 
+                      padding: "0 12px",
+                      width: "120px",
+                      height: "40px"
+                    }}>
+                      <input 
+                        type="number"
+                        value={purchaseQtys[m.id] || 0}
+                        onChange={(e) => handleQtyChange(m.id, e.target.value)}
+                        style={{ 
+                          flex: 1,
+                          height: "100%",
+                          border: "none", 
+                          textAlign: "left",
+                          fontSize: "14px",
+                          outline: "none",
+                          color: "var(--neutral-on-surface-primary)",
+                          background: "transparent",
+                          minWidth: 0
+                        }}
+                      />
+                      <span style={{ fontSize: "13px", color: "var(--neutral-on-surface-tertiary)", flexShrink: 0 }}>{m.uom}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: "20px 24px", background: "white", display: "flex", gap: "12px", flexShrink: 0 }}>
+            <Button variant="outlined" size="large" onClick={onClose} style={{ flex: 1 }}>Cancel</Button>
+            <Button variant="filled" size="large" onClick={validateAndSubmit} style={{ flex: 1 }}>Submit</Button>
+          </div>
+        </div>
+
+        {showPreview && <POPreview po={MOCK_PO_TABLE_DATA.find(po => po.poNumber === selectedPO)} />}
+      </div>
+
+      <GeneralModal
+        isOpen={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        title="Confirm Submission"
+        width="420px"
+        description="Some materials have a quantity of 0 and won’t be included in this purchase order. Do you want to continue?"
+        descriptionStyle={{ fontSize: "14px" }}
+        footer={
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", marginTop: "24px" }}>
+            <Button
+              variant="filled"
+              size="large"
+              style={{ width: "100%" }}
+              onClick={() => {
+                setShowConfirmModal(false);
+                processSubmit();
+              }}
+            >
+              Continue
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              style={{ width: "100%" }}
+              onClick={() => setShowConfirmModal(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        }
+      />
+    </GeneralModal>
+  );
+};
+
+const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
+  const [materialsData, setMaterialsData] = useState(MOCK_ORDER_MATERIALS_DATA);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -1026,20 +1468,41 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
   const [drawerTab, setDrawerTab] = useState("Calculation");
   const [expandedDemand, setExpandedDemand] = useState(false);
   const [expandedIncomingPO, setExpandedIncomingPO] = useState(false);
+  const [selectedRowIds, setSelectedRowIds] = useState([]);
+  const [isNewPOModalOpen, setIsNewPOModalOpen] = useState(false);
+  const [selectionError, setSelectionError] = useState("");
 
   const [hoveredSku, setHoveredSku] = useState(null);
 
+  const handleAddMaterialsToPO = (addedItems) => {
+    setMaterialsData(prev => prev.map(m => {
+      const added = addedItems.find(item => String(item.id) === String(m.id));
+      if (added) {
+        return {
+          ...m,
+          incomingPO: (m.incomingPO || 0) + added.qty,
+          incomingPOBreakdown: [
+            ...(m.incomingPOBreakdown || []),
+            { poNo: "PO-NEW", qty: added.qty }
+          ]
+        };
+      }
+      return m;
+    }));
+    setSelectedRowIds([]);
+  };
+
   const metrics = useMemo(() => {
     return {
-      totalMaterials: MOCK_ORDER_MATERIALS_DATA.length,
-      shortageItems: MOCK_ORDER_MATERIALS_DATA.filter(m => m.status === "Shortage").length,
-      totalShortageQty: MOCK_ORDER_MATERIALS_DATA.filter(m => m.status === "Shortage").reduce((acc, m) => acc + (m.demand - m.received), 0),
-      incomingPoQty: 120 // Mock value
+      totalMaterials: materialsData.length,
+      shortageItems: materialsData.filter(m => m.status === "Shortage" && (m.remaining - m.availableStock) > 0).length,
+      totalShortageQty: materialsData.filter(m => m.status === "Shortage").reduce((acc, m) => acc + Math.max(0, m.remaining - m.availableStock), 0),
+      incomingPoQty: materialsData.reduce((acc, m) => acc + (m.incomingPO || 0), 0)
     };
-  }, []);
+  }, [materialsData]);
 
   const filteredData = useMemo(() => {
-    let result = [...MOCK_ORDER_MATERIALS_DATA];
+    let result = [...materialsData];
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(m => 
@@ -1051,7 +1514,7 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
       result = result.filter(m => statusFilter.includes(m.status));
     }
     return result;
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, materialsData]);
 
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const visibleData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
@@ -1074,12 +1537,11 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
     setShowBreakdownDrawer(true);
   };
 
-  const gridTemplate = "2fr 2fr 1.5fr 1fr 1fr";
+  const gridTemplate = "48px 2fr 2fr 1.5fr 1fr 1fr";
   const rowHeight = 72;
 
   return (
     <div style={{ width: "100%", background: "var(--neutral-background-primary)", display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* Counter Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
         {[
           { label: "Total Materials", value: metrics.totalMaterials, icon: <Box /> },
@@ -1117,7 +1579,6 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
         ))}
       </div>
 
-      {/* Table Section */}
       <div style={{ 
         background: "var(--neutral-surface-primary)", 
         borderRadius: "var(--radius-card)", 
@@ -1126,7 +1587,6 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
         flexDirection: "column",
         overflow: "hidden"
       }}>
-        {/* Filters & Search */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <div onClick={handleFilterToggle}>
@@ -1169,18 +1629,56 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
               </>
             )}
           </div>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center", position: "relative" }}>
             <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Material Name, SKU" width="320px" />
+            <div style={{ position: "relative" }}>
+              <Button 
+                variant="filled" 
+                leftIcon={AddIcon} 
+                onClick={() => {
+                  if (selectedRowIds.length === 0) {
+                    setSelectionError("Select a material first before add new purchase order.");
+                  } else {
+                    setSelectionError("");
+                    setIsNewPOModalOpen(true);
+                  }
+                }}
+              >
+                New PO
+              </Button>
+            </div>
           </div>
         </div>
 
+        {selectionError && (
+          <div style={{ 
+            padding: "0 24px 16px 24px",
+            marginTop: "-8px"
+          }}>
+            <span style={{ color: "var(--status-red-primary)", fontSize: "12px" }}>
+              {selectionError}
+            </span>
+          </div>
+        )}
+
         <div style={{ height: "1px", background: "var(--neutral-line-separator-1)", width: "100%" }} />
 
-        {/* Table Body */}
         <div style={{ width: "100%", overflowX: "auto" }}>
           <div style={{ minWidth: "1000px", width: "100%" }}>
             <div style={{ display: "grid", gridTemplateColumns: gridTemplate, borderBottom: "1px solid var(--neutral-line-separator-1)", background: "var(--neutral-surface-primary)", alignItems: "center" }}>
-              <div style={{ padding: "16px 12px 16px 24px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Material</div>
+              <div style={{ padding: "16px 12px 16px 24px", display: "flex", justifyContent: "center" }}>
+                <Checkbox 
+                  checked={selectedRowIds.length === visibleData.length && visibleData.length > 0} 
+                  onChange={() => {
+                    if (selectedRowIds.length === visibleData.length) {
+                      setSelectedRowIds([]);
+                    } else {
+                      setSelectedRowIds(visibleData.map(m => m.id));
+                    }
+                  }} 
+                />
+              </div>
+              <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Material</div>
               <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Used In</div>
               <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Progress</div>
               <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Available Stock</div>
@@ -1188,13 +1686,12 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
             </div>
             <div>
               {visibleData.length > 0 ? visibleData.map((m, idx) => {
-                const [isRowHovered, setIsRowHovered] = useState(false);
                 return (
                   <div 
                     key={idx} 
+                    onMouseEnter={() => setHoveredSku(m.sku)}
+                    onMouseLeave={() => setHoveredSku(null)}
                     onClick={() => handleRowClick(m)}
-                    onMouseEnter={() => setIsRowHovered(true)}
-                    onMouseLeave={() => setIsRowHovered(false)}
                     style={{ 
                       display: "grid", 
                       gridTemplateColumns: gridTemplate, 
@@ -1204,10 +1701,25 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
                       transition: "background 0.2s ease", 
                       cursor: "pointer", 
                       width: "100%",
-                      background: isRowHovered ? "var(--neutral-surface-grey-lighter)" : "transparent"
+                      background: hoveredSku === m.sku ? "var(--neutral-surface-grey-lighter)" : "transparent"
                     }}
                   >
-                    <div style={{ padding: "12px 12px 12px 24px", display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div 
+                      style={{ padding: "12px 12px 12px 24px", display: "flex", justifyContent: "center" }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Checkbox 
+                        checked={selectedRowIds.includes(m.id)} 
+                        onChange={() => {
+                          setSelectedRowIds(prev => 
+                            prev.includes(m.id) ? prev.filter(id => id !== m.id) : [...prev, m.id]
+                          );
+                        }} 
+                      />
+                    </div>
+                    <div 
+                      style={{ padding: "12px 12px 12px 0", display: "flex", alignItems: "center", gap: "12px" }}
+                    >
                       <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: "var(--neutral-surface-grey-lighter)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         <Box size={20} color="var(--neutral-on-surface-tertiary)" />
                       </div>
@@ -1250,7 +1762,7 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
                     <div style={{ padding: "12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-regular)", color: "var(--neutral-on-surface-primary)" }}>{m.availableStock} {m.uom}</div>
                     <div style={{ padding: "12px" }}>
                       <StatusBadge variant={m.sVariant}>
-                        {m.status === "Shortage" ? `${m.status}: ${m.remaining} ${m.uom}` : m.status}
+                        {m.status === "Shortage" ? `${m.status}: ${Math.max(0, m.remaining - m.availableStock)} ${m.uom}` : m.status}
                       </StatusBadge>
                     </div>
                   </div>
@@ -1274,7 +1786,6 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
         </div>
       </div>
 
-      {/* Breakdown Drawer Placeholder */}
       {showBreakdownDrawer && selectedMaterial && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.28)", display: "flex", justifyContent: "flex-end", zIndex: 20000 }} onClick={() => setShowBreakdownDrawer(false)}>
           <div style={{ position: "absolute", inset: 0 }} onClick={() => setShowBreakdownDrawer(false)} />
@@ -1295,11 +1806,10 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
                   </div>
                 </div>
                 <StatusBadge variant={selectedMaterial.sVariant}>
-                  {selectedMaterial.status === "Shortage" ? `${selectedMaterial.status}: ${selectedMaterial.remaining} ${selectedMaterial.uom}` : selectedMaterial.status}
+                  {selectedMaterial.status === "Shortage" ? `${selectedMaterial.status}: ${Math.max(0, selectedMaterial.remaining - selectedMaterial.availableStock)} ${selectedMaterial.uom}` : selectedMaterial.status}
                 </StatusBadge>
               </div>
 
-              {/* Tabs */}
               <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
                 {["Calculation", "Used In"].map(tab => (
                   <button 
@@ -1317,7 +1827,6 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
                 ))}
               </div>
 
-              {/* Tab Content */}
               <div>
                 {drawerTab === "Calculation" ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -1408,7 +1917,18 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
                         <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingLeft: "32px" }}>
                           {selectedMaterial.incomingPOBreakdown.map((po, idx) => (
                             <div key={idx} style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
-                              <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>{po.poNo}</span>
+                              <span 
+                                style={{ 
+                                  color: "var(--feature-brand-primary)",
+                                  cursor: "pointer",
+                                  fontWeight: "bold"
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+                                onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+                                onClick={() => onNavigate("po_detail", { poNumber: po.poNo })}
+                              >
+                                {po.poNo}
+                              </span>
                               <span style={{ fontWeight: "bold", color: "var(--neutral-on-surface-secondary)" }}>{po.qty} {selectedMaterial.uom}</span>
                             </div>
                           ))}
@@ -1418,7 +1938,6 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
-                    {/* Table Header */}
                     <div style={{ display: "grid", gridTemplateColumns: "1.2fr 2fr 1fr 1fr 1fr", borderBottom: "1px solid var(--neutral-line-separator-1)", padding: "12px 0", gap: "16px" }}>
                       <div style={{ fontSize: "14px", color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>Work Order No</div>
                       <div style={{ fontSize: "14px", color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>Product</div>
@@ -1426,7 +1945,6 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
                       <div style={{ fontSize: "14px", color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>Requested in WO</div>
                       <div style={{ fontSize: "14px", color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>Received</div>
                     </div>
-                    {/* Table Body */}
                     {selectedMaterial.usedIn.map((use, idx) => (
                       <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.2fr 2fr 1fr 1fr 1fr", borderBottom: "1px solid var(--neutral-line-separator-1)", padding: "16px 0", gap: "16px", alignItems: "center" }}>
                         <div 
@@ -1454,16 +1972,25 @@ const MaterialsTab = ({ orderNo, onNavigate }) => {
                 )}
               </div>
             </div>
-
           </div>
         </div>
       )}
+
+      <NewPOModal 
+        isOpen={isNewPOModalOpen} 
+        onClose={() => setIsNewPOModalOpen(false)}
+        selectedMaterials={materialsData.filter(m => selectedRowIds.includes(m.id))}
+        onNavigate={onNavigate}
+        showSnackbar={showSnackbar}
+        onAddSuccess={handleAddMaterialsToPO}
+        initialData={initialData}
+      />
     </div>
   );
 };
 
-export const OrderDetailPage = ({ onNavigate, initialData = {} }) => {
-  const [activeTab, setActiveTab] = useState("work-orders");
+export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar }) => {
+  const [activeTab, setActiveTab] = useState(initialData?.activeTab || "work-orders");
 
   const orderData = initialData;
   const shipmentCode = orderData.shipmentCode || `SHP-${orderData.orderNo?.split('-').slice(1).join('-') || "202604-001"}`;
@@ -1613,12 +2140,15 @@ export const OrderDetailPage = ({ onNavigate, initialData = {} }) => {
           <WorkOrderTab orderNo={orderData.orderNo} onNavigate={onNavigate} />
         )}
         {activeTab === "materials" && (
-          <MaterialsTab orderNo={orderData.orderNo} onNavigate={onNavigate} />
+          <MaterialsTab 
+            orderNo={orderData.orderNo} 
+            onNavigate={onNavigate} 
+            showSnackbar={showSnackbar}
+            initialData={initialData}
+          />
         )}
         {activeTab === "traceability" && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "300px", color: "var(--neutral-on-surface-tertiary)" }}>
-            Traceability Content (Coming Soon)
-          </div>
+          <TraceabilityTab onNavigate={onNavigate} showSnackbar={showSnackbar} />
         )}
         {activeTab === "invoices" && (
           <InvoicesTab onNavigate={onNavigate} />

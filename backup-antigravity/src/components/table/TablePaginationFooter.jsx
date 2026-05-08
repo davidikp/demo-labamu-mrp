@@ -13,12 +13,13 @@ const TablePaginationFooter = ({
   totalPages,
   onPageChange,
   renderLeftActions,
+  style = {},
 }) => {
   const isPrevDisabled = currentPage <= 1;
   const isNextDisabled = currentPage >= totalPages;
 
   return (
-    <div className="ds-table-pagination">
+    <div className="ds-table-pagination" style={style}>
       <div className="ds-table-pagination__rows">
         {renderLeftActions && (
           <>

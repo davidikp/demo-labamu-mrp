@@ -16,7 +16,9 @@ import {
   CloudUploadIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  CopyIcon
+  CopyIcon,
+  FileIcon,
+  DownloadIcon
 } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
@@ -233,48 +235,168 @@ const DocumentTypeBadge = ({ fileName = "" }) => {
   );
 };
 
-const TableAttachmentCard = ({ attachments = [] }) => {
+const BatchDocumentsModal = ({ isOpen, onClose, attachments = [], batchNo }) => {
+  if (!isOpen) return null;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", padding: "8px 0" }}>
-      {attachments.map((att, i) => (
-        <div key={att.id || i} style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          width: "100%",
-          minWidth: 0
+    <GeneralModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={`Documents for Batch ${batchNo}`}
+      width="800px"
+    >
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "2fr 1fr 1fr 100px", 
+          padding: "16px 24px", 
+          borderBottom: "1px solid var(--neutral-line-separator-1)",
+          background: "var(--neutral-surface-primary)",
+          fontWeight: "var(--font-weight-bold)",
+          fontSize: "13px",
+          color: "var(--neutral-on-surface-primary)"
         }}>
-          <DocumentTypeBadge fileName={att.file?.name || "proof.pdf"} />
-          <div style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "2px",
-            minWidth: 0,
-            flex: 1
-          }}>
-            <span style={{
-              fontSize: "var(--text-title-3)",
-              fontWeight: "var(--font-weight-bold)",
-              color: "var(--feature-brand-primary)",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis"
-            }}>
-              {att.description || "Proof Document"}
-            </span>
-            <span style={{
-              fontSize: "12px",
-              color: "var(--feature-brand-primary)",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis"
-            }}>
-              {att.file?.name || "receipt-proof-completed.pdf"}
-            </span>
-          </div>
+          <span>Name</span>
+          <span>File Type</span>
+          <span>File Size</span>
+          <span style={{ textAlign: "right" }}>Action</span>
         </div>
-      ))}
-    </div>
+        <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+          {attachments.map((att, i) => {
+            const fileName = att.file?.name || "document.pdf";
+            const size = att.file?.size ? (att.file.size / 1024 / 1024).toFixed(2) + " MB" : "1.2 MB";
+            return (
+              <div key={i} style={{ 
+                display: "grid", 
+                gridTemplateColumns: "2fr 1fr 1fr 100px", 
+                padding: "16px 24px", 
+                borderBottom: "1px solid var(--neutral-line-separator-1)",
+                alignItems: "center",
+                fontSize: "14px"
+              }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: 0 }}>
+                  <span style={{ 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis", 
+                    whiteSpace: "nowrap", 
+                    color: "var(--neutral-on-surface-primary)",
+                    fontWeight: "var(--font-weight-bold)",
+                    fontSize: "14px"
+                  }}>
+                    {att.description || "No description"}
+                  </span>
+                  <span style={{ 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis", 
+                    whiteSpace: "nowrap", 
+                    color: "var(--neutral-on-surface-secondary)",
+                    fontSize: "12px"
+                  }}>
+                    {fileName}
+                  </span>
+                </div>
+                <div>
+                  <DocumentTypeBadge fileName={fileName} />
+                </div>
+                <span style={{ color: "var(--neutral-on-surface-primary)" }}>{size}</span>
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Button 
+                    variant="tertiary" 
+                    size="small" 
+                    leftIcon={DownloadIcon}
+                    onClick={() => {}}
+                    style={{ color: "var(--feature-brand-primary)", fontWeight: "bold" }}
+                  >
+                    Download
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </GeneralModal>
+  );
+};
+
+const TableAttachmentCard = ({ attachments = [], batchNo }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  if (!attachments || attachments.length === 0) {
+    return <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>-</span>;
+  }
+
+  const visibleAttachments = attachments.slice(0, 2);
+  const remainingCount = attachments.length - 2;
+
+  return (
+    <>
+      <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%", padding: "8px 0" }}>
+        {visibleAttachments.map((att, i) => (
+          <div key={att.id || i} style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            width: "100%",
+            minWidth: 0
+          }}>
+            <DocumentTypeBadge fileName={att.file?.name || "proof.pdf"} />
+            <div style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "2px",
+              minWidth: 0,
+              flex: 1
+            }}>
+              <span style={{
+                fontSize: "var(--text-title-3)",
+                fontWeight: "var(--font-weight-bold)",
+                color: "var(--feature-brand-primary)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
+              }}>
+                {att.description || "Proof Document"}
+              </span>
+              <span style={{
+                fontSize: "12px",
+                color: "var(--feature-brand-primary)",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis"
+              }}>
+                {att.file?.name || "receipt-proof-completed.pdf"}
+              </span>
+            </div>
+          </div>
+        ))}
+        {remainingCount > 0 && (
+          <Button 
+            variant="tertiary"
+            size="small"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsModalOpen(true);
+            }}
+            style={{
+              padding: "4px 8px",
+              height: "28px",
+              marginTop: "4px",
+              fontSize: "12px",
+              fontWeight: "bold",
+              color: "var(--feature-brand-primary)"
+            }}
+          >
+            + {remainingCount} more
+          </Button>
+        )}
+      </div>
+      <BatchDocumentsModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        attachments={attachments}
+        batchNo={batchNo}
+      />
+    </>
   );
 };
 
@@ -547,8 +669,7 @@ export const StockBatchesTab = ({
   const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   
   // localBatches and localTransactions are now passed as props
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [successToastMessage, setSuccessToastMessage] = useState("Batch successfully saved");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState(null); // 'add' | 'edit' | null
   const [formData, setFormData] = useState({
     id: null,
@@ -640,13 +761,7 @@ export const StockBatchesTab = ({
       setBatchToDispose(null);
       setDisposalReason("");
       
-      if (showSnackbar) {
-        showSnackbar("Batch successfully disposed", "black");
-      } else {
-        setSuccessToastMessage("Batch successfully disposed");
-        setShowSuccessToast(true);
-        setTimeout(() => setShowSuccessToast(false), 3000);
-      }
+      showSnackbar?.("Batch successfully disposed", "black");
     }
   };
 
@@ -680,13 +795,14 @@ export const StockBatchesTab = ({
 
   const handleSave = () => {
     if (validate()) {
+      const originalBatch = formData.id ? localBatches.find(b => b.id === formData.id) : {};
       const newBatch = {
+        ...originalBatch,
         id: formData.id || `batch-${Date.now()}`,
         materialId,
-        batchNo: formData.id ? localBatches.find(b => b.id === formData.id)?.batchNo : `BN-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+        batchNo: formData.id ? originalBatch.batchNo : `BN-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
         initialQty: parseInt(formData.quantity.replace(/,/g, ''), 10),
         currentQty: parseInt(formData.quantity.replace(/,/g, ''), 10),
-        reservedQty: 0,
         costPerUnit: parseInt(formData.costPerPcs.replace(/,/g, ''), 10),
         purchaseDate: formData.purchaseDate,
         expiryDate: formData.expiryDate,
@@ -704,10 +820,7 @@ export const StockBatchesTab = ({
         setLocalBatches(prev => prev.map(b => b.id === formData.id ? newBatch : b));
       }
 
-      setShowSuccessToast(false);
-      setSuccessToastMessage("Batch successfully saved");
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 3000);
+      showSnackbar?.("Batch successfully saved", "success");
       closeDrawer();
     }
   };
@@ -1123,7 +1236,7 @@ export const StockBatchesTab = ({
                     flexShrink: 0
                   }}>
                     {row.attachments?.length > 0 ? (
-                      <TableAttachmentCard attachments={row.attachments} />
+                      <TableAttachmentCard attachments={row.attachments} batchNo={row.batchNo} />
                     ) : (
                       <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>-</span>
                     )}
@@ -1362,7 +1475,7 @@ export const StockBatchesTab = ({
                     <input type="file" multiple onChange={handleFileChange} style={{ display: "none" }} />
                     <CloudUploadIcon size={40} color="var(--feature-brand-primary)" />
                     <span style={{ fontSize: "var(--text-body)", color: "#A9A9A9", lineHeight: "18px" }}>
-                      Max 3 files, 30MB each
+                      Max 10 files, 30MB each
                     </span>
                     <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-primary)", lineHeight: "18px" }}>
                       Drag file or <span style={{ color: "var(--feature-brand-primary)" }}>browse file</span>
@@ -1400,29 +1513,6 @@ export const StockBatchesTab = ({
         </div>
       )}
 
-      {/* Success Toast */}
-      {showSuccessToast && (
-        <div style={{
-          position: "fixed",
-          bottom: "24px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          background: "var(--neutral-on-surface-primary)",
-          color: "var(--neutral-surface-primary)",
-          padding: "12px 24px",
-          borderRadius: "8px",
-          boxShadow: "var(--elevation-sm)",
-          zIndex: 20000,
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          fontSize: "var(--text-body)",
-          fontWeight: "var(--font-weight-bold)"
-        }}>
-          <CheckIcon size={20} color="var(--status-green-primary)" />
-          {successToastMessage}
-        </div>
-      )}
       {/* Dispose Confirmation Modal */}
       <GeneralModal
         isOpen={showDisposeModal}

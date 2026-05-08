@@ -22,7 +22,7 @@ export const inputControlStyle = (disabled = false, hasValue = false) => ({
   fontSize: "var(--text-subtitle-1)",
   color: disabled
     ? "var(--neutral-on-surface-tertiary)"
-    : hasValue
+    : hasValue !== false && hasValue !== "" && hasValue !== null && hasValue !== undefined
       ? "var(--neutral-on-surface-primary)"
       : "var(--neutral-on-surface-tertiary)",
   fontFamily: "Lato, sans-serif",

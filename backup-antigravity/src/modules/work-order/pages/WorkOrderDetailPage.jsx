@@ -3394,6 +3394,27 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         }
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          {(initialData?.orderStart || initialData?.orderEnd) && (
+            <div
+              style={{
+                background: "var(--feature-brand-container-lighter)",
+                borderRadius: "var(--radius-small)",
+                padding: "12px 16px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                color: "var(--feature-brand-primary)",
+              }}
+            >
+              <Info size={16} />
+              <span style={{ fontSize: "var(--text-body)" }}>
+                Order Planned Date:{" "}
+                <strong>
+                  {initialData?.orderStart || "-"} - {initialData?.orderEnd || "-"}
+                </strong>
+              </span>
+            </div>
+          )}
           <div
             style={{ display: "flex", flexDirection: "column", gap: "8px" }}
           >
@@ -3414,6 +3435,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
             <DateInputControl
               value={readyStartDate}
               onChange={(e) => setReadyStartDate(e.target.value)}
+              minDate={initialData?.orderStart}
+              maxDate={initialData?.orderEnd}
             />
           </div>
           <div
@@ -3436,6 +3459,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
             <DateInputControl
               value={readyEndDate}
               onChange={(e) => setReadyEndDate(e.target.value)}
+              minDate={initialData?.orderStart}
+              maxDate={initialData?.orderEnd}
             />
           </div>
         </div>
@@ -4611,100 +4636,102 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   })()}
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <SearchableVendorSelect
-                      label="Purchase Order (Optional)"
-                      value={singleVendorForm.poNumber}
-                      placeholder="Select PO"
-                      emptyMessage="No Editable Purchase Order Found"
-                      disabled={singleVendorForm.name === "Internal"}
-                      options={poOptions}
-                      onChange={(nextPoNumber) => {
-                        const selectedPo = MOCK_PO_TABLE_DATA.find(
-                          (po) => po.poNumber === nextPoNumber
-                        );
-                        const poDetailData = nextPoNumber
-                          ? buildPoLinkSnapshot(
-                              buildDummyPoDetailData(nextPoNumber, {
-                                ...singleVendorForm,
-                                poNumber: nextPoNumber,
-                                poDetailData: null,
-                              })
-                            )
-                          : null;
-                        setSingleVendorForm({
-                          ...singleVendorForm,
-                          poNumber: nextPoNumber,
-                          isPoApproved:
-                            selectedPo?.statusKey === "issued" ||
-                            selectedPo?.statusKey === "completed",
-                          poStatus: poDetailData?.status,
-                          poBadge: poDetailData?.sBadge,
-                          poStatusKey: poDetailData?.statusKey,
-                          poDetailData,
-                        });
-                      }}
-                    />
-                    {singleVendorForm.poNumber &&
-                      singleVendorForm.status === "Not Started" && (
-                        <Button
-                          variant="tertiary"
-                          style={{
-                            padding: "4px 8px",
-                            fontSize: "var(--text-desc)",
-                            marginTop: "24px",
-                            color: "var(--status-red-primary)",
-                          }}
-                          onClick={() =>
-                            setSingleVendorForm({
-                              ...singleVendorForm,
-                              poNumber: "",
-                              isPoApproved: false,
-                              poStatus: null,
-                              poBadge: null,
-                              poStatusKey: null,
-                              poDetailData: null,
-                            })
-                          }
-                        >
-                          Remove Selection
-                        </Button>
-                      )}
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "10px",
-                      padding: "12px 14px",
-                      background: "var(--feature-brand-container-lighter)",
-                      borderRadius: "10px",
-                      border: "1px solid var(--feature-brand-container)",
-                    }}
-                  >
-                    <Info
-                      size={16}
-                      color="var(--feature-brand-primary)"
-                      style={{ flexShrink: 0, marginTop: "2px" }}
-                    />
-                    <span
+                {singleVendorForm.name && singleVendorForm.name !== "Internal" && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    <div
                       style={{
-                        fontSize: "var(--text-desc)",
-                        color: "var(--feature-brand-on-container)",
-                        lineHeight: "1.5",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
                       }}
                     >
-                      Select an existing PO if it is already known. If left empty,
-                      you can add the PO later.
-                    </span>
+                      <SearchableVendorSelect
+                        label="Purchase Order (Optional)"
+                        value={singleVendorForm.poNumber}
+                        placeholder="Select PO"
+                        emptyMessage="No Editable Purchase Order Found"
+                        disabled={singleVendorForm.name === "Internal"}
+                        options={poOptions}
+                        onChange={(nextPoNumber) => {
+                          const selectedPo = MOCK_PO_TABLE_DATA.find(
+                            (po) => po.poNumber === nextPoNumber
+                          );
+                          const poDetailData = nextPoNumber
+                            ? buildPoLinkSnapshot(
+                                buildDummyPoDetailData(nextPoNumber, {
+                                  ...singleVendorForm,
+                                  poNumber: nextPoNumber,
+                                  poDetailData: null,
+                                })
+                              )
+                            : null;
+                          setSingleVendorForm({
+                            ...singleVendorForm,
+                            poNumber: nextPoNumber,
+                            isPoApproved:
+                              selectedPo?.statusKey === "issued" ||
+                              selectedPo?.statusKey === "completed",
+                            poStatus: poDetailData?.status,
+                            poBadge: poDetailData?.sBadge,
+                            poStatusKey: poDetailData?.statusKey,
+                            poDetailData,
+                          });
+                        }}
+                      />
+                      {singleVendorForm.poNumber &&
+                        singleVendorForm.status === "Not Started" && (
+                          <Button
+                            variant="tertiary"
+                            style={{
+                              padding: "4px 8px",
+                              fontSize: "var(--text-desc)",
+                              marginTop: "24px",
+                              color: "var(--status-red-primary)",
+                            }}
+                            onClick={() =>
+                              setSingleVendorForm({
+                                ...singleVendorForm,
+                                poNumber: "",
+                                isPoApproved: false,
+                                poStatus: null,
+                                poBadge: null,
+                                poStatusKey: null,
+                                poDetailData: null,
+                              })
+                            }
+                          >
+                            Remove Selection
+                          </Button>
+                        )}
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "10px",
+                        padding: "12px 14px",
+                        background: "var(--feature-brand-container-lighter)",
+                        borderRadius: "10px",
+                        border: "1px solid var(--feature-brand-container)",
+                      }}
+                    >
+                      <Info
+                        size={16}
+                        color="var(--feature-brand-primary)"
+                        style={{ flexShrink: 0, marginTop: "2px" }}
+                      />
+                      <span
+                        style={{
+                          fontSize: "var(--text-desc)",
+                          color: "var(--feature-brand-on-container)",
+                          lineHeight: "1.5",
+                        }}
+                      >
+                        Select an existing PO if it is already known. If left empty,
+                        you can add the PO later.
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
 

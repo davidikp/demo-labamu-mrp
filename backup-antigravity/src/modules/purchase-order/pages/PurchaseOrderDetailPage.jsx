@@ -2170,7 +2170,7 @@ const poReferenceTableInnerStyle = (minWidth = "100%") => ({
   flexDirection: "column",
 });
 
-const poReferenceTableHeaderRowStyle = (gridTemplateColumns, gap = "0") => ({
+const poReferenceTableHeaderRowStyle = (gridTemplateColumns, gap = "0", overrides = {}) => ({
   display: "grid",
   gridTemplateColumns,
   gap,
@@ -2182,6 +2182,7 @@ const poReferenceTableHeaderRowStyle = (gridTemplateColumns, gap = "0") => ({
   fontSize: "var(--text-title-3)",
   fontWeight: "var(--font-weight-bold)",
   color: "var(--neutral-on-surface-primary)",
+  ...overrides,
 });
 
 const poReferenceTableRowStyle = (
@@ -2297,14 +2298,14 @@ export const PurchaseOrderDetailPage = ({
     displayData?.status || "Draft"
   );
   const [currentBadge, setCurrentBadge] = useState(
-    displayData?.sBadge || "grey-light"
+    displayData?.sBadge || "grey"
   );
   const formData = displayData?.formData || null;
 
   useEffect(() => {
     if (displayData) {
       setCurrentStatus(displayData.status || "Draft");
-      setCurrentBadge(displayData.sBadge || "grey-light");
+      setCurrentBadge(displayData.sBadge || "grey");
       setReceiptLogs(displayData.receiptLogs || []);
       setReceiptLines(displayData.receiptLines || []);
       setDocuments(displayData.formData?.documents || MOCK_PO_DOCUMENTS);
@@ -2355,6 +2356,7 @@ export const PurchaseOrderDetailPage = ({
   const [showSubmitGuardModal, setShowSubmitGuardModal] = useState(false);
   const [showDetailSubmitConfirmModal, setShowDetailSubmitConfirmModal] =
     useState(false);
+  const [showZeroPriceWarningModal, setShowZeroPriceWarningModal] = useState(false);
   const [documents, setDocuments] = useState(
     displayData?.formData?.documents || MOCK_PO_DOCUMENTS
   );
@@ -3156,7 +3158,13 @@ export const PurchaseOrderDetailPage = ({
       setShowSubmitGuardModal(true);
       return;
     }
-    setShowDetailSubmitConfirmModal(true);
+    
+    const hasZeroPriceItem = mockLines.some(line => (parseFloat(line.price) || 0) === 0);
+    if (hasZeroPriceItem) {
+      setShowZeroPriceWarningModal(true);
+    } else {
+      setShowDetailSubmitConfirmModal(true);
+    }
   };
 
   const getApprovedVendorReturnState = (vendor) => {
@@ -3565,6 +3573,10 @@ export const PurchaseOrderDetailPage = ({
         }),
       };
       onNavigate(initialData.returnTo.view || "detail", nextReturnData);
+      return;
+    }
+    if (initialData?.from === "order_detail" && initialData?.returnTo) {
+      onNavigate(initialData.returnTo.view || "detail", initialData.returnTo.data);
       return;
     }
     if (initialData?.from === "material_detail" && initialData?.returnTo) {
@@ -4984,7 +4996,7 @@ export const PurchaseOrderDetailPage = ({
             label="Expected Delivery Date"
             value={expectedDeliveryDate ?? null}
           />
-          <LabelValue label="Currency" value="IDR - Indonesian Rupiah" />
+          <LabelValue label="Currency" value={currencyLabel} />
           <LabelValue label="Created By" value="Joko" />
         </div>
       </div>
@@ -5178,7 +5190,7 @@ export const PurchaseOrderDetailPage = ({
                     width: "100%",
                   }}
                 >
-                  <div style={{ overflowX: "auto", width: "100%" }}>
+                  <div style={{ overflowX: mockLines.length > 0 ? "auto" : "hidden", width: "100%" }}>
                       <div
                         style={{
                           minWidth: "100%",
@@ -5187,44 +5199,46 @@ export const PurchaseOrderDetailPage = ({
                           flexDirection: "column",
                         }}
                       >
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "76px minmax(220px, 1.5fr) minmax(220px, 2.5fr) 110px 64px 130px 130px",
-                          gap: "8px",
-                          padding: "0 16px",
-                          height: "49px",
-                          alignItems: "center",
-                          background: "var(--neutral-surface-primary)",
-                          position: "relative",
-                          width: "100%",
-                          boxSizing: "border-box",
-                          fontSize: "var(--text-title-3)",
-                          fontWeight: "var(--font-weight-bold)",
-                          color: "var(--neutral-on-surface-primary)",
-                        }}
-                      >
-                        <span>Type</span>
-                        <span>Item</span>
-                        <span>Description</span>
-                        <span>WO Ref</span>
-                        <span style={{ textAlign: "left" }}>Qty</span>
-                        <span style={{ textAlign: "right" }}>Unit Price</span>
-                        <span style={{ textAlign: "right" }}>Subtotal</span>
+                      {mockLines.length > 0 && (
                         <div
-                          aria-hidden="true"
                           style={{
-                            position: "absolute",
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            height: "1px",
-                            background: "var(--neutral-line-separator-1)",
-                            pointerEvents: "none",
+                            display: "grid",
+                            gridTemplateColumns:
+                              "76px minmax(220px, 1.5fr) minmax(220px, 2.5fr) 110px 64px 130px 130px",
+                            gap: "8px",
+                            padding: "0 16px",
+                            height: "49px",
+                            alignItems: "center",
+                            background: "var(--neutral-surface-primary)",
+                            position: "relative",
+                            width: "100%",
+                            boxSizing: "border-box",
+                            fontSize: "var(--text-title-3)",
+                            fontWeight: "var(--font-weight-bold)",
+                            color: "var(--neutral-on-surface-primary)",
                           }}
-                        />
-                      </div>
+                        >
+                          <span>Type</span>
+                          <span>Item</span>
+                          <span style={{ paddingRight: "24px" }}>Description</span>
+                          <span>WO Ref</span>
+                          <span style={{ textAlign: "left" }}>Qty</span>
+                          <span style={{ textAlign: "right" }}>Unit Price</span>
+                          <span style={{ textAlign: "right" }}>Subtotal</span>
+                          <div
+                            aria-hidden="true"
+                            style={{
+                              position: "absolute",
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              height: "1px",
+                              background: "var(--neutral-line-separator-1)",
+                              pointerEvents: "none",
+                            }}
+                          />
+                        </div>
+                      )}
 
                       {mockLines.length > 0 ? (
                         mockLines.map((line, idx) => {
@@ -5316,18 +5330,15 @@ export const PurchaseOrderDetailPage = ({
                                     />
                                   )}
                                 </div>
-                                <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0, padding: "12px 0" }}>
                                   <span
                                     style={{
                                       display: "block",
                                       fontSize: "var(--text-title-3)",
                                       fontWeight: "var(--font-weight-bold)",
                                       color: "var(--neutral-on-surface-primary)",
-                                      whiteSpace: "nowrap",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
+                                      wordBreak: "break-word"
                                     }}
-                                    title={displayValue(line.item)}
                                   >
                                     {displayValue(line.item)}
                                   </span>
@@ -5338,11 +5349,8 @@ export const PurchaseOrderDetailPage = ({
                                       color: "var(--feature-brand-primary)",
                                       textDecoration: "underline",
                                       cursor: "pointer",
-                                      whiteSpace: "nowrap",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
+                                      wordBreak: "break-word"
                                     }}
-                                    title={displayValue(line.code)}
                                     onClick={() => {
                                       const materialData = MOCK_MATERIALS_DATA.find(m => m.sku === line.code) || MOCK_MATERIALS_DATA[0];
                                       onNavigate("materials_detail", {
@@ -5359,24 +5367,19 @@ export const PurchaseOrderDetailPage = ({
                                   </span>
                                 </div>
                               </div>
-                              <div style={{ minWidth: 0 }}>
-                                <Tooltip content={line.desc} style={{ display: "block", width: "100%" }} checkTruncation={true}>
-                                  <span
-                                    style={{
-                                      display: "-webkit-box",
-                                      WebkitLineClamp: 2,
-                                      WebkitBoxOrient: "vertical",
-                                      overflow: "hidden",
-                                      fontSize: "var(--text-title-3)",
-                                      color:
-                                        "var(--neutral-on-surface-secondary)",
-                                      lineHeight: "1.4",
-                                      wordBreak: "break-word",
-                                    }}
-                                  >
-                                    {displayValue(line.desc)}
-                                  </span>
-                                </Tooltip>
+                              <div style={{ minWidth: 0, padding: "12px 0", paddingRight: "24px" }}>
+                                <span
+                                  style={{
+                                    display: "block",
+                                    fontSize: "var(--text-title-3)",
+                                    color: "var(--neutral-on-surface-secondary)",
+                                    lineHeight: "1.4",
+                                    wordBreak: "break-word",
+                                    whiteSpace: "pre-wrap"
+                                  }}
+                                >
+                                  {displayValue(line.desc)}
+                                </span>
                               </div>
                               <div style={{ minWidth: 0 }}>
                                 <span
@@ -5456,11 +5459,17 @@ export const PurchaseOrderDetailPage = ({
                       ) : (
                         <div
                           style={{
-                            padding: "32px",
+                            padding: "48px 24px",
                             textAlign: "center",
                             color: "var(--neutral-on-surface-tertiary)",
                             fontSize: "var(--text-title-3)",
                             background: "var(--neutral-surface-primary)",
+                            border: "1.5px dashed var(--neutral-line-separator-1)",
+                            borderRadius: "16px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minHeight: "120px",
                           }}
                         >
                           No purchase order lines added.
@@ -5924,7 +5933,6 @@ export const PurchaseOrderDetailPage = ({
             <div
               style={{
                 padding: "20px 24px",
-                borderBottom: "1px solid var(--neutral-line-separator-1)",
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
@@ -5958,7 +5966,7 @@ export const PurchaseOrderDetailPage = ({
               </div>
             </div>
 
-            <div style={{ width: "100%", overflowX: "auto" }}>
+            <div style={{ width: "100%", overflowX: invoices.filter((inv) => inv.number.toLowerCase().includes(invoiceSearch.toLowerCase())).length > 0 ? "auto" : "hidden" }}>
               <div
                 style={{
                   minWidth: "1000px",
@@ -5967,40 +5975,35 @@ export const PurchaseOrderDetailPage = ({
                 }}
               >
                 {/* Table Header */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns:
-                      "1.2fr 1fr 1fr 1fr 2.5fr 1.2fr 1fr",
-                    gap: "12px",
-                    padding: "0 24px",
-                    height: "49px",
-                    alignItems: "center",
-                    background: "var(--neutral-surface-primary)",
-                    position: "relative",
-                    fontSize: "var(--text-title-3)",
-                    fontWeight: "var(--font-weight-bold)",
-                    color: "var(--neutral-on-surface-primary)",
-                  }}
-                >
-                  <span>Invoice No</span>
-                  <span>Invoice Date</span>
-                  <span>Payment Terms</span>
-                  <span>Due Date</span>
-                  <span>Settlement Progress</span>
-                  <span>Aging Status</span>
-                  <span>Invoice Status</span>
+                {invoices.filter((inv) =>
+                  inv.number.toLowerCase().includes(invoiceSearch.toLowerCase())
+                ).length > 0 && (
                   <div
                     style={{
-                      position: "absolute",
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      height: "1px",
-                      background: "var(--neutral-line-separator-1)",
+                      display: "grid",
+                      gridTemplateColumns:
+                        "1.2fr 1fr 1fr 1fr 2.5fr 1.2fr 1fr",
+                      gap: "12px",
+                      padding: "0 24px",
+                      height: "49px",
+                      alignItems: "center",
+                      background: "var(--neutral-surface-primary)",
+                      position: "relative",
+                      fontSize: "var(--text-title-3)",
+                      fontWeight: "var(--font-weight-bold)",
+                      color: "var(--neutral-on-surface-primary)",
+                      borderBottom: "1px solid var(--neutral-line-separator-1)",
                     }}
-                  />
-                </div>
+                  >
+                    <span>Invoice No</span>
+                    <span>Invoice Date</span>
+                    <span>Payment Terms</span>
+                    <span>Due Date</span>
+                    <span>Settlement Progress</span>
+                    <span>Aging Status</span>
+                    <span>Invoice Status</span>
+                  </div>
+                )}
 
                 {/* Table Body */}
                 {invoices.filter((inv) =>
@@ -6184,18 +6187,26 @@ export const PurchaseOrderDetailPage = ({
                       );
                     })
                 ) : (
-                  <div
-                    style={{
-                      padding: "40px",
-                      textAlign: "center",
-                      color: "var(--neutral-on-surface-tertiary)",
-                      fontSize: "var(--text-body)",
-                    }}
-                  >
-                    {invoiceSearch
-                      ? "No invoices found matching your search."
-                      : "No invoices recorded yet."}
-                  </div>
+                <div
+                  style={{
+                    padding: "48px 24px",
+                    textAlign: "center",
+                    color: "var(--neutral-on-surface-tertiary)",
+                    fontSize: "var(--text-title-3)",
+                    background: "var(--neutral-surface-primary)",
+                    border: "1.5px dashed var(--neutral-line-separator-1)",
+                    borderRadius: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: "120px",
+                    margin: "0 24px"
+                  }}
+                >
+                  {invoiceSearch
+                    ? "No invoices found matching your search."
+                    : "No invoices recorded yet."}
+                </div>
                 )}
               </div>
             </div>
@@ -6209,6 +6220,9 @@ export const PurchaseOrderDetailPage = ({
                 totalRows={invoices.length}
                 onPageChange={setInvoiceCurrentPage}
                 onRowsPerPageChange={setInvoiceRowsPerPage}
+                style={{
+                  borderTop: invoices.length === 0 ? "none" : "1px solid var(--neutral-line-separator-1)"
+                }}
               />
             </div>
           </div>
@@ -6231,7 +6245,7 @@ export const PurchaseOrderDetailPage = ({
                 width: "100%",
               }}
             >
-              <div style={{ overflowX: "auto", width: "100%" }}>
+              <div style={{ overflowX: threeWaysMatchData.length > 0 ? "auto" : "hidden", width: "100%" }}>
                 <div
                   style={{
                     minWidth: "100%",
@@ -6240,42 +6254,44 @@ export const PurchaseOrderDetailPage = ({
                     flexDirection: "column",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "80px 1fr 140px 160px 160px",
-                      gap: "12px",
-                      padding: "0 24px",
-                      height: "49px",
-                      alignItems: "center",
-                      background: "var(--neutral-surface-primary)",
-                      position: "relative",
-                      width: "100%",
-                      boxSizing: "border-box",
-                      fontSize: "var(--text-title-3)",
-                      fontWeight: "var(--font-weight-bold)",
-                      color: "var(--neutral-on-surface-primary)",
-                    }}
-                  >
-                    <div style={{ textAlign: "left", justifySelf: "start" }}>Type</div>
-                    <div style={{ textAlign: "left", justifySelf: "start", minWidth: 0, overflow: "hidden" }}>Item</div>
-                    <div style={{ textAlign: "left", justifySelf: "start" }}>PO Qty</div>
-                    <div style={{ textAlign: "left", justifySelf: "start" }}>Invoiced Qty</div>
-                    <div style={{ textAlign: "left", justifySelf: "start" }}>Received Qty</div>
+                  {threeWaysMatchData.length > 0 && (
                     <div
-                      aria-hidden="true"
                       style={{
-                        position: "absolute",
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        height: "1px",
-                        background: "var(--neutral-line-separator-1)",
-                        pointerEvents: "none",
+                        display: "grid",
+                        gridTemplateColumns:
+                          "80px 1fr 140px 160px 160px",
+                        gap: "12px",
+                        padding: "0 24px",
+                        height: "49px",
+                        alignItems: "center",
+                        background: "var(--neutral-surface-primary)",
+                        position: "relative",
+                        width: "100%",
+                        boxSizing: "border-box",
+                        fontSize: "var(--text-title-3)",
+                        fontWeight: "var(--font-weight-bold)",
+                        color: "var(--neutral-on-surface-primary)",
                       }}
-                    />
-                  </div>
+                    >
+                      <div style={{ textAlign: "left", justifySelf: "start" }}>Type</div>
+                      <div style={{ textAlign: "left", justifySelf: "start", minWidth: 0, overflow: "hidden" }}>Item</div>
+                      <div style={{ textAlign: "left", justifySelf: "start" }}>PO Qty</div>
+                      <div style={{ textAlign: "left", justifySelf: "start" }}>Invoiced Qty</div>
+                      <div style={{ textAlign: "left", justifySelf: "start" }}>Received Qty</div>
+                      <div
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          height: "1px",
+                          background: "var(--neutral-line-separator-1)",
+                          pointerEvents: "none",
+                        }}
+                      />
+                    </div>
+                  )}
 
                   {threeWaysMatchData.length > 0 ? (
                     threeWaysMatchData.map((line, idx) => {
@@ -6504,10 +6520,18 @@ export const PurchaseOrderDetailPage = ({
                   ) : (
                     <div
                       style={{
-                        padding: "40px",
+                        padding: "48px 24px",
                         textAlign: "center",
                         color: "var(--neutral-on-surface-tertiary)",
-                        fontSize: "var(--text-body)",
+                        fontSize: "var(--text-title-3)",
+                        background: "var(--neutral-surface-primary)",
+                        border: "1.5px dashed var(--neutral-line-separator-1)",
+                        borderRadius: "16px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        minHeight: "120px",
+                        margin: "0 24px"
                       }}
                     >
                       No items to match.
@@ -6779,46 +6803,42 @@ export const PurchaseOrderDetailPage = ({
               </div>
             </div>
 
-            <div
-              style={{
-                height: "1px",
-                background: "var(--neutral-line-separator-1)",
-                width: "100%",
-              }}
-            />
 
             <div style={{ padding: "0 0 24px 0" }}>
 
             {documentView === "list" ? (
               <div style={poReferenceTableFrameStyle}>
-                <div style={poReferenceTableScrollerStyle}>
-                  <div style={poReferenceTableInnerStyle("1080px")}>
-                    <div
-                      style={poReferenceTableHeaderRowStyle(
-                        "2.2fr 1fr 1.2fr 1fr 0.9fr 132px"
-                      )}
-                    >
-                      <div style={poReferenceTableHeaderCellStyle()}>Name</div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Document Type
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Uploaded By
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Date Modified
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        File Size
-                      </div>
+                <div style={{ ...poReferenceTableScrollerStyle, overflowX: filteredDocuments.length > 0 ? "auto" : "hidden" }}>
+                  <div style={poReferenceTableInnerStyle(filteredDocuments.length > 0 ? "1080px" : "100%")}>
+                    {filteredDocuments.length > 0 && (
                       <div
-                        style={poReferenceTableHeaderCellStyle({
-                          justifyContent: "flex-end",
-                        })}
+                        style={poReferenceTableHeaderRowStyle(
+                          "2.2fr 1fr 1.2fr 1fr 0.9fr 132px",
+                          "0"
+                        )}
                       >
-                        Action
+                        <div style={poReferenceTableHeaderCellStyle()}>Name</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Document Type
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Uploaded By
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Date Modified
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          File Size
+                        </div>
+                        <div
+                          style={poReferenceTableHeaderCellStyle({
+                            justifyContent: "flex-end",
+                          })}
+                        >
+                          Action
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {filteredDocuments.length > 0 ? (
                       filteredDocuments.map((doc, idx) => {
@@ -6968,22 +6988,21 @@ export const PurchaseOrderDetailPage = ({
                     ) : (
                       <div
                         style={{
-                          ...poReferenceTableEmptyStateStyle,
+                          padding: "48px 24px",
+                          textAlign: "center",
+                          color: "var(--neutral-on-surface-tertiary)",
+                          fontSize: "var(--text-title-3)",
+                          background: "var(--neutral-surface-primary)",
+                          border: "1.5px dashed var(--neutral-line-separator-1)",
+                          borderRadius: "16px",
                           display: "flex",
-                          flexDirection: "column",
                           alignItems: "center",
-                          gap: "8px",
+                          justifyContent: "center",
+                          minHeight: "120px",
+                          margin: "0 24px"
                         }}
                       >
-                        <span
-                          style={{
-                            fontSize: "14px",
-                            fontWeight: "var(--font-weight-regular)",
-                            color: "var(--neutral-on-surface-secondary)",
-                          }}
-                        >
-                          No documents added
-                        </span>
+                        No documents added yet.
                       </div>
                     )}
                   </div>
@@ -7155,21 +7174,19 @@ export const PurchaseOrderDetailPage = ({
                     style={{
                       gridColumn: "1 / -1",
                       padding: "48px 24px",
+                      textAlign: "center",
+                      color: "var(--neutral-on-surface-tertiary)",
+                      fontSize: "var(--text-title-3)",
+                      background: "var(--neutral-surface-primary)",
+                      border: "1.5px dashed var(--neutral-line-separator-1)",
+                      borderRadius: "16px",
                       display: "flex",
-                      flexDirection: "column",
                       alignItems: "center",
-                      gap: "8px",
+                      justifyContent: "center",
+                      minHeight: "120px",
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: "var(--font-weight-regular)",
-                        color: "var(--neutral-on-surface-secondary)",
-                      }}
-                    >
-                      No documents added
-                    </span>
+                    No documents added yet.
                   </div>
                 )}
               </div>
@@ -7360,35 +7377,37 @@ export const PurchaseOrderDetailPage = ({
                 </div>
               ) : null}
               <div style={poReferenceTableFrameStyle}>
-                <div style={poReferenceTableScrollerStyle}>
+                <div style={{ ...poReferenceTableScrollerStyle, overflowX: receiptLines.length > 0 ? "auto" : "hidden" }}>
                   <div style={poReferenceTableInnerStyle("100%")}>
-                    <div
-                      style={poReferenceTableHeaderRowStyle(
-                        "70px minmax(200px, 1.5fr) minmax(200px, 2.5fr) 100px 100px 100px 100px 110px",
-                        "8px"
-                      )}
-                    >
-                      <div style={poReferenceTableHeaderCellStyle()}>Type</div>
-                      <div style={poReferenceTableHeaderCellStyle()}>Item</div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Description
+                    {receiptLines.length > 0 && (
+                      <div
+                        style={poReferenceTableHeaderRowStyle(
+                          "70px minmax(200px, 1.5fr) minmax(200px, 2.5fr) 100px 100px 100px 100px 110px",
+                          "8px"
+                        )}
+                      >
+                        <div style={poReferenceTableHeaderCellStyle()}>Type</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Item</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Description
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          WO Ref
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Ordered Qty
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Received Qty
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Remaining Qty
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Receive Now
+                        </div>
                       </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        WO Ref
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Ordered Qty
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Received Qty
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Remaining Qty
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Receive Now
-                      </div>
-                    </div>
+                    )}
                     {receiptLines.map((line, idx) => {
                       const remainingQty = Math.max(
                         line.orderedQty - line.receivedQty,
@@ -7655,12 +7674,18 @@ export const PurchaseOrderDetailPage = ({
                         style={{
                           padding: "48px 24px",
                           textAlign: "center",
-                          color: "var(--neutral-on-surface-secondary)",
-                          fontSize: "14px",
-                          fontWeight: "var(--font-weight-regular)",
+                          color: "var(--neutral-on-surface-tertiary)",
+                          fontSize: "var(--text-title-3)",
+                          background: "var(--neutral-surface-primary)",
+                          border: "1.5px dashed var(--neutral-line-separator-1)",
+                          borderRadius: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minHeight: "120px",
                         }}
                       >
-                        No purchase order lines added
+                        No purchase order lines added.
                       </div>
                     )}
                   </div>
@@ -7713,38 +7738,40 @@ export const PurchaseOrderDetailPage = ({
             >
               <div style={poReferenceTableFrameStyle}>
                 <div style={poReferenceTableScrollerStyle}>
-                  <div style={poReferenceTableInnerStyle("1400px")}>
-                    <div
-                      style={poReferenceTableHeaderRowStyle(
-                        "1.2fr 1fr 1.4fr 1fr 1.3fr 1.1fr 1.4fr 1.6fr",
-                        "8px"
-                      )}
-                    >
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Receipt Date & Time
+                  <div style={poReferenceTableInnerStyle(groupedReceiptLogs.length > 0 ? "1400px" : "100%")}>
+                    {groupedReceiptLogs.length > 0 && (
+                      <div
+                        style={poReferenceTableHeaderRowStyle(
+                          "1.2fr 1fr 1.4fr 1fr 1.3fr 1.1fr 1.4fr 1.6fr",
+                          "8px"
+                        )}
+                      >
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Receipt Date & Time
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Receipt Number
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Item Name
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          SKU / Code
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Received Qty
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Received By
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Notes
+                        </div>
+                        <div style={poReferenceTableHeaderCellStyle()}>
+                          Proof Document
+                        </div>
                       </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Receipt Number
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Item Name
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        SKU / Code
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Received Qty
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Received By
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Notes
-                      </div>
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Proof Document
-                      </div>
-                    </div>
+                    )}
                     {groupedReceiptLogs.length > 0 ? (
                       groupedReceiptLogs.map((log, idx) => (
                         <div
@@ -7911,7 +7938,21 @@ export const PurchaseOrderDetailPage = ({
                         </div>
                       ))
                     ) : (
-                      <div style={poReferenceTableEmptyStateStyle}>
+                      <div
+                        style={{
+                          padding: "48px 24px",
+                          textAlign: "center",
+                          color: "var(--neutral-on-surface-tertiary)",
+                          fontSize: "var(--text-title-3)",
+                          background: "var(--neutral-surface-primary)",
+                          border: "1.5px dashed var(--neutral-line-separator-1)",
+                          borderRadius: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minHeight: "120px",
+                        }}
+                      >
                         No receipt history yet.
                       </div>
                     )}
@@ -8306,6 +8347,38 @@ export const PurchaseOrderDetailPage = ({
           ))}
         </div>
       </GeneralModal>
+
+      <GeneralModal
+        isOpen={showZeroPriceWarningModal}
+        onClose={() => setShowZeroPriceWarningModal(false)}
+        title="Zero Unit Price Detected"
+        width="420px"
+        description="Some items have a unit price of 0. Please review them before submitting, or continue if this is intentional."
+        descriptionStyle={{ fontSize: "14px" }}
+        footer={
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", marginTop: "24px" }}>
+            <Button
+              variant="filled"
+              size="large"
+              style={{ width: "100%" }}
+              onClick={() => {
+                setShowZeroPriceWarningModal(false);
+                setShowDetailSubmitConfirmModal(true);
+              }}
+            >
+              Continue to Submit
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              style={{ width: "100%" }}
+              onClick={() => setShowZeroPriceWarningModal(false)}
+            >
+              Go Back to Edit
+            </Button>
+          </div>
+        }
+      />
 
       <GeneralModal
         isOpen={showDetailSubmitConfirmModal}

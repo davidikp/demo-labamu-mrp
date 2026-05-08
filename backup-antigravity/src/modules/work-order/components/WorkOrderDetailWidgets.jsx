@@ -497,6 +497,8 @@ const DateInputControl = ({
   fieldHeight = "48px",
   borderRadius = "10px",
   fontSize = "var(--text-subtitle-1)",
+  minDate = "",
+  maxDate = "",
   style = {},
 }) => {
   const triggerRef = useRef(null);
@@ -792,12 +794,15 @@ const DateInputControl = ({
                 {calendarDays.map((day) => {
                   const isSelected = day.iso === value;
                   const isToday = day.iso === todayIso;
+                  const isDisabled = (minDate && day.iso < minDate) || (maxDate && day.iso > maxDate);
                   
                   return (
                     <button
                       key={day.iso}
                       type="button"
+                      disabled={isDisabled}
                       onClick={() => {
+                        if (isDisabled) return;
                         onChange?.(createSyntheticInputEvent(day.iso));
                         setIsOpen(false);
                       }}
@@ -816,13 +821,16 @@ const DateInputControl = ({
                           ? "var(--feature-brand-on-primary)"
                           : isToday
                             ? "var(--feature-brand-primary)"
-                            : day.isCurrentMonth
-                              ? "var(--neutral-on-surface-primary)"
-                              : "var(--neutral-line-separator-2)",
+                            : isDisabled
+                              ? "var(--neutral-line-separator-2)"
+                              : day.isCurrentMonth
+                                ? "var(--neutral-on-surface-primary)"
+                                : "var(--neutral-line-separator-2)",
                         fontSize: "var(--text-subtitle-1)",
                         fontWeight: isToday || isSelected ? "var(--font-weight-bold)" : "var(--font-weight-regular)",
-                        cursor: "pointer",
+                        cursor: isDisabled ? "not-allowed" : "pointer",
                         position: "relative",
+                        opacity: isDisabled ? 0.4 : 1,
                       }}
                     >
                       {day.day}

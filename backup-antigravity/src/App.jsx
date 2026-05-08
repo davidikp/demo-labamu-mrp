@@ -350,6 +350,454 @@ const LabamuStyles = () => (
   `}</style>
 );
 
+const ModuleRenderer = ({ 
+  location,
+  onNavigate, 
+  t, 
+  isSidebarCollapsed, 
+  poApprovalSettings, 
+  setPoApprovalSettings,
+  showPoSnackbar, 
+  notificationSettings, 
+  setNotificationSettings, 
+  systemNotifications,
+  setSystemNotifications, 
+  handleModuleChange 
+}) => {
+  const { module: moduleRoute, id, subview } = useParams();
+  const activeModule = ROUTE_TO_MODULE[moduleRoute] || moduleRoute?.replace(/-/g, '_');
+  const viewState = { view: (id || "list").replace(/-/g, '_'), data: location.state };
+
+  if (subview === "edit") {
+    viewState.view = "create";
+  }
+
+  if (id && !viewState.data) {
+    viewState.data = { id, poNumber: id, wo: id, material: { sku: id } };
+  }
+
+  const isSpecialView = ["list", "create", "settings", "manage"].includes(viewState.view) || 
+                        activeModule === "analytics" || 
+                        activeModule === "administration" ||
+                        activeModule === "procurement_ap_report" ||
+                        activeModule === "po_report" ||
+                        activeModule === "vendor_liability_report" ||
+                        activeModule === "ap_aging_report";
+
+  if (id && !isSpecialView && !subview) {
+    viewState.view = "detail";
+  } else if (viewState.view === "manage" && activeModule === "materials") {
+    viewState.view = "settings";
+  }
+
+  if (activeModule === "procurement_ap_report") {
+    if (viewState.view === "po_report") {
+      return <POReportPage onNavigate={onNavigate} t={t} />;
+    }
+    if (viewState.view === "vendor_liability_report") {
+      return <VendorLiabilityReportPage onNavigate={onNavigate} t={t} />;
+    }
+    if (viewState.view === "ap_aging_report") {
+      return <APAgingReportPage onNavigate={onNavigate} t={t} />;
+    }
+    return <ProcurementAPReportPage onNavigate={onNavigate} />;
+  }
+
+  if (activeModule === "user_guide") {
+    return (
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          background: "#F5F6FA",
+          height: "100%",
+          overflowY: "auto",
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "900px",
+            margin: "0 auto",
+            padding: "40px 32px 80px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "24px",
+            width: "100%",
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>
+              User Guide
+            </h1>
+            <p style={{ fontSize: "14px", color: "#6B7280", margin: 0 }}>
+              Complete step-by-step guide to using Labamu Manufacturing (MRP)
+            </p>
+          </div>
+
+          {/* Intro Callout */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "12px",
+              padding: "16px 20px",
+              background: "#fff",
+              borderRadius: "12px",
+              border: "1px solid #E5E7EB",
+            }}
+          >
+            <Info size={18} color="#6B7280" style={{ flexShrink: 0, marginTop: "2px" }} />
+            <span style={{ color: "#374151", fontSize: "14px", lineHeight: "1.6" }}>
+              This guide walks you through the entire manufacturing workflow, from setup to production tracking. You can plan, produce, and monitor efficiently.
+            </span>
+          </div>
+
+          {/* Step 1 */}
+          <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "50%", border: "2px solid #4F70E2", flexShrink: 0, padding: "4px" }}>
+                <Check size={14} color="#4F70E2" />
+              </div>
+              <h2 style={{ fontSize: "18px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 1: Getting Started</h2>
+            </div>
+            <p style={{ fontSize: "14px", color: "#6B7280", marginTop: "-8px", margin: 0 }}>Set up your account and understand the basics.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <span style={{ fontSize: "14px", fontWeight: "600", color: "#1A1D23" }}>What you need to know:</span>
+              <ul style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "6px", color: "#4B5563", margin: 0, fontSize: "14px" }}>
+                <li>MRP is automatically available once your business is activated for the Manufacturing app on Labamu.</li>
+                <li>It connects directly with <b>Products</b>, <b>Materials</b>, <b>BOM (Bill of Materials)</b>, and <b>Routing</b>.</li>
+                <li>Each production order follows this flow:</li>
+              </ul>
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px", padding: "12px 16px", background: "#F0F7FF", borderRadius: "10px" }}>
+                {["Material Planning", "RFQ", "Quotes", "Order", "Work Order", "Production Tracking", "Completion"].map((pill, idx, arr) => (
+                  <React.Fragment key={idx}>
+                    <span style={{ background: "#4F70E2", color: "#fff", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>{pill}</span>
+                    {idx < arr.length - 1 && <span style={{ color: "#9CA3AF" }}><ChevronRight size={14} /></span>}
+                  </React.Fragment>
+                ))}
+              </div>
+              <ul style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "6px", color: "#4B5563", margin: 0, fontSize: "14px" }}>
+                <li>Ensure your master data (Products, Materials, BOM, and Routing) is uploaded before creating an Order.</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Step 2 */}
+          <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "50%", border: "2px solid #4F70E2", flexShrink: 0, padding: "4px" }}>
+                <Check size={14} color="#4F70E2" />
+              </div>
+              <h2 style={{ fontSize: "18px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 2: Manage Materials & Batches</h2>
+            </div>
+            <p style={{ fontSize: "14px", color: "#6B7280", marginTop: "-8px", margin: 0 }}>Define all raw materials or components used in your production.</p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <span style={{ fontSize: "14px", fontWeight: "600", color: "#1A1D23" }}>How to Create Materials:</span>
+              <ol style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "6px", color: "#4B5563", margin: 0, fontSize: "14px" }}>
+                <li>Navigate to <b>Manufacturing → Materials</b> in the sidebar.</li>
+                <li>Click <b>New Material</b>.</li>
+                <li>Fill in the details:
+                  <ul style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px", fontSize: "13px" }}>
+                    <li><b>SKU</b> – Auto-generated if left empty.</li>
+                    <li><b>Material Name</b> – (Mandatory) e.g., <i>Steel Plate 2mm</i>.</li>
+                    <li><b>Category</b> – (Mandatory) e.g., <i>Metal</i>, <i>Plastic</i>.</li>
+                    <li><b>ABC Classification</b> – (Mandatory) A = High Value, B = Medium, C = Low.</li>
+                    <li><b>Material Type</b> – (Mandatory) Raw Material, Sub Material, or Consumable.</li>
+                    <li><b>Unit of Measure</b> – (Mandatory) e.g., <i>pcs</i>, <i>kg</i>, <i>mL</i>.</li>
+                  </ul>
+                </li>
+                <li>Click <b>Save</b>.</li>
+              </ol>
+              <div style={{ padding: "16px 18px", background: "#EFF6FF", borderRadius: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                <span style={{ fontSize: "13px", fontWeight: "700", color: "#1A1D23" }}>How to Create Batches:</span>
+                <p style={{ fontSize: "13px", color: "#4B5563", margin: 0 }}>Track stock quantity, expiry, and vendor details for each material via the <b>Stock Batches</b> tab.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 3 & 4 */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 3: Create Routing</h3>
+              <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Define sequence of operations (e.g. Cutting → Assembly → QA).</p>
+              <ol style={{ fontSize: "13px", color: "#4B5563", paddingLeft: "20px" }}>
+                <li>Go to <b>Manufacturing → Routing</b>.</li>
+                <li>Click <b>Add Stage</b>.</li>
+                <li>Enter Name & Save.</li>
+              </ol>
+            </div>
+            <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 4: Create BOM</h3>
+              <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Connect materials and routing steps into a production recipe.</p>
+              <ol style={{ fontSize: "13px", color: "#4B5563", paddingLeft: "20px" }}>
+                <li>Go to <b>Bill of Materials</b>.</li>
+                <li>Assign Materials & Stages.</li>
+                <li>View calculated COGS.</li>
+              </ol>
+            </div>
+          </div>
+
+          {/* Step 5 */}
+          <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "50%", border: "2px solid #4F70E2", flexShrink: 0, padding: "4px" }}>
+                <Check size={14} color="#4F70E2" />
+              </div>
+              <h2 style={{ fontSize: "18px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 5: Create Products</h2>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <p style={{ fontSize: "14px", color: "#4B5563", margin: 0 }}>Define finished goods that will be produced using your BOMs.</p>
+              <div style={{ padding: "14px 16px", background: "#FFF4F4", borderRadius: "10px", border: "1px solid #FFCDD2", display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                <Info size={16} color="#B91C1C" style={{ flexShrink: 0, marginTop: "2px" }} />
+                <span style={{ fontSize: "13px", color: "#B91C1C", fontWeight: "500" }}><b>Critical:</b> Products <u>must</u> have an attached BOM to be used in RFQs, Quotes, or Orders.</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 6 & 7 */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 6: Create RFQ</h3>
+              <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Request procurement from suppliers. Manage up to 5 PICs per request.</p>
+            </div>
+            <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 7: Manage Quotes</h3>
+              <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Create customer quotes with multi-PIC support, T&C, and payment terms.</p>
+            </div>
+          </div>
+
+          {/* Execution: Orders & Work Orders */}
+          <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "50%", border: "2px solid #4F70E2", flexShrink: 0, padding: "4px" }}>
+                <Check size={14} color="#4F70E2" />
+              </div>
+              <h2 style={{ fontSize: "18px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Execution: Orders & Work Orders</h2>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <div style={{ padding: "16px", background: "#F8F9FB", borderRadius: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <span style={{ fontSize: "11px", fontWeight: "700", color: "#4F70E2", background: "#EFF6FF", padding: "2px 8px", borderRadius: "4px", alignSelf: "flex-start" }}>Step 8</span>
+                <span style={{ fontSize: "14px", fontWeight: "700", color: "#1A1D23" }}>Manage Orders</span>
+                <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Confirm orders and track planned vs actual dates. Manage shipment codes for tracking.</p>
+              </div>
+              <div style={{ padding: "16px", background: "#F8F9FB", borderRadius: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <span style={{ fontSize: "11px", fontWeight: "700", color: "#4F70E2", background: "#EFF6FF", padding: "2px 8px", borderRadius: "4px", alignSelf: "flex-start" }}>Step 9</span>
+                <span style={{ fontSize: "14px", fontWeight: "700", color: "#1A1D23" }}>Work Order</span>
+                <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Allocate materials and track routing progress. Production results update inventory.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 10 & Settings */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+            <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 10: Invoicing</h3>
+              <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Create repayment or down payment invoices directly from Orders or Finance menu.</p>
+            </div>
+            <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#6366F1", margin: 0 }}>Admin Settings</h3>
+              <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Manage <b>User Permissions</b>, Groups, and <b>FX Exchange Rates</b> for multi-currency support.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (activeModule === "work_order") {
+    if (viewState.view === "list") {
+      return (
+        <WorkOrderListPage
+          onNavigate={onNavigate}
+          t={t}
+        />
+      );
+    }
+    if (viewState.view === "detail") {
+      return (
+        <WorkOrderDetailPage
+          key={viewState.data?.wo || "work-order-detail"}
+          onNavigate={onNavigate}
+          isSidebarCollapsed={isSidebarCollapsed}
+          initialData={viewState.data}
+        />
+      );
+    }
+    // PurchaseOrderCreatePage is also used by WorkOrder
+    if (viewState.view === "create") {
+      return (
+        <PurchaseOrderCreatePage
+          key={
+            viewState.data?.poNumber ||
+            viewState.data?.workOrder?.wo ||
+            "purchase-order-create"
+          }
+          onNavigate={onNavigate}
+          isSidebarCollapsed={isSidebarCollapsed}
+          initialData={viewState.data}
+          poApprovalSettings={poApprovalSettings}
+          showPoSnackbar={showPoSnackbar}
+        />
+      );
+    }
+    if (viewState.view === "po_detail") {
+      return (
+        <PurchaseOrderDetailPage
+          key={(typeof viewState.data === "string" ? viewState.data : viewState.data?.poNumber) || "purchase-order-detail"}
+          onNavigate={onNavigate}
+          initialData={viewState.data}
+          poApprovalSettings={poApprovalSettings}
+          isSidebarCollapsed={isSidebarCollapsed}
+          showPoSnackbar={showPoSnackbar}
+        />
+      );
+    }
+  }
+  if (activeModule === "purchase_order") {
+    if (viewState.view === "list") {
+      return (
+        <PurchaseOrderListPage
+          onNavigate={onNavigate}
+          t={t}
+        />
+      );
+    }
+    if (viewState.view === "settings") {
+      return (
+        <PurchaseOrderSettingsPage
+          onNavigate={onNavigate}
+          isSidebarCollapsed={isSidebarCollapsed}
+          poApprovalSettings={poApprovalSettings}
+          onSaveSettings={(settings) => {
+            setPoApprovalSettings(settings);
+            showPoSnackbar("Purchase order settings successfully saved", "success");
+            onNavigate("list");
+          }}
+        />
+      );
+    }
+    if (viewState.view === "create") {
+      return (
+        <PurchaseOrderCreatePage
+          key={
+            viewState.data?.poNumber ||
+            viewState.data?.workOrder?.wo ||
+            "purchase-order-create"
+          }
+          onNavigate={onNavigate}
+          isSidebarCollapsed={isSidebarCollapsed}
+          initialData={viewState.data}
+          poApprovalSettings={poApprovalSettings}
+          showPoSnackbar={showPoSnackbar}
+        />
+      );
+    }
+    if (viewState.view === "detail" || viewState.view === "po_detail") {
+      return (
+        <PurchaseOrderDetailPage
+          key={viewState.data?.poNumber || viewState.view || "purchase-order-detail"}
+          onNavigate={onNavigate}
+          initialData={viewState.data}
+          poApprovalSettings={poApprovalSettings}
+          isSidebarCollapsed={isSidebarCollapsed}
+          showPoSnackbar={showPoSnackbar}
+        />
+      );
+    }
+  }
+  if (activeModule === "orders") {
+    if (viewState.view === "list") {
+      return (
+        <OrderListPage
+          onNavigate={onNavigate}
+          t={t}
+        />
+      );
+    }
+    if (viewState.view === "detail") {
+      return (
+        <OrderDetailPage
+          onNavigate={onNavigate}
+          initialData={viewState.data}
+          showSnackbar={showPoSnackbar}
+        />
+      );
+    }
+  }
+  if (activeModule === "user_management" || (activeModule === "administration" && viewState.view === "user_management")) {
+    return (
+      <UserManagementPage
+        isSidebarCollapsed={isSidebarCollapsed}
+      />
+    );
+  }
+  if (activeModule === "notification_settings" || (activeModule === "administration" && viewState.view === "notification_settings")) {
+    return (
+      <NotificationSettingsPage
+        isSidebarCollapsed={isSidebarCollapsed}
+        notificationSettings={notificationSettings}
+        onSaveNotificationSettings={(settings) =>
+          setNotificationSettings(settings)
+        }
+      />
+    );
+  }
+  if (activeModule === "materials") {
+    if (viewState.view === "list") {
+      return (
+        <MaterialsListPage
+          onNavigate={onNavigate}
+          showSnackbar={showPoSnackbar}
+          t={t}
+        />
+      );
+    }
+    if (viewState.view === "settings" || viewState.view === "manage") {
+      return (
+        <MaterialManagePage
+          onNavigate={onNavigate}
+          showSnackbar={showPoSnackbar}
+          t={t}
+        />
+      );
+    }
+    if (viewState.view !== "list") {
+      return (
+        <MaterialDetailPage
+          material={viewState.data}
+          onNavigate={onNavigate}
+          showSnackbar={showPoSnackbar}
+          t={t}
+        />
+      );
+    }
+  }
+
+  return (
+    <div
+      style={{
+        padding: "24px",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100%",
+      }}
+    >
+      <span
+        style={{
+          color: "var(--neutral-on-surface-tertiary)",
+          fontSize: "var(--text-title-2)",
+        }}
+      >
+        {t("message.under_construction")}
+      </span>
+    </div>
+  );
+};
+
 export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -471,12 +919,14 @@ export default function App() {
         return;
       }
       if (view === "detail" || view === "po_detail") {
-        const id = (data?.sku || data?.poNumber || data?.wo || data?.id || "detail");
+        const id = (data?.orderNo || data?.sku || data?.poNumber || data?.wo || data?.id || "detail");
         let targetModule = currentModuleRoute;
         
         // Ensure POs always use the purchase-order module route
         if (view === "po_detail" || (typeof id === "string" && id.startsWith("PO-"))) {
           targetModule = "purchase-order";
+        } else if ((view === "detail" || view === "order_detail") && (typeof id === "string" && id.startsWith("ORD-"))) {
+          targetModule = "orders";
         } else if (view === "detail" && (typeof id === "string" && id.startsWith("WO-"))) {
           targetModule = "work-order";
         }
@@ -515,441 +965,6 @@ export default function App() {
       // Direct moduleId as route if not mapped
       navigate(`/${moduleId.replace(/_/g, '-')}`);
     }
-  };
-
-  const ModuleRenderer = () => {
-    const { module: moduleRoute, id, subview } = useParams();
-    const activeModule = ROUTE_TO_MODULE[moduleRoute] || moduleRoute?.replace(/-/g, '_');
-    const viewState = { view: (id || "list").replace(/-/g, '_'), data: location.state };
-
-    if (subview === "edit") {
-      viewState.view = "create";
-    }
-
-    // Normalize viewState based on known routes
-    const isSpecialView = ["list", "create", "settings", "manage"].includes(viewState.view) || 
-                          activeModule === "analytics" || 
-                          activeModule === "administration" ||
-                          activeModule === "procurement_ap_report" ||
-                          activeModule === "po_report" ||
-                          activeModule === "vendor_liability_report" ||
-                          activeModule === "ap_aging_report";
-
-    if (id && !viewState.data) {
-      viewState.data = { id, poNumber: id, wo: id, material: { sku: id } };
-    }
-
-    if (id && !isSpecialView && !subview) {
-      viewState.view = "detail";
-    } else if (viewState.view === "manage" && activeModule === "materials") {
-      viewState.view = "settings";
-    }
-
-    if (activeModule === "procurement_ap_report") {
-      if (viewState.view === "po_report") {
-        return <POReportPage onNavigate={onNavigate} t={t} />;
-      }
-      if (viewState.view === "vendor_liability_report") {
-        return <VendorLiabilityReportPage onNavigate={onNavigate} t={t} />;
-      }
-      if (viewState.view === "ap_aging_report") {
-        return <APAgingReportPage onNavigate={onNavigate} t={t} />;
-      }
-      return <ProcurementAPReportPage onNavigate={onNavigate} />;
-    }
-
-    if (activeModule === "user_guide") {
-      return (
-        <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            background: "#F5F6FA",
-            height: "100%",
-            overflowY: "auto",
-          }}
-        >
-          <div
-            style={{
-              maxWidth: "900px",
-              margin: "0 auto",
-              padding: "40px 32px 80px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "24px",
-              width: "100%",
-            }}
-          >
-            {/* Header */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <h1 style={{ fontSize: "28px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>
-                User Guide
-              </h1>
-              <p style={{ fontSize: "14px", color: "#6B7280", margin: 0 }}>
-                Complete step-by-step guide to using Labamu Manufacturing (MRP)
-              </p>
-            </div>
-
-            {/* Intro Callout */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "12px",
-                padding: "16px 20px",
-                background: "#fff",
-                borderRadius: "12px",
-                border: "1px solid #E5E7EB",
-              }}
-            >
-              <Info size={18} color="#6B7280" style={{ flexShrink: 0, marginTop: "2px" }} />
-              <span style={{ color: "#374151", fontSize: "14px", lineHeight: "1.6" }}>
-                This guide walks you through the entire manufacturing workflow, from setup to production tracking. You can plan, produce, and monitor efficiently.
-              </span>
-            </div>
-
-            {/* Step 1 */}
-            <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "18px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "50%", border: "2px solid #4F70E2", flexShrink: 0, padding: "4px" }}>
-                  <Check size={14} color="#4F70E2" />
-                </div>
-                <h2 style={{ fontSize: "18px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 1: Getting Started</h2>
-              </div>
-              <p style={{ fontSize: "14px", color: "#6B7280", marginTop: "-8px", margin: 0 }}>Set up your account and understand the basics.</p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <span style={{ fontSize: "14px", fontWeight: "600", color: "#1A1D23" }}>What you need to know:</span>
-                <ul style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "6px", color: "#4B5563", margin: 0, fontSize: "14px" }}>
-                  <li>MRP is automatically available once your business is activated for the Manufacturing app on Labamu.</li>
-                  <li>It connects directly with <b>Products</b>, <b>Materials</b>, <b>BOM (Bill of Materials)</b>, and <b>Routing</b>.</li>
-                  <li>Each production order follows this flow:</li>
-                </ul>
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px", padding: "12px 16px", background: "#F0F7FF", borderRadius: "10px" }}>
-                  {["Material Planning", "RFQ", "Quotes", "Order", "Work Order", "Production Tracking", "Completion"].map((pill, idx, arr) => (
-                    <React.Fragment key={idx}>
-                      <span style={{ background: "#4F70E2", color: "#fff", padding: "4px 12px", borderRadius: "20px", fontSize: "12px", fontWeight: "600" }}>{pill}</span>
-                      {idx < arr.length - 1 && <span style={{ color: "#9CA3AF" }}><ChevronRight size={14} /></span>}
-                    </React.Fragment>
-                  ))}
-                </div>
-                <ul style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "6px", color: "#4B5563", margin: 0, fontSize: "14px" }}>
-                  <li>Ensure your master data (Products, Materials, BOM, and Routing) is uploaded before creating an Order.</li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Step 2 */}
-            <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "18px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "50%", border: "2px solid #4F70E2", flexShrink: 0, padding: "4px" }}>
-                  <Check size={14} color="#4F70E2" />
-                </div>
-                <h2 style={{ fontSize: "18px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 2: Manage Materials & Batches</h2>
-              </div>
-              <p style={{ fontSize: "14px", color: "#6B7280", marginTop: "-8px", margin: 0 }}>Define all raw materials or components used in your production.</p>
-
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <span style={{ fontSize: "14px", fontWeight: "600", color: "#1A1D23" }}>How to Create Materials:</span>
-                <ol style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "6px", color: "#4B5563", margin: 0, fontSize: "14px" }}>
-                  <li>Navigate to <b>Manufacturing → Materials</b> in the sidebar.</li>
-                  <li>Click <b>New Material</b>.</li>
-                  <li>Fill in the details:
-                    <ul style={{ paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "4px", marginTop: "4px", fontSize: "13px" }}>
-                      <li><b>SKU</b> – Auto-generated if left empty.</li>
-                      <li><b>Material Name</b> – (Mandatory) e.g., <i>Steel Plate 2mm</i>.</li>
-                      <li><b>Category</b> – (Mandatory) e.g., <i>Metal</i>, <i>Plastic</i>.</li>
-                      <li><b>ABC Classification</b> – (Mandatory) A = High Value, B = Medium, C = Low.</li>
-                      <li><b>Material Type</b> – (Mandatory) Raw Material, Sub Material, or Consumable.</li>
-                      <li><b>Unit of Measure</b> – (Mandatory) e.g., <i>pcs</i>, <i>kg</i>, <i>mL</i>.</li>
-                    </ul>
-                  </li>
-                  <li>Click <b>Save</b>.</li>
-                </ol>
-                <div style={{ padding: "16px 18px", background: "#EFF6FF", borderRadius: "10px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "700", color: "#1A1D23" }}>How to Create Batches:</span>
-                  <p style={{ fontSize: "13px", color: "#4B5563", margin: 0 }}>Track stock quantity, expiry, and vendor details for each material via the <b>Stock Batches</b> tab.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 3 & 4 */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 3: Create Routing</h3>
-                <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Define sequence of operations (e.g. Cutting → Assembly → QA).</p>
-                <ol style={{ fontSize: "13px", color: "#4B5563", paddingLeft: "20px" }}>
-                  <li>Go to <b>Manufacturing → Routing</b>.</li>
-                  <li>Click <b>Add Stage</b>.</li>
-                  <li>Enter Name & Save.</li>
-                </ol>
-              </div>
-              <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 4: Create BOM</h3>
-                <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Connect materials and routing steps into a production recipe.</p>
-                <ol style={{ fontSize: "13px", color: "#4B5563", paddingLeft: "20px" }}>
-                  <li>Go to <b>Bill of Materials</b>.</li>
-                  <li>Assign Materials & Stages.</li>
-                  <li>View calculated COGS.</li>
-                </ol>
-              </div>
-            </div>
-
-            {/* Step 5 */}
-            <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "18px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "50%", border: "2px solid #4F70E2", flexShrink: 0, padding: "4px" }}>
-                  <Check size={14} color="#4F70E2" />
-                </div>
-                <h2 style={{ fontSize: "18px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 5: Create Products</h2>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                <p style={{ fontSize: "14px", color: "#4B5563", margin: 0 }}>Define finished goods that will be produced using your BOMs.</p>
-                <div style={{ padding: "14px 16px", background: "#FFF4F4", borderRadius: "10px", border: "1px solid #FFCDD2", display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                  <Info size={16} color="#B91C1C" style={{ flexShrink: 0, marginTop: "2px" }} />
-                  <span style={{ fontSize: "13px", color: "#B91C1C", fontWeight: "500" }}><b>Critical:</b> Products <u>must</u> have an attached BOM to be used in RFQs, Quotes, or Orders.</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 6 & 7 */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 6: Create RFQ</h3>
-                <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Request procurement from suppliers. Manage up to 5 PICs per request.</p>
-              </div>
-              <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 7: Manage Quotes</h3>
-                <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Create customer quotes with multi-PIC support, T&C, and payment terms.</p>
-              </div>
-            </div>
-
-            {/* Step 8 & 9 */}
-            <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "18px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "28px", height: "28px", borderRadius: "50%", border: "2px solid #4F70E2", flexShrink: 0, padding: "4px" }}>
-                  <Check size={14} color="#4F70E2" />
-                </div>
-                <h2 style={{ fontSize: "18px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Execution: Orders & Work Orders</h2>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                <div style={{ padding: "16px", background: "#F8F9FB", borderRadius: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#4F70E2", background: "#EFF6FF", padding: "2px 8px", borderRadius: "4px", alignSelf: "flex-start" }}>Step 8</span>
-                  <span style={{ fontSize: "14px", fontWeight: "700", color: "#1A1D23" }}>Manage Orders</span>
-                  <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Confirm orders and track planned vs actual dates. Manage shipment codes for tracking.</p>
-                </div>
-                <div style={{ padding: "16px", background: "#F8F9FB", borderRadius: "12px", display: "flex", flexDirection: "column", gap: "8px" }}>
-                  <span style={{ fontSize: "11px", fontWeight: "700", color: "#4F70E2", background: "#EFF6FF", padding: "2px 8px", borderRadius: "4px", alignSelf: "flex-start" }}>Step 9</span>
-                  <span style={{ fontSize: "14px", fontWeight: "700", color: "#1A1D23" }}>Work Order</span>
-                  <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Allocate materials and track routing progress. Production results update inventory.</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 10 & Settings */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#1A1D23", margin: 0 }}>Step 10: Invoicing</h3>
-                <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Create repayment or down payment invoices directly from Orders or Finance menu.</p>
-              </div>
-              <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", padding: "24px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: "700", color: "#6366F1", margin: 0 }}>Admin Settings</h3>
-                <p style={{ fontSize: "13px", color: "#6B7280", margin: 0 }}>Manage <b>User Permissions</b>, Groups, and <b>FX Exchange Rates</b> for multi-currency support.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (activeModule === "work_order") {
-      if (viewState.view === "list") {
-        return (
-          <WorkOrderListPage
-            onNavigate={onNavigate}
-            t={t}
-          />
-        );
-      }
-      if (viewState.view === "detail") {
-        return (
-          <WorkOrderDetailPage
-            key={viewState.data?.wo || "work-order-detail"}
-            onNavigate={onNavigate}
-            isSidebarCollapsed={isSidebarCollapsed}
-            initialData={viewState.data}
-          />
-        );
-      }
-      // PurchaseOrderCreatePage is also used by WorkOrder
-      if (viewState.view === "create") {
-        return (
-          <PurchaseOrderCreatePage
-            key={
-              viewState.data?.poNumber ||
-              viewState.data?.workOrder?.wo ||
-              "purchase-order-create"
-            }
-            onNavigate={onNavigate}
-            isSidebarCollapsed={isSidebarCollapsed}
-            initialData={viewState.data}
-            poApprovalSettings={poApprovalSettings}
-            showPoSnackbar={showPoSnackbar}
-          />
-        );
-      }
-      if (viewState.view === "po_detail") {
-        return (
-          <PurchaseOrderDetailPage
-            key={(typeof viewState.data === "string" ? viewState.data : viewState.data?.poNumber) || "purchase-order-detail"}
-            onNavigate={onNavigate}
-            initialData={viewState.data}
-            poApprovalSettings={poApprovalSettings}
-            isSidebarCollapsed={isSidebarCollapsed}
-            showPoSnackbar={showPoSnackbar}
-          />
-        );
-      }
-    }
-    if (activeModule === "purchase_order") {
-      if (viewState.view === "list") {
-        return (
-          <PurchaseOrderListPage
-            onNavigate={onNavigate}
-            t={t}
-          />
-        );
-      }
-      if (viewState.view === "settings") {
-        return (
-          <PurchaseOrderSettingsPage
-            onNavigate={onNavigate}
-            isSidebarCollapsed={isSidebarCollapsed}
-            poApprovalSettings={poApprovalSettings}
-            onSaveSettings={(settings) => {
-              setPoApprovalSettings(settings);
-              showPoSnackbar("Purchase order settings successfully saved", "success");
-              onNavigate("list");
-            }}
-          />
-        );
-      }
-      if (viewState.view === "create") {
-        return (
-          <PurchaseOrderCreatePage
-            key={
-              viewState.data?.poNumber ||
-              viewState.data?.workOrder?.wo ||
-              "purchase-order-create"
-            }
-            onNavigate={onNavigate}
-            isSidebarCollapsed={isSidebarCollapsed}
-            initialData={viewState.data}
-            poApprovalSettings={poApprovalSettings}
-            showPoSnackbar={showPoSnackbar}
-          />
-        );
-      }
-      if (viewState.view === "detail" || viewState.view === "po_detail") {
-        return (
-          <PurchaseOrderDetailPage
-            key={viewState.data?.poNumber || viewState.view || "purchase-order-detail"}
-            onNavigate={onNavigate}
-            initialData={viewState.data}
-            poApprovalSettings={poApprovalSettings}
-            isSidebarCollapsed={isSidebarCollapsed}
-            showPoSnackbar={showPoSnackbar}
-          />
-        );
-      }
-    }
-    if (activeModule === "orders") {
-      if (viewState.view === "list") {
-        return (
-          <OrderListPage
-            onNavigate={onNavigate}
-            t={t}
-          />
-        );
-      }
-      if (viewState.view === "detail") {
-        return (
-          <OrderDetailPage
-            onNavigate={onNavigate}
-            initialData={viewState.data}
-          />
-        );
-      }
-    }
-    if (activeModule === "user_management" || (activeModule === "administration" && viewState.view === "user_management")) {
-      return (
-        <UserManagementPage
-          isSidebarCollapsed={isSidebarCollapsed}
-        />
-      );
-    }
-    if (activeModule === "notification_settings" || (activeModule === "administration" && viewState.view === "notification_settings")) {
-      return (
-        <NotificationSettingsPage
-          isSidebarCollapsed={isSidebarCollapsed}
-          notificationSettings={notificationSettings}
-          onSaveNotificationSettings={(settings) =>
-            setNotificationSettings(settings)
-          }
-        />
-      );
-    }
-    if (activeModule === "materials") {
-      if (viewState.view === "list") {
-        return (
-          <MaterialsListPage
-            onNavigate={onNavigate}
-            showSnackbar={showPoSnackbar}
-            t={t}
-          />
-        );
-      }
-      if (viewState.view === "settings" || viewState.view === "manage") {
-        return (
-          <MaterialManagePage
-            onNavigate={onNavigate}
-            showSnackbar={showPoSnackbar}
-            t={t}
-          />
-        );
-      }
-      if (viewState.view !== "list") {
-        return (
-          <MaterialDetailPage
-            material={viewState.data}
-            onNavigate={onNavigate}
-            showSnackbar={showPoSnackbar}
-            t={t}
-          />
-        );
-      }
-    }
-
-    return (
-      <div
-        style={{
-          padding: "24px",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100%",
-        }}
-      >
-        <span
-          style={{
-            color: "var(--neutral-on-surface-tertiary)",
-            fontSize: "var(--text-title-2)",
-          }}
-        >
-          {t("message.under_construction")}
-        </span>
-      </div>
-    );
   };
 
   const pathParts = location.pathname.split("/").filter(Boolean);
@@ -1058,9 +1073,54 @@ export default function App() {
           )}
           <Routes>
             <Route path="/" element={<Navigate to="/work-order" replace />} />
-            <Route path="/:module" element={<ModuleRenderer />} />
-            <Route path="/:module/:id" element={<ModuleRenderer />} />
-            <Route path="/:module/:id/:subview" element={<ModuleRenderer />} />
+            <Route path="/:module" element={
+              <ModuleRenderer 
+                location={location}
+                onNavigate={onNavigate}
+                t={t}
+                isSidebarCollapsed={isSidebarCollapsed}
+                poApprovalSettings={poApprovalSettings}
+                setPoApprovalSettings={setPoApprovalSettings}
+                showPoSnackbar={showPoSnackbar}
+                notificationSettings={notificationSettings}
+                setNotificationSettings={setNotificationSettings}
+                systemNotifications={systemNotifications}
+                setSystemNotifications={setSystemNotifications}
+                handleModuleChange={handleModuleChange}
+              />
+            } />
+            <Route path="/:module/:id" element={
+              <ModuleRenderer 
+                location={location}
+                onNavigate={onNavigate}
+                t={t}
+                isSidebarCollapsed={isSidebarCollapsed}
+                poApprovalSettings={poApprovalSettings}
+                setPoApprovalSettings={setPoApprovalSettings}
+                showPoSnackbar={showPoSnackbar}
+                notificationSettings={notificationSettings}
+                setNotificationSettings={setNotificationSettings}
+                systemNotifications={systemNotifications}
+                setSystemNotifications={setSystemNotifications}
+                handleModuleChange={handleModuleChange}
+              />
+            } />
+            <Route path="/:module/:id/:subview" element={
+              <ModuleRenderer 
+                location={location}
+                onNavigate={onNavigate}
+                t={t}
+                isSidebarCollapsed={isSidebarCollapsed}
+                poApprovalSettings={poApprovalSettings}
+                setPoApprovalSettings={setPoApprovalSettings}
+                showPoSnackbar={showPoSnackbar}
+                notificationSettings={notificationSettings}
+                setNotificationSettings={setNotificationSettings}
+                systemNotifications={systemNotifications}
+                setSystemNotifications={setSystemNotifications}
+                handleModuleChange={handleModuleChange}
+              />
+            } />
             <Route path="*" element={
               <div style={{ padding: "40px", textAlign: "center" }}>
                 <h2>404 - Page Not Found</h2>

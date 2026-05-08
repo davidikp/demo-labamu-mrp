@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Settings } from "../../../components/icons/Icons.jsx";
+import { Settings, ChevronDownIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
 import { FilterPill } from "../../../components/common/FilterPill.jsx";
@@ -34,6 +34,8 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
+  const [sortBy, setSortBy] = useState("wo");
+  const [sortDirection, setSortDirection] = useState("desc");
   const statusCards = [
     {
       key: "not_started",
@@ -62,15 +64,15 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
     },
   ];
   const tableColumns = [
-    { label: "Work Order No.", flex: "1.6" },
-    { label: "Order Number", flex: "1.6" },
-    { label: "Product", flex: "1.4" },
-    { label: "Qty", flex: "0.6" },
-    { label: "Priority", flex: "0.8" },
-    { label: "Planned Start Date", flex: "1.2" },
-    { label: "Planned End Date", flex: "1.2" },
-    { label: "Created By", flex: "1" },
-    { label: "Status", flex: "1.2" },
+    { label: "Work Order No.", key: "wo", flex: "1.6", sortable: true },
+    { label: "Order Number", key: "ord", flex: "1.6", sortable: true },
+    { label: "Product", key: "product", flex: "1.4", sortable: true },
+    { label: "Qty", key: "qty", flex: "0.6", sortable: false },
+    { label: "Priority", key: "priority", flex: "0.8", sortable: false },
+    { label: "Planned Start Date", key: "start", flex: "1.2", sortable: false },
+    { label: "Planned End Date", key: "end", flex: "1.2", sortable: false },
+    { label: "Created By", key: "createdBy", flex: "1", sortable: false },
+    { label: "Status", key: "status", flex: "1.2", sortable: false },
   ];
   const statusCounts = statusCards.reduce((acc, card) => {
     acc[card.key] = MOCK_WO_TABLE_DATA.filter(
@@ -119,6 +121,15 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
     );
   };
 
+  const toggleSort = (key) => {
+    if (sortBy === key) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(key);
+      setSortDirection("asc");
+    }
+  };
+
   const filteredRows = MOCK_WO_TABLE_DATA.filter((row) => {
     const haystack =
       `${row.wo} ${row.ord} ${row.product} ${row.createdBy} ${row.priority}`.toLowerCase();
@@ -149,6 +160,14 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
       matchesStartDate &&
       matchesEndDate
     );
+  }).sort((a, b) => {
+    const direction = sortDirection === "asc" ? 1 : -1;
+    const aValue = a[sortBy] || "";
+    const bValue = b[sortBy] || "";
+    if (typeof aValue === "string") {
+      return aValue.localeCompare(bValue) * direction;
+    }
+    return (aValue - bValue) * direction;
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
@@ -172,6 +191,8 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
     endDateRange.start,
     endDateRange.end,
     rowsPerPage,
+    sortBy,
+    sortDirection,
   ]);
 
   useEffect(() => {
@@ -530,6 +551,7 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
               {tableColumns.map((col, idx) => (
                 <div
                   key={idx}
+                  onClick={() => col.sortable && toggleSort(col.key)}
                   style={{
                     flex: col.flex,
                     minWidth: 0,
@@ -537,9 +559,11 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
                     padding: "0 12px",
                     display: "flex",
                     alignItems: "center",
+                    gap: "6px",
                     fontSize: "var(--text-title-3)",
                     fontWeight: "var(--font-weight-bold)",
                     color: "var(--neutral-on-surface-primary)",
+                    cursor: col.sortable ? "pointer" : "default",
                   }}
                 >
                   <span
@@ -551,6 +575,23 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
                   >
                     {col.label}
                   </span>
+                  {col.sortable && (
+                    <ChevronDownIcon
+                      size={14}
+                      color={
+                        sortBy === col.key
+                          ? "var(--feature-brand-primary)"
+                          : "var(--neutral-on-surface-tertiary)"
+                      }
+                      style={{
+                        transform:
+                          sortBy === col.key && sortDirection === "asc"
+                            ? "rotate(180deg)"
+                            : "rotate(0deg)",
+                        transition: "transform 0.2s",
+                      }}
+                    />
+                  )}
                 </div>
               ))}
             </div>

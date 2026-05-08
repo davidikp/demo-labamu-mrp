@@ -13,6 +13,7 @@ const GeneralModal = ({
   showCloseButton = true,
   centeredHeader = true,
   zIndex = 5000,
+  noPadding = false,
 }) => {
   if (!isOpen) return null;
   const hasChildren = React.Children.count(children) > 0;
@@ -28,6 +29,8 @@ const GeneralModal = ({
         className="ds-modal-shell"
         style={{
           "--ds-modal-width": width,
+          padding: noPadding ? "0" : undefined,
+          gap: noPadding ? "0" : undefined,
         }}
       >
         {showCloseButton ? (
