@@ -6,7 +6,8 @@ import {
   DownloadIcon,
   ChevronDownIcon,
   FileIcon,
-  CloseIcon
+  CloseIcon,
+  AddIcon
 } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
@@ -461,8 +462,11 @@ const AddBatchToInvoiceModal = ({ isOpen, onClose, batches, showSnackbar }) => {
     >
       <div style={{ display: "flex", height: "80vh" }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          <div style={{ padding: "64px 24px 24px", background: "white", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <span style={{ fontSize: "20px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Add Batch Documents to Invoice</span>
+          <div style={{ padding: "40px 24px 8px", background: "white", display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0, gap: "8px" }}>
+            <span style={{ fontSize: "20px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)", textAlign: "center" }}>Add Batch Documents to Invoice</span>
+            <span style={{ fontSize: "14px", color: "var(--neutral-on-surface-tertiary)", textAlign: "center", maxWidth: "480px" }}>
+              Selected documents will be packaged into a ZIP file and attached to the invoice
+            </span>
           </div>
 
           <div style={{ flex: 1, padding: "24px", display: "flex", flexDirection: "column", gap: "24px", overflowY: "auto" }}>
@@ -493,7 +497,7 @@ const AddBatchToInvoiceModal = ({ isOpen, onClose, batches, showSnackbar }) => {
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ 
                 display: "grid", 
-                gridTemplateColumns: "48px 1.5fr 1.5fr 1fr", 
+                gridTemplateColumns: "48px 1.5fr 1fr", 
                 borderBottom: "1px solid var(--neutral-line-separator-1)", 
                 padding: "12px 0",
                 alignItems: "center"
@@ -509,47 +513,83 @@ const AddBatchToInvoiceModal = ({ isOpen, onClose, batches, showSnackbar }) => {
                 </div>
                 <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Document</span>
                 <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Batch</span>
-                <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Status</span>
               </div>
               
               <div style={{ display: "flex", flexDirection: "column" }}>
-                {allDocuments.map(doc => {
-                  const isLinked = selectedInvoice === "INV-20240401" && (doc.id === "doc1" || doc.id === "doc2"); // Simulated linkage
-                  return (
-                    <div key={doc.id} style={{ 
-                      display: "grid", 
-                      gridTemplateColumns: "48px 1.5fr 1.5fr 1fr", 
-                      padding: "16px 0", 
-                      borderBottom: "1px solid var(--neutral-line-separator-1)", 
-                      alignItems: "center" 
-                    }}>
-                      <div style={{ display: "flex", justifyContent: "center" }}>
-                        <Checkbox 
-                          checked={selectedDocIds.includes(doc.id)} 
-                          onChange={() => {
-                            setSelectedDocIds(prev => prev.includes(doc.id) ? prev.filter(id => id !== doc.id) : [...prev, doc.id]);
-                          }} 
-                        />
+                {batches.length > 0 && (
+                  <div style={{ 
+                    display: "grid", 
+                    gridTemplateColumns: "48px 1.5fr 1fr", 
+                    padding: "16px 0", 
+                    borderBottom: "1px solid var(--neutral-line-separator-1)", 
+                    alignItems: "center",
+                    background: "white"
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      <Checkbox 
+                        checked={true} 
+                        onChange={() => {}} 
+                        disabled={true}
+                      />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Batch Data Export</span>
+                        <div style={{ padding: "2px 6px", background: "#E8F5E9", borderRadius: "4px", fontSize: "10px", color: "#2E7D32", fontWeight: "bold" }}>Excel File</div>
                       </div>
+                      <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>
+                        Exported traceability data for the selected {batches.length > 1 ? "batches" : "batch"}.
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>
+                        {batches.length > 1 ? `${batches.length} Batches` : batches[0].batchNo}
+                      </span>
                       <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                        <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{doc.description || doc.file?.name}</span>
-                        <span style={{ fontSize: "12px", color: "var(--feature-brand-primary)" }}>{doc.file?.name}</span>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                        <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{doc.batchNo}</span>
-                        <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>{doc.materialName}</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center" }}>
-                        <StatusBadge variant={isLinked ? "green" : "grey"}>
-                          {isLinked ? "Linked" : "Not Linked"}
-                        </StatusBadge>
+                        {batches.length > 1 ? batches.map((b, i) => (
+                          <span key={i} style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>
+                            {b.batchNo}
+                          </span>
+                        )) : (
+                          <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>
+                            {batches[0].material.name}
+                          </span>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
+                  </div>
+                )}
+
+                {allDocuments.map(doc => (
+                  <div key={doc.id} style={{ 
+                    display: "grid", 
+                    gridTemplateColumns: "48px 1.5fr 1fr", 
+                    padding: "16px 0", 
+                    borderBottom: "1px solid var(--neutral-line-separator-1)", 
+                    alignItems: "center" 
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "center" }}>
+                      <Checkbox 
+                        checked={selectedDocIds.includes(doc.id)} 
+                        onChange={() => {
+                          setSelectedDocIds(prev => prev.includes(doc.id) ? prev.filter(id => id !== doc.id) : [...prev, doc.id]);
+                        }} 
+                      />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{doc.description || doc.file?.name}</span>
+                      <span style={{ fontSize: "12px", color: "var(--feature-brand-primary)" }}>{doc.file?.name}</span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{doc.batchNo}</span>
+                      <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>{doc.materialName}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
+          <div style={{ height: "24px", flexShrink: 0 }} />
           <div style={{ padding: "0 24px 24px", background: "white", display: "flex", flexDirection: "column", gap: "16px", flexShrink: 0 }}>
             {showDocError && (
               <div style={{ 
@@ -619,6 +659,7 @@ export const TraceabilityTab = ({ onNavigate, showSnackbar }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [selectedRowIds, setSelectedRowIds] = useState([]);
+  const [selectionError, setSelectionError] = useState("");
   
   const [materialFilter, setMaterialFilter] = useState([]);
   const [productFilter, setProductFilter] = useState([]);
@@ -639,7 +680,7 @@ export const TraceabilityTab = ({ onNavigate, showSnackbar }) => {
   }, []);
 
   const productOptions = useMemo(() => {
-    return [...new Set(MOCK_TRACEABILITY_DATA.map(item => item.product.name))];
+    return [...new Set(MOCK_TRACEABILITY_DATA.flatMap(item => (item.products || []).map(p => p.name)))];
   }, []);
 
   const filteredData = useMemo(() => {
@@ -651,9 +692,8 @@ export const TraceabilityTab = ({ onNavigate, showSnackbar }) => {
         item.batchNo.toLowerCase().includes(q) ||
         item.material.name.toLowerCase().includes(q) ||
         item.material.sku.toLowerCase().includes(q) ||
-        item.workOrderNo.toLowerCase().includes(q) ||
-        item.product.name.toLowerCase().includes(q) ||
-        item.product.sku.toLowerCase().includes(q)
+        (item.workOrderNos || []).some(wo => wo.toLowerCase().includes(q)) ||
+        (item.products || []).some(p => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))
       );
     }
 
@@ -662,7 +702,7 @@ export const TraceabilityTab = ({ onNavigate, showSnackbar }) => {
     }
 
     if (productFilter.length > 0) {
-      result = result.filter(item => productFilter.includes(item.product.name));
+      result = result.filter(item => (item.products || []).some(p => productFilter.includes(p.name)));
     }
 
     return result;
@@ -671,7 +711,7 @@ export const TraceabilityTab = ({ onNavigate, showSnackbar }) => {
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const visibleData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
-  const gridTemplate = "48px 1fr 1.5fr 1fr 1.5fr 0.8fr 1.5fr 1.2fr";
+  const gridTemplate = "48px 1.5fr 1fr 1fr 1.5fr 0.8fr 1.5fr";
   const rowHeight = 72;
 
   return (
@@ -685,214 +725,122 @@ export const TraceabilityTab = ({ onNavigate, showSnackbar }) => {
         overflow: "hidden"
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
-          {selectedRowIds.length > 0 ? (
-            <div style={{ 
-              flex: 1, 
-              display: "flex", 
-              alignItems: "center", 
-              justifyContent: "space-between",
-              background: "rgba(0, 107, 255, 0.05)",
-              borderRadius: "var(--radius-card)",
-              padding: "8px 16px 8px 12px",
-              height: "44px"
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div 
-                  onClick={() => setSelectedRowIds([])}
-                  style={{ cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", width: "24px", height: "24px" }}
-                >
-                  <CloseIcon size={18} color="var(--neutral-on-surface-primary)" />
-                </div>
-                <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{selectedRowIds.length} selected</span>
-              </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <div style={{ position: "relative" }}>
-                  <Button 
-                    variant="outlined" 
-                    size="small" 
-                    leftIcon={DownloadIcon} 
-                    rightIcon={ChevronDownIcon}
-                    onClick={(e) => {
-                      setBulkDownloadTriggerRect(e.currentTarget.getBoundingClientRect());
-                      setIsBulkDownloadOpen(!isBulkDownloadOpen);
-                    }}
-                  >
-                    Download
-                  </Button>
-                  {isBulkDownloadOpen && (
-                    <>
-                      {createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setIsBulkDownloadOpen(false)} />, document.body)}
-                      {createPortal(
-                        <div style={{
-                          position: "fixed",
-                          top: `${bulkDownloadTriggerRect.bottom + 8}px`,
-                          left: `${bulkDownloadTriggerRect.left}px`,
-                          width: "240px",
-                          background: "var(--neutral-surface-primary)",
-                          border: "1px solid var(--neutral-line-separator-1)",
-                          borderRadius: "12px",
-                          boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                          padding: "8px",
-                          zIndex: 14001,
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "4px"
-                        }}>
-                          <button 
-                            onClick={() => setIsBulkDownloadOpen(false)}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "flex-start",
-                              padding: "10px 12px",
-                              border: "none",
-                              background: "transparent",
-                              borderRadius: "8px",
-                              cursor: "pointer",
-                              fontSize: "14px",
-                              color: "var(--neutral-on-surface-primary)",
-                              transition: "background 0.2s",
-                              width: "100%",
-                              textAlign: "left"
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = "#F5F5F5"}
-                            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                          >
-                            Download Data as Excel
-                          </button>
-                          <div style={{ height: "1px", background: "var(--neutral-line-separator-1)", margin: "0 4px" }} />
-                          <button 
-                            onClick={() => setIsBulkDownloadOpen(false)}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "flex-start",
-                              padding: "10px 12px",
-                              border: "none",
-                              background: "transparent",
-                              borderRadius: "8px",
-                              cursor: "pointer",
-                              fontSize: "14px",
-                              color: "var(--neutral-on-surface-primary)",
-                              transition: "background 0.2s",
-                              width: "100%",
-                              textAlign: "left"
-                            }}
-                            onMouseEnter={(e) => e.currentTarget.style.background = "#F5F5F5"}
-                            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
-                          >
-                            Download Documents as ZIP
-                          </button>
-                        </div>,
-                        document.body
-                      )}
-                    </>
-                  )}
-                </div>
-
-                <Button 
-                  variant="filled" 
-                  size="small" 
-                  onClick={() => {
-                    const batches = MOCK_TRACEABILITY_DATA.filter(b => selectedRowIds.includes(b.id));
-                    setSelectedBatches(batches);
-                    setIsInvoiceModalOpen(true);
-                  }}
-                >
-                  Add to Invoice
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                <div onClick={(e) => {
-                  setFilterTriggerRect(e.currentTarget.getBoundingClientRect());
-                  setOpenFilterKey(prev => prev === 'material' ? null : 'material');
-                }}>
-                  <FilterPill 
-                    label="Material" 
-                    count={materialFilter.length} 
-                    active={materialFilter.length > 0} 
-                    isOpen={openFilterKey === 'material'} 
-                  />
-                </div>
-                <div onClick={(e) => {
-                  setFilterTriggerRect(e.currentTarget.getBoundingClientRect());
-                  setOpenFilterKey(prev => prev === 'product' ? null : 'product');
-                }}>
-                  <FilterPill 
-                    label="Product" 
-                    count={productFilter.length} 
-                    active={productFilter.length > 0} 
-                    isOpen={openFilterKey === 'product'} 
-                  />
-                </div>
-
-                {openFilterKey && (
-                  <>
-                    {createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setOpenFilterKey(null)} />, document.body)}
-                    {createPortal(
-                      <div style={{
-                        position: "fixed",
-                        top: `${filterTriggerRect.bottom + 8}px`,
-                        left: `${filterTriggerRect.left}px`,
-                        width: "240px",
-                        background: "var(--neutral-surface-primary)",
-                        border: "1px solid var(--neutral-line-separator-1)",
-                        borderRadius: "16px",
-                        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                        padding: "16px",
-                        zIndex: 14001,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "16px"
-                      }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                          <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>
-                            {openFilterKey === 'material' ? 'Material' : 'Product'}
-                          </span>
-                          <button 
-                            onClick={() => { 
-                              if (openFilterKey === 'material') setMaterialFilter([]);
-                              else setProductFilter([]);
-                              setOpenFilterKey(null); 
-                            }} 
-                            style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
-                          >
-                            Remove Filter
-                          </button>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                          {(openFilterKey === 'material' ? materialOptions : productOptions).map(opt => (
-                            <label key={opt} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
-                              <Checkbox 
-                                checked={(openFilterKey === 'material' ? materialFilter : productFilter).includes(opt)} 
-                                onChange={() => {
-                                  const setter = openFilterKey === 'material' ? setMaterialFilter : setProductFilter;
-                                  const filter = openFilterKey === 'material' ? materialFilter : productFilter;
-                                  setter(prev => prev.includes(opt) ? prev.filter(v => v !== opt) : [...prev, opt]);
-                                }} 
-                              />
-                              {opt}
-                            </label>
-                          ))}
-                        </div>
-                      </div>,
-                      document.body
-                    )}
-                  </>
-                )}
-              </div>
-              <TableSearchField 
-                value={searchQuery} 
-                onChange={(e) => setSearchQuery(e.target.value)} 
-                placeholder="Search Batch No, Material, WO, Product" 
-                width="360px" 
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <div 
+              onClick={(e) => {
+                setOpenFilterKey("material");
+                setFilterTriggerRect(e.currentTarget.getBoundingClientRect());
+              }}
+            >
+              <FilterPill 
+                label="Material" 
+                count={materialFilter.length} 
+                active={materialFilter.length > 0} 
+                isOpen={openFilterKey === "material"} 
               />
-            </>
-          )}
+            </div>
+            <div 
+              onClick={(e) => {
+                setOpenFilterKey("product");
+                setFilterTriggerRect(e.currentTarget.getBoundingClientRect());
+              }}
+            >
+              <FilterPill 
+                label="Product" 
+                count={productFilter.length} 
+                active={productFilter.length > 0} 
+                isOpen={openFilterKey === "product"} 
+              />
+            </div>
+
+            {openFilterKey && (
+              <>
+                {createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setOpenFilterKey(null)} />, document.body)}
+                {createPortal(
+                  <div style={{
+                    position: "fixed",
+                    top: `${filterTriggerRect.bottom + 8}px`,
+                    left: `${filterTriggerRect.left}px`,
+                    width: "240px",
+                    background: "var(--neutral-surface-primary)",
+                    border: "1px solid var(--neutral-line-separator-1)",
+                    borderRadius: "16px",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                    padding: "16px",
+                    zIndex: 14001,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px"
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>
+                        {openFilterKey === "material" ? "Material" : "Product"}
+                      </span>
+                      <button 
+                        onClick={() => { 
+                          if (openFilterKey === "material") setMaterialFilter([]);
+                          else setProductFilter([]);
+                          setOpenFilterKey(null); 
+                        }} 
+                        style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
+                      >
+                        Remove Filter
+                      </button>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {(openFilterKey === "material" ? materialOptions : productOptions).map(opt => (
+                        <label key={opt} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
+                          <Checkbox 
+                            checked={openFilterKey === "material" ? materialFilter.includes(opt) : productFilter.includes(opt)} 
+                            onChange={() => {
+                              if (openFilterKey === "material") {
+                                setMaterialFilter(prev => prev.includes(opt) ? prev.filter(s => s !== opt) : [...prev, opt]);
+                              } else {
+                                setProductFilter(prev => prev.includes(opt) ? prev.filter(s => s !== opt) : [...prev, opt]);
+                              }
+                            }} 
+                          />
+                          {opt}
+                        </label>
+                      ))}
+                    </div>
+                  </div>,
+                  document.body
+                )}
+              </>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Batch No, Material, WO, Product" width="320px" />
+            <Button 
+              variant="filled" 
+              leftIcon={AddIcon} 
+              onClick={() => {
+                if (selectedRowIds.length === 0) {
+                  setSelectionError("Select a batch number first before add to invoice.");
+                } else {
+                  setSelectionError("");
+                  const batches = MOCK_TRACEABILITY_DATA.filter(b => selectedRowIds.includes(b.id));
+                  setSelectedBatches(batches);
+                  setIsInvoiceModalOpen(true);
+                }
+              }}
+            >
+              Add to Invoice
+            </Button>
+          </div>
         </div>
+
+        {selectionError && (
+          <div style={{ 
+            padding: "0 24px 16px 24px",
+            marginTop: "-8px"
+          }}>
+            <span style={{ color: "var(--status-red-primary)", fontSize: "12px" }}>
+              {selectionError}
+            </span>
+          </div>
+        )}
 
         <div style={{ height: "1px", background: "var(--neutral-line-separator-1)", width: "100%" }} />
 
@@ -909,27 +857,24 @@ export const TraceabilityTab = ({ onNavigate, showSnackbar }) => {
                 <Checkbox 
                   checked={selectedRowIds.length === visibleData.length && visibleData.length > 0} 
                   onChange={() => {
-                    if (selectedRowIds.length === visibleData.length) {
-                      setSelectedRowIds([]);
-                    } else {
-                      setSelectedRowIds(visibleData.map(m => m.id));
-                    }
+                    if (selectedRowIds.length === visibleData.length) setSelectedRowIds([]);
+                    else setSelectedRowIds(visibleData.map(item => item.id));
+                    setSelectionError("");
                   }} 
                 />
               </div>
-              <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Batch Number</div>
               <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Material</div>
+              <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Batch Number</div>
               <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Work Order No</div>
               <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Product</div>
               <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Received</div>
               <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Documents</div>
-              <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Action</div>
             </div>
-            <div>
+            <div style={{ display: "block", maxHeight: "calc(100vh - 400px)", overflowY: "auto", width: "100%" }}>
               {visibleData.length > 0 ? visibleData.map((item, idx) => {
                 return (
                   <div 
-                    key={item.id} 
+                    key={idx} 
                     style={{ 
                       display: "grid", 
                       gridTemplateColumns: gridTemplate, 
@@ -937,95 +882,72 @@ export const TraceabilityTab = ({ onNavigate, showSnackbar }) => {
                       alignItems: "center", 
                       borderBottom: "1px solid var(--neutral-line-separator-1)", 
                       transition: "background 0.2s ease", 
+                      cursor: "default", 
                       width: "100%",
                       background: "transparent"
                     }}
                   >
-                    <div 
-                      style={{ padding: "12px 12px 12px 24px", display: "flex", justifyContent: "center" }}
-                    >
+                    <div style={{ padding: "0 12px 0 24px", display: "flex", justifyContent: "center" }}>
                       <Checkbox 
                         checked={selectedRowIds.includes(item.id)} 
                         onChange={() => {
-                          setSelectedRowIds(prev => 
-                            prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]
-                          );
+                          setSelectedRowIds(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]);
+                          setSelectionError("");
                         }} 
                       />
                     </div>
-                    
-                    <div style={{ padding: "12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--feature-brand-primary)" }}>
+                    <div style={{ padding: "0 12px", overflow: "hidden", display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.material.name}</span>
                       <span 
-                        style={{ cursor: "pointer", transition: "text-decoration 0.2s" }}
+                        onClick={() => onNavigate("material_detail", { sku: item.material.sku })}
+                        style={{ fontSize: "var(--text-body)", color: "var(--feature-brand-primary)", cursor: "pointer" }}
                         onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
                         onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
-                        onClick={() => {}}
+                      >
+                        {item.material.sku}
+                      </span>
+                    </div>
+                    <div style={{ padding: "0 12px", overflow: "hidden" }}>
+                      <span 
+                        onClick={() => onNavigate("batch_detail", { batchNo: item.batchNo })}
+                        style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--feature-brand-primary)", cursor: "pointer" }}
+                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
                       >
                         {item.batchNo}
                       </span>
                     </div>
-
-                    <div style={{ padding: "12px", display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
-                      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                        <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.material.name}</span>
+                    <div style={{ padding: "8px 12px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {(item.workOrderNos || []).map((wo, i) => (
                         <span 
-                          style={{ fontSize: "var(--text-body)", color: "var(--feature-brand-primary)", cursor: "pointer", transition: "text-decoration 0.2s", width: "max-content" }}
+                          key={i}
+                          onClick={() => onNavigate("wo_detail", { woNo: wo })}
+                          style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--feature-brand-primary)", cursor: "pointer", whiteSpace: "nowrap" }}
                           onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
                           onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
-                          onClick={() => onNavigate?.("material_detail", { material: item.material })}
                         >
-                          {item.material.sku}
+                          {wo}
                         </span>
-                      </div>
+                      ))}
                     </div>
-
-                    <div style={{ padding: "12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--feature-brand-primary)" }}>
-                      <span 
-                        style={{ cursor: "pointer", transition: "text-decoration 0.2s" }}
-                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
-                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
-                        onClick={() => {}}
-                      >
-                        {item.workOrderNo}
-                      </span>
+                    <div style={{ padding: "8px 12px", overflow: "hidden", display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {(item.products || []).map((p, i) => (
+                        <div key={i} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                          <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
+                          <span 
+                            onClick={() => onNavigate("product_detail", { sku: p.sku })}
+                            style={{ fontSize: "var(--text-body)", color: "var(--feature-brand-primary)", cursor: "pointer" }}
+                            onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+                            onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+                          >
+                            {p.sku}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-
-                    <div style={{ padding: "12px", display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
-                      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                        <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.product.name}</span>
-                        <span 
-                          style={{ fontSize: "var(--text-body)", color: "var(--feature-brand-primary)", cursor: "pointer", transition: "text-decoration 0.2s", width: "max-content" }}
-                          onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
-                          onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
-                          onClick={() => {}}
-                        >
-                          {item.product.sku}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ padding: "12px", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>
-                      {item.received}
-                    </div>
-
-                    <div style={{ padding: "12px" }}>
+                    <div style={{ padding: "0 12px", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>{item.received}</div>
+                    <div style={{ padding: "0 12px" }}>
                       <TableAttachmentCard attachments={item.documents} batchNo={item.batchNo} />
-                    </div>
-
-                     <div style={{ padding: "12px" }}>
-                      <Tooltip content={(!item.documents || item.documents.length === 0) ? "Batch has no documents" : ""}>
-                        <Button 
-                          variant="outlined" 
-                          size="small" 
-                          disabled={!item.documents || item.documents.length === 0}
-                          onClick={() => {
-                            setSelectedBatches([item]);
-                            setIsInvoiceModalOpen(true);
-                          }}
-                        >
-                          Add to Invoice
-                        </Button>
-                      </Tooltip>
                     </div>
                   </div>
                 );

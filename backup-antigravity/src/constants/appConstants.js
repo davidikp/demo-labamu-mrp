@@ -42,3 +42,4 @@ export const ALLOWED_DOCUMENT_EXTENSIONS = ["pdf", "jpg", "jpeg", "png", "webp"]
 export const ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"];
 export const MAX_PROOF_UPLOAD_FILES = 3;
 export const FILE_DESCRIPTION_MAX_LENGTH = 40;
+export const MAX_PURCHASE_ORDER_DOCUMENTS = 10;

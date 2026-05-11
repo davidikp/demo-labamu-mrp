@@ -7,11 +7,11 @@ export const MOCK_TRACEABILITY_DATA = [
       sku: "ALU-SH-2MM",
       image: "https://images.unsplash.com/photo-1558449028-b53a39d100fc?auto=format&fit=crop&q=80&w=100&h=100"
     },
-    workOrderNo: "WO-202604-001",
-    product: {
-      name: "Aluminum Frame X1",
-      sku: "ALU-FR-X1"
-    },
+    workOrderNos: ["WO-202604-001", "WO-202604-002"],
+    products: [
+      { name: "Aluminum Frame X1", sku: "ALU-FR-X1" },
+      { name: "Aluminum Frame X2", sku: "ALU-FR-X2" }
+    ],
     received: "30 SHT",
     documents: [
       { id: "doc1", description: "Material Certificate", file: { name: "cert-alu-001.pdf" } },
@@ -27,11 +27,10 @@ export const MOCK_TRACEABILITY_DATA = [
       sku: "ALU-SH-2MM",
       image: "https://images.unsplash.com/photo-1558449028-b53a39d100fc?auto=format&fit=crop&q=80&w=100&h=100"
     },
-    workOrderNo: "WO-202604-005",
-    product: {
-      name: "Aluminum Case B2",
-      sku: "ALU-CS-B2"
-    },
+    workOrderNos: ["WO-202604-005"],
+    products: [
+      { name: "Aluminum Case B2", sku: "ALU-CS-B2" }
+    ],
     received: "30 SHT",
     documents: [
       { id: "doc3", description: "Batch Receipt", file: { name: "receipt-bn-002.pdf" } }
@@ -45,11 +44,11 @@ export const MOCK_TRACEABILITY_DATA = [
       sku: "STL-PIPE-05",
       image: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&q=80&w=100&h=100"
     },
-    workOrderNo: "WO-202604-002",
-    product: {
-      name: "Steel Structure S1",
-      sku: "STL-STR-S1"
-    },
+    workOrderNos: ["WO-202604-002", "WO-202604-003", "WO-202604-004"],
+    products: [
+      { name: "Steel Structure S1", sku: "STL-STR-S1" },
+      { name: "Steel Base Plate", sku: "STL-BP-01" }
+    ],
     received: "120 M",
     documents: []
   },
@@ -61,11 +60,10 @@ export const MOCK_TRACEABILITY_DATA = [
       sku: "COP-W-15",
       image: "https://images.unsplash.com/photo-1558449028-b53a39d100fc?auto=format&fit=crop&q=80&w=100&h=100"
     },
-    workOrderNo: "WO-202604-004",
-    product: {
-      name: "Motor Winding M2",
-      sku: "MOT-WND-M2"
-    },
+    workOrderNos: ["WO-202604-004"],
+    products: [
+      { name: "Motor Winding M2", sku: "MOT-WND-M2" }
+    ],
     received: "10 ROL",
     documents: [
       { id: "doc4", description: "Import Document", file: { name: "import-permit-1.pdf" } }
@@ -79,11 +77,10 @@ export const MOCK_TRACEABILITY_DATA = [
       sku: "PLS-HDPE",
       image: "https://images.unsplash.com/photo-1558449028-b53a39d100fc?auto=format&fit=crop&q=80&w=100&h=100"
     },
-    workOrderNo: "WO-202604-009",
-    product: {
-      name: "Plastic Case V1",
-      sku: "PLS-CS-V1"
-    },
+    workOrderNos: ["WO-202604-009"],
+    products: [
+      { name: "Plastic Case V1", sku: "PLS-CS-V1" }
+    ],
     received: "500 KG",
     documents: [
       { id: "doc5", description: "MSDS Report", file: { name: "msds-hdpe-001.pdf" } },

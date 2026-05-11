@@ -26,7 +26,7 @@ import {
   createUploadDocumentRecord 
 } from "../../../utils/upload/uploadUtils.js";
 import { MOCK_WO_TABLE_DATA } from "../../work-order/mock/workOrderMocks.js";
-import { MOCK_ORDER_MATERIALS_DATA } from "../mock/orderMocks.js";
+import { MOCK_ORDER_MATERIALS_DATA, MOCK_ORDER_PRODUCTS_DATA } from "../mock/orderMocks.js";
 import { MOCK_PO_TABLE_DATA } from "../../../modules/purchase-order/mock/purchaseOrderMocks.js";
 import { TraceabilityTab } from "../components/TraceabilityTab.jsx";
 
@@ -404,6 +404,181 @@ const tabButtonStyle = (isActive) => ({
   boxShadow: "none",
 });
 
+
+const ProductsTab = ({ onNavigate }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterTriggerRect, setFilterTriggerRect] = useState(null);
+
+  const [hoveredSku, setHoveredSku] = useState(null);
+
+  const filteredData = React.useMemo(() => {
+    let result = [...MOCK_ORDER_PRODUCTS_DATA];
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(p => 
+        p.name.toLowerCase().includes(q) ||
+        p.sku.toLowerCase().includes(q)
+      );
+    }
+    if (statusFilter.length > 0) {
+      result = result.filter(p => statusFilter.includes(p.status));
+    }
+    return result;
+  }, [searchQuery, statusFilter]);
+
+  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+  const visibleData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  const statusOptions = ["Not Started", "In Progress", "Ready"];
+
+  const handleFilterToggle = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setFilterTriggerRect(rect);
+    setIsFilterOpen(!isFilterOpen);
+  };
+
+  const toggleStatus = (status) => {
+    setStatusFilter(prev => 
+      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
+    );
+  };
+
+  const gridTemplate = "2.2fr 1.2fr 1.8fr 1fr 1.2fr";
+  const rowHeight = 72;
+
+  return (
+    <div style={{ width: "100%", background: "var(--neutral-surface-primary)", display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          <div onClick={handleFilterToggle}>
+            <FilterPill label="Status" count={statusFilter.length} active={statusFilter.length > 0} isOpen={isFilterOpen} />
+          </div>
+          {isFilterOpen && (
+            <>
+              {createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setIsFilterOpen(false)} />, document.body)}
+              {createPortal(
+                <div style={{
+                  position: "fixed",
+                  top: `${filterTriggerRect.bottom + 8}px`,
+                  left: `${filterTriggerRect.left}px`,
+                  width: "240px",
+                  background: "var(--neutral-surface-primary)",
+                  border: "1px solid var(--neutral-line-separator-1)",
+                  borderRadius: "16px",
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                  padding: "16px",
+                  zIndex: 14001,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px"
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Status</span>
+                    <button onClick={() => { setStatusFilter([]); setIsFilterOpen(false); }} style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Remove Filter</button>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    {statusOptions.map(opt => (
+                      <label key={opt} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
+                        <Checkbox checked={statusFilter.includes(opt)} onChange={() => toggleStatus(opt)} />
+                        {opt}
+                      </label>
+                    ))}
+                  </div>
+                </div>,
+                document.body
+              )}
+            </>
+          )}
+        </div>
+        <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Product, SKU" width="320px" />
+      </div>
+      <div style={{ height: "1px", background: "var(--neutral-line-separator-1)", width: "100%" }} />
+      <div style={{ width: "100%", overflowX: "auto" }}>
+        <div style={{ minWidth: "1000px", width: "100%" }}>
+          <div style={{ display: "grid", gridTemplateColumns: gridTemplate, borderBottom: "1px solid var(--neutral-line-separator-1)", background: "var(--neutral-surface-primary)", alignItems: "center" }}>
+            <div style={{ padding: "16px 12px 16px 24px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Product</div>
+            <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Linked WO</div>
+            <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Linked Material</div>
+            <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Ordered Qty</div>
+            <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Production Status</div>
+          </div>
+          <div>
+            {visibleData.length > 0 ? visibleData.map((p, idx) => (
+              <div key={idx} style={{ display: "grid", gridTemplateColumns: gridTemplate, minHeight: `${rowHeight}px`, alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-1)", cursor: "default", width: "100%", padding: "8px 0" }}>
+                <div style={{ padding: "0 12px 0 24px", display: "flex", alignItems: "center", gap: "12px", overflow: "hidden" }}>
+                  <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: "var(--neutral-surface-grey-lighter)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                    {p.image ? <img src={p.image} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Box size={20} color="var(--neutral-on-surface-tertiary)" />}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                    <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
+                    <span 
+                      onClick={() => onNavigate("product_detail", { sku: p.sku })}
+                      onMouseEnter={() => setHoveredSku(p.sku)}
+                      onMouseLeave={() => setHoveredSku(null)}
+                      style={{ 
+                        fontSize: "var(--text-body)", 
+                        color: "var(--feature-brand-primary)", 
+                        cursor: "pointer",
+                        textDecoration: hoveredSku === p.sku ? "underline" : "none"
+                      }}
+                    >
+                      {p.sku}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ padding: "0 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                  {p.linkedWO.map((wo, wIdx) => (
+                    <span 
+                      key={wIdx}
+                      onClick={() => onNavigate("wo_detail", { woNo: wo })}
+                      style={{ fontSize: "13px", color: "var(--feature-brand-primary)", cursor: "pointer", fontWeight: "bold" }}
+                      onMouseEnter={(e) => e.target.style.textDecoration = "underline"}
+                      onMouseLeave={(e) => e.target.style.textDecoration = "none"}
+                    >
+                      {wo}
+                    </span>
+                  ))}
+                </div>
+                <div style={{ padding: "0 12px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                  {p.linkedMaterial.map((m, mIdx) => (
+                    <span 
+                      key={mIdx}
+                      style={{ 
+                        fontSize: "12px", 
+                        padding: "2px 8px", 
+                        borderRadius: "100px", 
+                        background: "var(--neutral-surface-grey-lighter)", 
+                        color: "var(--neutral-on-surface-secondary)",
+                        cursor: "pointer"
+                      }}
+                      onMouseEnter={(e) => { e.target.style.background = "#EAF1FF"; e.target.style.color = "var(--feature-brand-primary)"; }}
+                      onMouseLeave={(e) => { e.target.style.background = "var(--neutral-surface-grey-lighter)"; e.target.style.color = "var(--neutral-on-surface-secondary)"; }}
+                      onClick={() => onNavigate("material_detail", { name: m })}
+                    >
+                      {m}
+                    </span>
+                  ))}
+                </div>
+                <div style={{ padding: "0 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>{p.orderedQty}</div>
+                <div style={{ padding: "0 12px" }}>
+                  <StatusBadge variant={p.sBadge}>{p.status}</StatusBadge>
+                </div>
+              </div>
+            )) : <div style={{ padding: "40px", textAlign: "center", color: "var(--neutral-on-surface-tertiary)" }}>No results found.</div>}
+          </div>
+        </div>
+      </div>
+      <div style={{ padding: "0 4px" }}>
+        <TablePaginationFooter currentPage={currentPage} totalPages={totalPages} rowsPerPage={rowsPerPage} totalRows={filteredData.length} onPageChange={setCurrentPage} onRowsPerPageChange={setRowsPerPage} />
+      </div>
+    </div>
+  );
+};
+
+
 const WorkOrderTab = ({ orderNo, onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState([]);
@@ -608,6 +783,16 @@ const InvoicesTab = ({ onNavigate }) => {
     return result;
   }, [searchQuery, statusFilter]);
 
+  const metrics = useMemo(() => {
+    const total = filteredData.reduce((acc, inv) => acc + inv.totalDue, 0);
+    const paid = filteredData.filter(inv => inv.status === "Paid").reduce((acc, inv) => acc + inv.totalDue, 0);
+    return {
+      totalInvoice: total,
+      totalPaid: paid,
+      totalOutstanding: total - paid
+    };
+  }, [filteredData]);
+
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const visibleData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
   const statusOptions = ["Paid", "Issued", "Void", "Canceled", "Need Revision"];
@@ -629,51 +814,100 @@ const InvoicesTab = ({ onNavigate }) => {
   const maxBodyHeight = rowHeight * 5;
 
   return (
-    <div style={{ width: "100%", background: "var(--neutral-surface-primary)", display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <div onClick={handleFilterToggle}>
-            <FilterPill label="Status" count={statusFilter.length} active={statusFilter.length > 0} isOpen={isFilterOpen} />
+    <div style={{ width: "100%", background: "var(--neutral-background-primary)", display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
+        {[
+          { label: "Total Invoice", value: metrics.totalInvoice, icon: <TrendingUp /> },
+          { label: "Total Paid", value: metrics.totalPaid, icon: <Box /> },
+          { label: "Total Outstanding", value: metrics.totalOutstanding, icon: <Info /> }
+        ].map((card, idx) => (
+          <div key={idx} style={{ 
+            background: "var(--neutral-surface-primary)", 
+            borderRadius: "16px", 
+            padding: "20px", 
+            border: "1px solid var(--neutral-line-separator-1)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            minHeight: "92px"
+          }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ fontSize: "13px", color: "var(--neutral-on-surface-tertiary)", fontWeight: "500" }}>{card.label}</div>
+              <div style={{ fontSize: "16px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>{formatCurrency(card.value)}</div>
+            </div>
+            <div style={{ 
+              width: "36px", 
+              height: "36px", 
+              borderRadius: "50%", 
+              background: "#F5F5F5", 
+              display: "flex", 
+              alignItems: "center", 
+              justifyContent: "center",
+              flexShrink: 0
+            }}>
+              {React.cloneElement(card.icon, { size: 18, color: "var(--neutral-on-surface-secondary)" })}
+            </div>
           </div>
-          {isFilterOpen && (
-            <>
-              {createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setIsFilterOpen(false)} />, document.body)}
-              {createPortal(
-                <div style={{
-                  position: "fixed",
-                  top: `${filterTriggerRect.bottom + 8}px`,
-                  left: `${filterTriggerRect.left}px`,
-                  width: "240px",
-                  background: "var(--neutral-surface-primary)",
-                  border: "1px solid var(--neutral-line-separator-1)",
-                  borderRadius: "16px",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                  padding: "16px",
-                  zIndex: 14001,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "16px"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Status</span>
-                    <button onClick={() => { setStatusFilter([]); setIsFilterOpen(false); }} style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Remove Filter</button>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {statusOptions.map(opt => (
-                      <label key={opt} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
-                        <Checkbox checked={statusFilter.includes(opt)} onChange={() => toggleStatus(opt)} />
-                        {opt}
-                      </label>
-                    ))}
-                  </div>
-                </div>,
-                document.body
-              )}
-            </>
-          )}
-        </div>
-        <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Invoice Number" width="320px" />
+        ))}
       </div>
+
+      <div style={{ 
+        background: "var(--neutral-surface-primary)", 
+        borderRadius: "var(--radius-card)", 
+        border: "1px solid var(--neutral-line-separator-1)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden"
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <div onClick={handleFilterToggle}>
+              <FilterPill label="Status" count={statusFilter.length} active={statusFilter.length > 0} isOpen={isFilterOpen} />
+            </div>
+            {isFilterOpen && (
+              <>
+                {createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setIsFilterOpen(false)} />, document.body)}
+                {createPortal(
+                  <div style={{
+                    position: "fixed",
+                    top: `${filterTriggerRect.bottom + 8}px`,
+                    left: `${filterTriggerRect.left}px`,
+                    width: "240px",
+                    background: "var(--neutral-surface-primary)",
+                    border: "1px solid var(--neutral-line-separator-1)",
+                    borderRadius: "16px",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                    padding: "16px",
+                    zIndex: 14001,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "16px"
+                  }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Status</span>
+                      <button onClick={() => { setStatusFilter([]); setIsFilterOpen(false); }} style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Remove Filter</button>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      {statusOptions.map(opt => (
+                        <label key={opt} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
+                          <Checkbox checked={statusFilter.includes(opt)} onChange={() => toggleStatus(opt)} />
+                          {opt}
+                        </label>
+                      ))}
+                    </div>
+                  </div>,
+                  document.body
+                )}
+              </>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Invoice Number" width="320px" />
+            <Button variant="filled" leftIcon={AddIcon} onClick={() => {}}>
+              Add Invoice
+            </Button>
+          </div>
+        </div>
       <div style={{ height: "1px", background: "var(--neutral-line-separator-1)", width: "100%" }} />
       <div style={{ width: "100%", overflowX: "auto" }}>
         <div style={{ minWidth: "1000px", width: "100%" }}>
@@ -722,6 +956,7 @@ const InvoicesTab = ({ onNavigate }) => {
       </div>
       <div style={{ padding: "0 4px" }}>
         <TablePaginationFooter currentPage={currentPage} totalPages={totalPages} rowsPerPage={rowsPerPage} totalRows={filteredData.length} onPageChange={setCurrentPage} onRowsPerPageChange={setRowsPerPage} />
+      </div>
       </div>
     </div>
   );
@@ -1810,8 +2045,8 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
                 </StatusBadge>
               </div>
 
-              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                {["Calculation", "Used In"].map(tab => (
+              <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "8px" }}>
+                {["Calculation", "Work Orders"].map(tab => (
                   <button 
                     key={tab}
                     onClick={() => setDrawerTab(tab)}
@@ -1829,7 +2064,7 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
 
               <div>
                 {drawerTab === "Calculation" ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", alignItems: "center" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -1839,16 +2074,22 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
                           >
                             {expandedDemand ? <ChevronDownIcon size={16} color="var(--neutral-on-surface-tertiary)" /> : <ChevronRightIcon size={16} color="var(--neutral-on-surface-tertiary)" />}
                           </div>
-                          <span style={{ color: "var(--neutral-on-surface-secondary)" }}>Demand</span>
+                          <div style={{ display: "flex", flexDirection: "column" }}>
+                            <span style={{ color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>Demand</span>
+                            <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Total material quantity needed across all work orders</span>
+                          </div>
                         </div>
-                        <span style={{ fontWeight: "bold" }}>
-                          {Math.max(selectedMaterial.demandBreakdown?.bom || 0, selectedMaterial.demandBreakdown?.wo || 0)} {selectedMaterial.uom}
+                        <span style={{ fontWeight: "bold", fontSize: "16px", color: "var(--neutral-on-surface-primary)" }}>
+                          {Math.max(selectedMaterial.demandBreakdown?.bom || 0, selectedMaterial.demandBreakdown?.wo || 0) || selectedMaterial.demand} {selectedMaterial.uom}
                         </span>
                       </div>
                       {expandedDemand && (
                         <div style={{ display: "flex", flexDirection: "column", gap: "8px", paddingLeft: "32px" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
-                            <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>Required in BOM</span>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", alignItems: "center" }}>
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                              <span style={{ color: "var(--neutral-on-surface-primary)" }}>Required in BOM</span>
+                              <span style={{ fontSize: "11px", color: "var(--neutral-on-surface-tertiary)" }}>Quantity required based on the BOM calculation</span>
+                            </div>
                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                               {selectedMaterial.demandBreakdown?.bom >= (selectedMaterial.demandBreakdown?.wo || 0) && (
                                 <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)", fontStyle: "italic" }}>Marked as demand (largest)</span>
@@ -1856,8 +2097,11 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
                               <span style={{ fontWeight: "bold", color: "var(--neutral-on-surface-secondary)" }}>{selectedMaterial.demandBreakdown?.bom || 0} {selectedMaterial.uom}</span>
                             </div>
                           </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
-                            <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>Requested in WO</span>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", alignItems: "center" }}>
+                            <div style={{ display: "flex", flexDirection: "column" }}>
+                              <span style={{ color: "var(--neutral-on-surface-primary)" }}>Requested in WO</span>
+                              <span style={{ fontSize: "11px", color: "var(--neutral-on-surface-tertiary)" }}>Quantity requested in active work orders</span>
+                            </div>
                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                               {selectedMaterial.demandBreakdown?.wo > (selectedMaterial.demandBreakdown?.bom || 0) && (
                                 <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)", fontStyle: "italic" }}>Marked as demand (largest)</span>
@@ -1869,29 +2113,46 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
                       )}
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
-                      <span style={{ color: "var(--neutral-on-surface-secondary)", marginLeft: "24px" }}>Received by Production</span>
-                      <span style={{ fontWeight: "bold" }}>{selectedMaterial.received} {selectedMaterial.uom}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", alignItems: "center" }}>
+                      <div style={{ display: "flex", flexDirection: "column", marginLeft: "24px" }}>
+                        <span style={{ color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>Received by Production</span>
+                        <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Quantity already issued to the production floor</span>
+                      </div>
+                      <span style={{ fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{selectedMaterial.received} {selectedMaterial.uom}</span>
                     </div>
-                    <div style={{ position: "relative", height: "1px", background: "var(--neutral-line-separator-1)", margin: "8px 0" }}>
+                    <div style={{ position: "relative", height: "1px", background: "var(--neutral-line-separator-1)", margin: "4px 0" }}>
                       <span style={{ position: "absolute", right: "-12px", top: "-11px", fontWeight: "bold", fontSize: "20px", lineHeight: "1" }}>-</span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
-                      <span style={{ color: "var(--neutral-on-surface-secondary)", marginLeft: "24px" }}>Remaining</span>
-                      <span style={{ fontWeight: "bold" }}>{selectedMaterial.remaining} {selectedMaterial.uom}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", alignItems: "center" }}>
+                      <div style={{ display: "flex", flexDirection: "column", marginLeft: "24px" }}>
+                        <span style={{ color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>Remaining</span>
+                        <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Quantity still needed to complete production demand</span>
+                      </div>
+                      <span style={{ fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{selectedMaterial.remaining} {selectedMaterial.uom}</span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
-                      <span style={{ color: "var(--neutral-on-surface-secondary)", marginLeft: "24px" }}>Available Stock</span>
-                      <span style={{ fontWeight: "bold" }}>{selectedMaterial.availableStock} {selectedMaterial.uom}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", alignItems: "center" }}>
+                      <div style={{ display: "flex", flexDirection: "column", marginLeft: "24px" }}>
+                        <span style={{ color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>Available Stock</span>
+                        <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Quantity currently available in warehouse stock</span>
+                      </div>
+                      <span style={{ fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>{selectedMaterial.availableStock} {selectedMaterial.uom}</span>
                     </div>
-                    <div style={{ position: "relative", height: "1px", background: "var(--neutral-line-separator-1)", margin: "8px 0" }}>
+                    <div style={{ position: "relative", height: "1px", background: "var(--neutral-line-separator-1)", margin: "4px 0" }}>
                       <span style={{ position: "absolute", right: "-12px", top: "-11px", fontWeight: "bold", fontSize: "20px", lineHeight: "1" }}>-</span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px" }}>
-                      <span style={{ color: "var(--neutral-on-surface-secondary)", marginLeft: "24px" }}>Shortage</span>
-                      <span style={{ fontWeight: "bold", color: selectedMaterial.remaining - selectedMaterial.availableStock > 0 ? "var(--status-red-primary)" : "var(--status-green-primary)" }}>
-                        {selectedMaterial.remaining - selectedMaterial.availableStock} {selectedMaterial.uom}
-                      </span>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "14px", alignItems: "center" }}>
+                      <div style={{ display: "flex", flexDirection: "column", marginLeft: "24px" }}>
+                        <span style={{ color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>Stock Balance</span>
+                        <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Additional quantity needed after current stock is calculated</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)", fontStyle: "italic" }}>
+                          {selectedMaterial.remaining - selectedMaterial.availableStock > 0 ? "Shortage" : "Covered"}
+                        </span>
+                        <span style={{ fontWeight: "bold", color: selectedMaterial.remaining - selectedMaterial.availableStock > 0 ? "var(--status-red-primary)" : "var(--status-green-primary)" }}>
+                          {selectedMaterial.remaining - selectedMaterial.availableStock} {selectedMaterial.uom}
+                        </span>
+                      </div>
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -1907,7 +2168,10 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
                           ) : (
                             <div style={{ width: "16px" }} />
                           )}
-                          <span style={{ color: "var(--neutral-on-surface-secondary)" }}>Incoming PO</span>
+                          <div style={{ display: "flex", flexDirection: "column" }}>
+                            <span style={{ color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>Incoming PO</span>
+                            <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>Quantity expected to arrive from open purchase orders</span>
+                          </div>
                         </div>
                         <span style={{ fontWeight: "bold", color: "var(--feature-brand-primary)" }}>
                           {(selectedMaterial.incomingPOBreakdown || []).reduce((acc, po) => acc + po.qty, 0)} {selectedMaterial.uom}
@@ -1990,12 +2254,13 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
 };
 
 export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar }) => {
-  const [activeTab, setActiveTab] = useState(initialData?.activeTab || "work-orders");
+  const [activeTab, setActiveTab] = useState(initialData?.activeTab || "products");
 
   const orderData = initialData;
   const shipmentCode = orderData.shipmentCode || `SHP-${orderData.orderNo?.split('-').slice(1).join('-') || "202604-001"}`;
 
   const tabs = [
+    { key: "products", label: "Products" },
     { key: "work-orders", label: "Work Orders" },
     { key: "materials", label: "Materials" },
     { key: "traceability", label: "Traceability" },
@@ -2131,11 +2396,14 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar }) => {
 
       {/* Tab Content */}
       <div style={{ 
-        background: activeTab === "materials" ? "transparent" : "var(--neutral-surface-primary)", 
-        borderRadius: activeTab === "materials" ? "0" : "var(--radius-card)", 
-        border: activeTab === "materials" ? "none" : "1px solid var(--neutral-line-separator-1)",
+        background: ["materials", "products", "invoices"].includes(activeTab) ? "transparent" : "var(--neutral-surface-primary)", 
+        borderRadius: ["materials", "products", "invoices"].includes(activeTab) ? "0" : "var(--radius-card)", 
+        border: ["materials", "products", "invoices"].includes(activeTab) ? "none" : "1px solid var(--neutral-line-separator-1)",
         overflow: "hidden"
       }}>
+        {activeTab === "products" && (
+          <ProductsTab onNavigate={onNavigate} />
+        )}
         {activeTab === "work-orders" && (
           <WorkOrderTab orderNo={orderData.orderNo} onNavigate={onNavigate} />
         )}

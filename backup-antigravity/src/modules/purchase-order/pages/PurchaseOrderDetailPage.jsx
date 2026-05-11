@@ -80,6 +80,7 @@ import {
   FILE_DESCRIPTION_MAX_LENGTH,
   LANGUAGE_OPTIONS,
   MAX_PROOF_UPLOAD_FILES,
+  MAX_PURCHASE_ORDER_DOCUMENTS,
   UPLOAD_MAX_FILE_SIZE_BYTES,
 } from "../../../constants/appConstants.js";
 import {
@@ -323,37 +324,45 @@ const FormField = ({
       width: "100%",
     }}
   >
-    {label ? (
+    {(label || headerRight) && (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          width: "100%",
+        }}
+      >
         <div
           style={{
             display: "flex",
             alignItems: "center",
-            justifyContent: headerRight ? "space-between" : "flex-start",
-            gap: "12px",
-            fontSize: labelFontSize ? labelFontSize : (headerRight ? "var(--text-desc)" : "var(--text-body)"),
+            gap: "2px",
+            fontSize: labelFontSize || "var(--text-body)",
             fontWeight: "var(--font-weight-regular)",
           }}
         >
-        <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
-          {required ? (
+          {required && (
             <span style={{ color: "var(--status-red-primary)" }}>*</span>
-          ) : null}
-          <span style={{ color: "var(--neutral-on-surface-primary)" }}>
-            {label}
-          </span>
+          )}
+          {label && (
+            <span style={{ color: "var(--neutral-on-surface-primary)" }}>
+              {label}
+            </span>
+          )}
         </div>
-        {headerRight ? (
+        {headerRight && (
           <span
             style={{
-              fontSize: headerRightFontSize ? headerRightFontSize : "var(--text-desc)",
-              color: headerRightColor ? headerRightColor : "var(--neutral-on-surface-tertiary)",
+              fontSize: headerRightFontSize || "var(--text-desc)",
+              color: headerRightColor || "var(--neutral-on-surface-tertiary)",
             }}
           >
             {headerRight}
           </span>
-        ) : null}
+        )}
       </div>
-    ) : null}
+    )}
     {children}
     {error ? (
       <span
@@ -1314,7 +1323,7 @@ const InputField = ({
           disabled={disabled}
           {...rest}
           style={{
-            minHeight: "88px",
+            minHeight: "120px",
             padding: "12px 16px",
             width: "100%",
             resize: "vertical",
@@ -2363,6 +2372,7 @@ export const PurchaseOrderDetailPage = ({
   const [openDocumentMenuId, setOpenDocumentMenuId] = useState(null);
   const [showDocumentToast, setShowDocumentToast] = useState(false);
   const [documentToastMessage, setDocumentToastMessage] = useState("");
+  const [documentToastVariant, setDocumentToastVariant] = useState("success");
   const [documentSearch, setDocumentSearch] = useState("");
   const [documentTypeFilters, setDocumentTypeFilters] = useState([]);
   const [documentView, setDocumentView] = useState("list");
@@ -4195,6 +4205,7 @@ export const PurchaseOrderDetailPage = ({
     ]);
     setShowUploadDocumentModal(false);
     resetDocumentUploadState();
+    setDocumentToastVariant("success");
     setDocumentToastMessage("Document successfully uploaded");
     setShowDocumentToast(true);
     setTimeout(() => setShowDocumentToast(false), 4000);
@@ -4225,6 +4236,7 @@ export const PurchaseOrderDetailPage = ({
         return;
       }
     }
+    setDocumentToastVariant("success");
     setDocumentToastMessage(message);
     setOpenDocumentMenuId(null);
     setShowDocumentToast(true);
@@ -4267,6 +4279,7 @@ export const PurchaseOrderDetailPage = ({
     setRenameDocumentValue("");
     setEditDocumentDescriptionValue("");
     setEditDocumentTypeValue("other");
+    setDocumentToastVariant("success");
     setDocumentToastMessage("Document successfully updated");
     setShowDocumentToast(true);
     setTimeout(() => setShowDocumentToast(false), 4000);
@@ -4299,6 +4312,7 @@ export const PurchaseOrderDetailPage = ({
     setShowDeleteDocumentModal(false);
     setSelectedDocumentId(null);
     setRenameDocumentValue("");
+    setDocumentToastVariant("dark");
     setDocumentToastMessage("Document successfully deleted");
     setShowDocumentToast(true);
     setTimeout(() => setShowDocumentToast(false), 4000);
@@ -4689,12 +4703,12 @@ export const PurchaseOrderDetailPage = ({
             top: "84px",
             right: "24px",
             background: showDocumentToast
-              ? "var(--status-green-primary)"
+              ? (documentToastVariant === "dark" ? "var(--neutral-on-surface-primary)" : "var(--status-green-primary)")
               : actionToastVariant === "error"
                 ? "var(--status-red-primary)"
                 : "var(--status-green-primary)",
             color: showDocumentToast
-              ? "var(--status-green-on-primary)"
+              ? "var(--neutral-on-surface-reverse)"
               : actionToastVariant === "error"
                 ? "var(--status-red-on-primary)"
                 : "var(--status-green-on-primary)",
@@ -5346,12 +5360,13 @@ export const PurchaseOrderDetailPage = ({
                                     style={{
                                       display: "block",
                                       fontSize: "var(--text-title-3)",
-                                      color: "var(--feature-brand-primary)",
-                                      textDecoration: "underline",
-                                      cursor: "pointer",
+                                      color: line.type === "manual" ? "var(--neutral-on-surface-secondary)" : "var(--feature-brand-primary)",
+                                      textDecoration: line.type === "manual" ? "none" : "underline",
+                                      cursor: line.type === "manual" ? "default" : "pointer",
                                       wordBreak: "break-word"
                                     }}
                                     onClick={() => {
+                                      if (line.type === "manual") return;
                                       const materialData = MOCK_MATERIALS_DATA.find(m => m.sku === line.code) || MOCK_MATERIALS_DATA[0];
                                       onNavigate("materials_detail", {
                                         ...materialData,
@@ -6791,7 +6806,7 @@ export const PurchaseOrderDetailPage = ({
                     !(
                       currentStatus === "Draft" ||
                       currentStatus === "Need Revision"
-                    )
+                    ) || documents.length >= MAX_PURCHASE_ORDER_DOCUMENTS
                   }
                   onClick={() => {
                     resetDocumentUploadState();
@@ -6804,7 +6819,37 @@ export const PurchaseOrderDetailPage = ({
             </div>
 
 
-            <div style={{ padding: "0 0 24px 0" }}>
+            <div style={{ padding: "0 24px 24px 24px" }}>
+              {documents.length >= MAX_PURCHASE_ORDER_DOCUMENTS && (
+                <div
+                  style={{
+                    marginBottom: "16px",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: "12px",
+                    padding: "12px 16px",
+                    borderRadius: "12px",
+                    background: "var(--feature-brand-container-lighter)",
+                    border: "1px solid var(--feature-brand-container-darker)",
+                  }}
+                >
+                  <Info
+                    size={16}
+                    strokeWidth={2.1}
+                    color="var(--feature-brand-primary)"
+                    style={{ flexShrink: 0, marginTop: "2px" }}
+                  />
+                  <span
+                    style={{
+                      fontSize: "var(--text-title-3)",
+                      color: "var(--feature-brand-primary)",
+                      lineHeight: "1.5",
+                    }}
+                  >
+                    This purchase order already has {MAX_PURCHASE_ORDER_DOCUMENTS} documents attached. Remove a document before uploading a new one.
+                  </span>
+                </div>
+              )}
 
             {documentView === "list" ? (
               <div style={poReferenceTableFrameStyle}>
@@ -7376,6 +7421,17 @@ export const PurchaseOrderDetailPage = ({
                   </span>
                 </div>
               ) : null}
+              {receiptErrors._global ? (
+                <span
+                  style={{
+                    marginBottom: "16px",
+                    fontSize: "var(--text-body)",
+                    color: "var(--status-red-primary)",
+                  }}
+                >
+                  {receiptErrors._global}
+                </span>
+              ) : null}
               <div style={poReferenceTableFrameStyle}>
                 <div style={{ ...poReferenceTableScrollerStyle, overflowX: receiptLines.length > 0 ? "auto" : "hidden" }}>
                   <div style={poReferenceTableInnerStyle("100%")}>
@@ -7496,32 +7552,33 @@ export const PurchaseOrderDetailPage = ({
                               >
                                 {displayValue(line.item)}
                               </span>
-                              <span
-                                style={{
-                                  display: "block",
-                                  fontSize: "var(--text-title-3)",
-                                  color: "var(--feature-brand-primary)",
-                                  textDecoration: "underline",
-                                  cursor: "pointer",
-                                  whiteSpace: "nowrap",
-                                  overflow: "hidden",
-                                  textOverflow: "ellipsis",
-                                }}
-                                title={displayValue(line.code)}
-                                onClick={() => {
-                                  const materialData = MOCK_MATERIALS_DATA.find(m => m.sku === line.code) || MOCK_MATERIALS_DATA[0];
-                                  onNavigate("materials_detail", {
-                                    ...materialData,
-                                    from: "purchase_order_detail",
-                                    returnTo: {
-                                      view: "purchase_order_detail",
-                                      data: initialData
-                                    }
-                                  });
-                                }}
-                              >
-                                {displayValue(line.code)}
-                              </span>
+                               <span
+                                 style={{
+                                   display: "block",
+                                   fontSize: "var(--text-title-3)",
+                                   color: line.type === "manual" ? "var(--neutral-on-surface-secondary)" : "var(--feature-brand-primary)",
+                                   textDecoration: line.type === "manual" ? "none" : "underline",
+                                   cursor: line.type === "manual" ? "default" : "pointer",
+                                   whiteSpace: "nowrap",
+                                   overflow: "hidden",
+                                   textOverflow: "ellipsis",
+                                 }}
+                                 title={displayValue(line.code)}
+                                 onClick={() => {
+                                   if (line.type === "manual") return;
+                                   const materialData = MOCK_MATERIALS_DATA.find(m => m.sku === line.code) || MOCK_MATERIALS_DATA[0];
+                                   onNavigate("materials_detail", {
+                                     ...materialData,
+                                     from: "purchase_order_detail",
+                                     returnTo: {
+                                       view: "purchase_order_detail",
+                                       data: initialData
+                                     }
+                                   });
+                                 }}
+                               >
+                                 {displayValue(line.code)}
+                               </span>
                             </div>
                           </div>
                           <div
@@ -7691,17 +7748,6 @@ export const PurchaseOrderDetailPage = ({
                   </div>
                 </div>
               </div>
-              {receiptErrors._global ? (
-                <span
-                  style={{
-                    marginTop: "12px",
-                    fontSize: "var(--text-body)",
-                    color: "var(--status-red-primary)",
-                  }}
-                >
-                  {receiptErrors._global}
-                </span>
-              ) : null}
             </div>
           </div>
 
@@ -7924,6 +7970,7 @@ export const PurchaseOrderDetailPage = ({
                                 normalizeProofDocuments([], log.proof)
                               }
                               onDocumentClick={(doc) => {
+                                setDocumentToastVariant("success");
                                 setDocumentToastMessage(
                                   `${doc?.name || "Document"} opened`
                                 );
@@ -8632,48 +8679,21 @@ export const PurchaseOrderDetailPage = ({
               </span>
             </div>
           )}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "8px" }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "2px",
-                fontSize: "var(--text-body)",
-                fontWeight: "var(--font-weight-regular)",
-              }}
-            >
-              <span style={{ color: "var(--status-red-primary)" }}>*</span>
-              <span style={{ color: "var(--neutral-on-surface-primary)" }}>
-                Received By
-              </span>
-            </div>
-            <input
-              type="text"
-              value={receiptReceivedBy}
-              onChange={(e) => setReceiptReceivedBy(e.target.value)}
-              placeholder="Enter receiver name"
-              style={{
-                height: "48px",
-                border: "1px solid var(--neutral-line-separator-1)",
-                borderRadius: "8px",
-                padding: "0 16px",
-                background: "var(--neutral-surface-primary)",
-                fontSize: "var(--text-subtitle-1)",
-                color: "var(--neutral-on-surface-primary)",
-                width: "100%",
-                outline: "none",
-                fontFamily: "Lato, sans-serif",
-              }}
-            />
-          </div>
+          <InputField
+            label="Received By"
+            required
+            value={receiptReceivedBy}
+            onChange={(e) => setReceiptReceivedBy(e.target.value)}
+            placeholder="Enter receiver name"
+          />
           <InputField
             label="Notes"
             multiline
             placeholder="Add note for this receipt"
             value={receiptNotes}
-            onChange={(e) => setReceiptNotes(e.target.value)}
+            onChange={(e) => setReceiptNotes(e.target.value.slice(0, 1000))}
+            maxLength={1000}
+            headerRight={`${receiptNotes.length}/1000`}
           />
           <div
             style={{ display: "flex", flexDirection: "column", gap: "8px" }}
@@ -9568,14 +9588,16 @@ export const PurchaseOrderDetailPage = ({
               </div>
 
               <InputField
-                label="Notes (Optional)"
+                label="Notes"
                 multiline
                 placeholder="Enter notes..."
                 value={addInvoiceFormData.notes}
+                maxLength={1000}
+                headerRight={`${(addInvoiceFormData.notes || "").length}/1000`}
                 onChange={(e) =>
                   setAddInvoiceFormData({
                     ...addInvoiceFormData,
-                    notes: e.target.value,
+                    notes: e.target.value.slice(0, 1000),
                   })
                 }
               />
@@ -9894,14 +9916,16 @@ export const PurchaseOrderDetailPage = ({
 
 
               <InputField
-                label="Notes (Optional)"
+                label="Notes"
                 multiline
                 placeholder="Enter notes..."
                 value={paymentFormData.notes}
+                maxLength={1000}
+                headerRight={`${(paymentFormData.notes || "").length}/1000`}
                 onChange={(e) =>
                   setPaymentFormData({
                     ...paymentFormData,
-                    notes: e.target.value,
+                    notes: e.target.value.slice(0, 1000),
                   })
                 }
               />

@@ -290,6 +290,38 @@ export const MOCK_ORDER_MATERIALS_DATA = [
   }
 ];
 
-
-
-
+export const MOCK_ORDER_PRODUCTS_DATA = [
+  {
+    id: 1,
+    name: "Wooden Chair Frame",
+    sku: "WCF-A1",
+    image: "https://images.unsplash.com/photo-1592078615290-033ee584e267?auto=format&fit=crop&q=80&w=100&h=100",
+    linkedWO: ["WO-202603-001", "WO-202603-002"],
+    linkedMaterial: ["Teak Wood", "Wood Glue", "Sandpaper"],
+    orderedQty: 100,
+    status: "In Progress",
+    sBadge: "yellow"
+  },
+  {
+    id: 2,
+    name: "Metal Legs (Black)",
+    sku: "ML-B2",
+    image: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&q=80&w=100&h=100",
+    linkedWO: ["WO-202603-003"],
+    linkedMaterial: ["Steel Pipe", "Black Powder Coat"],
+    orderedQty: 400,
+    status: "Ready",
+    sBadge: "green"
+  },
+  {
+    id: 3,
+    name: "Upholstery Kit (Grey)",
+    sku: "UK-G3",
+    image: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&q=80&w=100&h=100",
+    linkedWO: ["WO-202603-004"],
+    linkedMaterial: ["Fabric Grey", "Foam", "Staples"],
+    orderedQty: 100,
+    status: "Not Started",
+    sBadge: "grey"
+  }
+];
