@@ -42,7 +42,7 @@ import {
   DATE_PICKER_WEEKDAYS
 } from "../../../constants/appConstants.js";
 
-const FormField = ({ label, required = false, children, error, headerRight }) => (
+const FormField = ({ label, required = false, children, error, helperText, headerRight }) => (
   <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
     {label && (
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -59,6 +59,7 @@ const FormField = ({ label, required = false, children, error, headerRight }) =>
     )}
     {children}
     {error && <span style={{ fontSize: "var(--text-desc)", color: "var(--status-red-primary)" }}>{error}</span>}
+    {!error && helperText && <span style={{ fontSize: "var(--text-desc)", color: "var(--neutral-on-surface-secondary)" }}>{helperText}</span>}
   </div>
 );
 
@@ -145,22 +146,23 @@ const Tooltip = ({ content, children }) => {
   );
 };
 
-const InputField = ({ label, required, type = "text", placeholder, value, onChange, prefix, suffix, error, icon: Icon, headerRight, ...rest }) => {
+const InputField = ({ label, required, type = "text", placeholder, value, onChange, prefix, suffix, error, helperText, icon: Icon, headerRight, ...rest }) => {
   const [isFocused, setIsFocused] = useState(false);
   
   return (
-    <FormField label={label} required={required} error={error} headerRight={headerRight}>
+    <FormField label={label} required={required} error={error} helperText={helperText} headerRight={headerRight}>
       <div style={{ 
         display: "flex", 
         alignItems: "center", 
         height: "48px", 
         border: `1px solid ${error ? "var(--status-red-primary)" : isFocused ? "var(--feature-brand-primary)" : "#e9e9e9"}`, 
         borderRadius: "10px",
-        background: "var(--neutral-surface-primary)",
+        background: rest.disabled ? "var(--neutral-surface-grey-lighter)" : "var(--neutral-surface-primary)",
         padding: "0 16px",
         gap: "8px",
         transition: "border-color 0.2s ease, box-shadow 0.2s ease",
-        boxShadow: isFocused ? "0 0 0 3px rgba(0, 104, 255, 0.08)" : "none"
+        boxShadow: isFocused ? "0 0 0 3px rgba(0, 104, 255, 0.08)" : "none",
+        cursor: rest.disabled ? "not-allowed" : "default"
       }}>
         {prefix && <span style={{ color: "var(--neutral-on-surface-secondary)", fontSize: "var(--text-subtitle-1)" }}>{prefix}</span>}
         <input 
@@ -176,8 +178,9 @@ const InputField = ({ label, required, type = "text", placeholder, value, onChan
             outline: "none", 
             fontSize: "var(--text-subtitle-1)", 
             background: "transparent",
-            color: "var(--neutral-on-surface-primary)",
-            width: "100%"
+            color: rest.disabled ? "var(--neutral-on-surface-tertiary)" : "var(--neutral-on-surface-primary)",
+            width: "100%",
+            cursor: rest.disabled ? "not-allowed" : "text",
           }}
           {...rest}
         />
@@ -451,6 +454,7 @@ const DateInputControl = ({
   borderRadius = "10px",
   fontSize = "var(--text-subtitle-1)",
   style = {},
+  maxDate = null,
 }) => {
   const triggerRef = useRef(null);
   const popoverRef = useRef(null);
@@ -602,6 +606,7 @@ const DateInputControl = ({
                       key={day.iso}
                       type="button"
                       onClick={() => {
+                        if (maxDate && day.iso > maxDate) return;
                         onChange?.({ target: { value: day.iso } });
                         setIsOpen(false);
                       }}
@@ -612,8 +617,8 @@ const DateInputControl = ({
                         border: "none",
                         borderRadius: "50%",
                         background: isSelected ? "var(--feature-brand-primary)" : isToday ? "var(--feature-brand-container)" : "transparent",
-                        color: isSelected ? "white" : isToday ? "var(--feature-brand-primary)" : day.isCurrentMonth ? "var(--neutral-on-surface-primary)" : "var(--neutral-line-separator-2)",
-                        cursor: "pointer",
+                        color: isSelected ? "white" : (maxDate && day.iso > maxDate) ? "var(--neutral-line-separator-2)" : isToday ? "var(--feature-brand-primary)" : day.isCurrentMonth ? "var(--neutral-on-surface-primary)" : "var(--neutral-line-separator-2)",
+                        cursor: (maxDate && day.iso > maxDate) ? "not-allowed" : "pointer",
                         fontSize: "var(--text-subtitle-1)",
                         fontWeight: isToday || isSelected ? "var(--font-weight-bold)" : "var(--font-weight-regular)",
                         position: "relative",
@@ -655,7 +660,9 @@ export const StockBatchesTab = ({
   localBatches, 
   setLocalBatches, 
   setLocalTransactions, 
-  showSnackbar 
+  showSnackbar,
+  onNavigate,
+  currentMaterial 
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showEmptyBatches, setShowEmptyBatches] = useState(false);
@@ -674,6 +681,7 @@ export const StockBatchesTab = ({
   const [formData, setFormData] = useState({
     id: null,
     quantity: "",
+    currentQuantity: "",
     costPerPcs: "",
     purchaseDate: "",
     expiryDate: "",
@@ -682,15 +690,25 @@ export const StockBatchesTab = ({
     receivedDate: "",
     storageLocation: "",
     vendor: "",
-    attachments: []
+    attachments: [],
+    poRef: null
   });
   const [errors, setErrors] = useState({});
+  const isPoBatch = drawerMode === "edit" && !!formData.poRef;
+
   
+  // Dispose Modal State
   // Dispose Modal State
   const [showDisposeModal, setShowDisposeModal] = useState(false);
   const [batchToDispose, setBatchToDispose] = useState(null);
   const [disposalReason, setDisposalReason] = useState("");
   const [disposeError, setDisposeError] = useState("");
+
+  // Adjustment Modal State
+  const [showAdjustmentModal, setShowAdjustmentModal] = useState(false);
+  const [adjustmentComment, setAdjustmentComment] = useState("");
+  const [pendingBatch, setPendingBatch] = useState(null);
+  const [adjustmentError, setAdjustmentError] = useState("");
 
   const scrollerRef = useRef(null);
   const [scrollShadows, setScrollShadows] = useState({ left: false, right: false });
@@ -768,7 +786,8 @@ export const StockBatchesTab = ({
   const openEditDrawer = (batch) => {
     setFormData({
       id: batch.id,
-      quantity: (batch.currentQty || batch.initialQty || "").toString(),
+      quantity: batch.initialQty.toString(),
+      currentQuantity: (batch.currentQty || 0).toString(),
       costPerPcs: (batch.costPerUnit || "").toString(),
       purchaseDate: batch.purchaseDate || "",
       expiryDate: batch.expiryDate || "",
@@ -777,7 +796,8 @@ export const StockBatchesTab = ({
       receivedDate: batch.receivedDate || "",
       storageLocation: batch.storageLocation || "",
       vendor: batch.vendor || "",
-      attachments: Array.isArray(batch.attachments) ? batch.attachments : []
+      attachments: Array.isArray(batch.attachments) ? batch.attachments : [],
+      poRef: batch.poRef
     });
     setDrawerMode("edit");
   };
@@ -789,6 +809,18 @@ export const StockBatchesTab = ({
     if (formData.status === "Received" && !formData.receivedDate) {
       newErrors.receivedDate = "This field cannot be empty";
     }
+    
+    if (drawerMode === "edit" && formData.status === "Received") {
+      const initial = parseInt(formData.quantity.replace(/,/g, ''), 10);
+      const current = parseInt(formData.currentQuantity.replace(/,/g, ''), 10);
+      
+      if (formData.poRef && current > initial) {
+        newErrors.currentQuantity = `Current quantity cannot exceed the received quantity in the purchase order (${initial})`;
+      } else if (current > initial) {
+        newErrors.currentQuantity = "Current quantity cannot exceed the initial quantity";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -796,13 +828,23 @@ export const StockBatchesTab = ({
   const handleSave = () => {
     if (validate()) {
       const originalBatch = formData.id ? localBatches.find(b => b.id === formData.id) : {};
+      const finalStatus = formData.receivedDate ? "Received" : formData.status;
+      const initialQtyValue = parseInt(formData.quantity.replace(/,/g, ''), 10);
+      let currentQtyValue;
+      
+      if (drawerMode === "add") {
+        currentQtyValue = finalStatus === "Requested" ? 0 : initialQtyValue;
+      } else {
+        currentQtyValue = finalStatus === "Requested" ? 0 : parseInt(formData.currentQuantity.replace(/,/g, ''), 10);
+      }
+
       const newBatch = {
         ...originalBatch,
         id: formData.id || `batch-${Date.now()}`,
         materialId,
         batchNo: formData.id ? originalBatch.batchNo : `BN-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-        initialQty: parseInt(formData.quantity.replace(/,/g, ''), 10),
-        currentQty: parseInt(formData.quantity.replace(/,/g, ''), 10),
+        initialQty: initialQtyValue,
+        currentQty: currentQtyValue,
         costPerUnit: parseInt(formData.costPerPcs.replace(/,/g, ''), 10),
         purchaseDate: formData.purchaseDate,
         expiryDate: formData.expiryDate,
@@ -811,8 +853,18 @@ export const StockBatchesTab = ({
         storageLocation: formData.storageLocation,
         vendor: formData.vendor,
         attachments: formData.attachments,
-        status: formData.status
+        status: finalStatus,
+        poRef: originalBatch.poRef // preserve poRef
       };
+
+      if (drawerMode === "edit") {
+        const originalBatch = localBatches.find(b => b.id === formData.id);
+        if (originalBatch && originalBatch.currentQty !== currentQtyValue) {
+          setPendingBatch(newBatch);
+          setShowAdjustmentModal(true);
+          return;
+        }
+      }
 
       if (drawerMode === "add") {
         setLocalBatches(prev => [newBatch, ...prev]);
@@ -823,6 +875,45 @@ export const StockBatchesTab = ({
       showSnackbar?.("Batch successfully saved", "success");
       closeDrawer();
     }
+  };
+
+  const handleAdjustmentSubmit = () => {
+    if (!adjustmentComment.trim()) {
+      setAdjustmentError("Comment is required");
+      return;
+    }
+
+    const originalBatch = localBatches.find(b => b.id === pendingBatch.id);
+    const qtyDiff = pendingBatch.currentQty - (originalBatch?.currentQty || 0);
+
+    // 1. Update batch
+    setLocalBatches(prev => prev.map(b => b.id === pendingBatch.id ? pendingBatch : b));
+
+    // 2. Add transaction
+    const now = new Date();
+    const newTransaction = {
+      id: `tx-adj-${Date.now()}`,
+      materialId: materialId,
+      date: now.toISOString(),
+      batchNo: pendingBatch.batchNo,
+      type: "Adjustment",
+      quantity: qtyDiff,
+      unit: currentMaterial?.unit || "pcs",
+      workOrder: null,
+      product: "-",
+      reason: adjustmentComment,
+      actionBy: "Admin User"
+    };
+
+    if (setLocalTransactions) {
+      setLocalTransactions(prev => [newTransaction, ...prev]);
+    }
+
+    setShowAdjustmentModal(false);
+    setAdjustmentComment("");
+    setPendingBatch(null);
+    closeDrawer();
+    showSnackbar?.("Batch adjustment successfully saved", "black");
   };
 
   const handleFileChange = (e) => {
@@ -940,6 +1031,7 @@ export const StockBatchesTab = ({
   }, [batches]);
 
   const formatCurrency = (val) => {
+    if (val === undefined || val === null || val === "" || isNaN(parseInt(val, 10))) return "-";
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "IDR",
@@ -954,7 +1046,11 @@ export const StockBatchesTab = ({
   };
 
   const handleNumberInput = (val, field) => {
-    const numericValue = val.replace(/,/g, "").replace(/[^0-9]/g, "");
+    let numericValue = val.replace(/,/g, "").replace(/[^0-9]/g, "");
+    // Prevent leading zeros unless the value is just "0"
+    if (numericValue.length > 1 && numericValue.startsWith('0')) {
+      numericValue = numericValue.replace(/^0+/, '');
+    }
     setFormData(prev => ({ ...prev, [field]: numericValue }));
   };
 
@@ -970,6 +1066,7 @@ export const StockBatchesTab = ({
     { label: "Received Date", key: "receivedDate", width: "130px" },
     { label: "Storage Location", key: "storageLocation", width: "160px" },
     { label: "Vendor", key: "vendor", width: "160px" },
+    { label: "PO Ref", key: "poRef", width: "140px" },
     { label: "Attachments", key: "attachments", width: "240px" },
     { label: "Status", key: "status", width: "100px" },
     { label: "Actions", key: "actions", width: "100px", sticky: true }
@@ -1117,7 +1214,7 @@ export const StockBatchesTab = ({
         <div ref={scrollerRef} style={{ overflowX: "auto" }}>
           {/* Scroller Wrapper */}
           <div style={{ 
-            minWidth: "1780px", 
+            minWidth: "1920px", 
             display: "inline-flex", 
             flexDirection: "column",
             background: "var(--neutral-surface-primary)"
@@ -1206,10 +1303,10 @@ export const StockBatchesTab = ({
                     }}>
                     <Tooltip content={row.batchNo}>
                       <div style={{
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        width: "100%"
+                        wordBreak: "break-all",
+                        width: "100%",
+                        lineHeight: "1.4",
+                        padding: "8px 0"
                       }}>
                         {row.batchNo}
                       </div>
@@ -1226,10 +1323,36 @@ export const StockBatchesTab = ({
                   <div style={{ width: columns[8].width, padding: "0 12px", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", flexShrink: 0 }}>{row.receivedDate || "-"}</div>
                   <div style={{ width: columns[9].width, padding: "0 12px", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", flexShrink: 0 }}>{row.storageLocation || "-"}</div>
                   <div style={{ width: columns[10].width, padding: "0 12px", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", flexShrink: 0 }}>{row.vendor}</div>
+                  <div style={{ width: columns[11].width, padding: "0 12px", fontSize: "var(--text-title-3)", flexShrink: 0 }}>
+                    {row.poRef ? (
+                      <span 
+                        style={{ 
+                          color: "var(--feature-brand-primary)", 
+                          cursor: "pointer", 
+                          fontWeight: "bold",
+                          textDecoration: "none"
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onNavigate?.("purchase_order_detail", { 
+                            poNumber: row.poRef,
+                            from: "material_detail",
+                            returnTo: { view: "materials_detail", data: currentMaterial }
+                          });
+                        }}
+                      >
+                        {row.poRef}
+                      </span>
+                    ) : (
+                      <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>-</span>
+                    )}
+                  </div>
                   
                   {/* Attachments */}
                   <div style={{ 
-                    width: columns[11].width, 
+                    width: columns[12].width, 
                     padding: "0 12px",
                     display: "flex", 
                     alignItems: "center", 
@@ -1288,13 +1411,16 @@ export const StockBatchesTab = ({
                     boxSizing: "border-box",
                     flexShrink: 0
                   }}>
-                    <Tooltip content="Edit">
-                      <IconButton 
-                        icon={EditIcon} 
-                        onClick={() => openEditDrawer(row)} 
-                        size="small" 
-                        color="var(--feature-brand-primary)" 
-                      />
+                    <Tooltip content={row.poRef && row.status === "Requested" ? "Cannot edit requested PO batch" : "Edit"}>
+                      <div style={{ display: "flex" }}>
+                        <IconButton 
+                          icon={EditIcon} 
+                          onClick={() => openEditDrawer(row)} 
+                          size="small" 
+                          color="var(--feature-brand-primary)"
+                          disabled={row.poRef && row.status === "Requested"}
+                        />
+                      </div>
                     </Tooltip>
                     <Tooltip content="Dispose">
                       <IconButton 
@@ -1373,23 +1499,39 @@ export const StockBatchesTab = ({
             {/* Drawer Body */}
             <div style={{ flex: 1, overflowY: "auto", padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
               <InputField 
-                label="Quantity" 
+                label="Initial Quantity" 
                 required 
                 type="text"
                 value={formatNumber(formData.quantity)}
                 onChange={(e) => handleNumberInput(e.target.value, "quantity")}
                 placeholder="0"
-                suffix="Pcs"
+                suffix={currentMaterial?.unit || "Pcs"}
                 error={errors.quantity}
+                disabled={drawerMode === "edit"}
               />
               
+              {drawerMode === "edit" && (
+                <InputField 
+                  label="Current Quantity" 
+                  type="text"
+                  value={formatNumber(formData.currentQuantity)}
+                  onChange={(e) => handleNumberInput(e.target.value, "currentQuantity")}
+                  placeholder="0"
+                  suffix={currentMaterial?.unit || "Pcs"}
+                  disabled={formData.status === "Requested"}
+                  helperText={formData.status === "Requested" ? "Change the batch status to \u201CReceived\u201D to update the current quantity" : ""}
+                  error={errors.currentQuantity}
+                />
+              )}
+              
               <InputField 
-                label="Cost/Pcs" 
+                label="Cost per Unit" 
                 type="text"
                 value={formatNumber(formData.costPerPcs)}
                 onChange={(e) => handleNumberInput(e.target.value, "costPerPcs")}
                 placeholder="0"
                 prefix="IDR"
+                disabled={isPoBatch}
               />
 
               <FormField label="Purchase Date" required error={errors.purchaseDate}>
@@ -1397,6 +1539,8 @@ export const StockBatchesTab = ({
                   value={formData.purchaseDate}
                   onChange={(e) => setFormData({...formData, purchaseDate: e.target.value})}
                   hasError={!!errors.purchaseDate}
+                  maxDate={new Date().toISOString().split('T')[0]}
+                  disabled={isPoBatch}
                 />
               </FormField>
 
@@ -1423,6 +1567,7 @@ export const StockBatchesTab = ({
                     { value: "Requested", label: "Requested" },
                     { value: "Received", label: "Received" }
                   ]}
+                  disabled={isPoBatch}
                 />
               </FormField>
 
@@ -1432,6 +1577,7 @@ export const StockBatchesTab = ({
                     value={formData.receivedDate}
                     onChange={(e) => setFormData({...formData, receivedDate: e.target.value})}
                     hasError={!!errors.receivedDate}
+                    disabled={isPoBatch}
                   />
                 </FormField>
               )}
@@ -1451,6 +1597,7 @@ export const StockBatchesTab = ({
                   placeholder="Select vendor"
                   searchable
                   hideSearchIcon
+                  disabled={isPoBatch}
                 />
               </FormField>
 
@@ -1512,6 +1659,85 @@ export const StockBatchesTab = ({
           </div>
         </div>
       )}
+
+      {/* Adjustment Reason Modal */}
+      <GeneralModal
+        isOpen={showAdjustmentModal}
+        onClose={() => {
+          setShowAdjustmentModal(false);
+          setAdjustmentComment("");
+          setAdjustmentError("");
+        }}
+        title="Adjustment Reason"
+        width="440px"
+        zIndex={15000}
+        footer={
+          <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+            <Button
+              variant="outlined"
+              size="large"
+              style={{ flex: 1 }}
+              onClick={() => {
+                setShowAdjustmentModal(false);
+                setAdjustmentComment("");
+                setAdjustmentError("");
+              }}
+            >
+              Back
+            </Button>
+            <Button
+              variant="filled"
+              size="large"
+              style={{ flex: 1 }}
+              onClick={handleAdjustmentSubmit}
+            >
+              Submit
+            </Button>
+          </div>
+        }
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "var(--text-title-3)" }}>
+                <span style={{ color: "var(--status-red-primary)" }}>*</span>
+                <span style={{ fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>Reason</span>
+              </div>
+              <span style={{ fontSize: "var(--text-desc)", color: "var(--neutral-on-surface-tertiary)" }}>
+                {adjustmentComment.length}/400
+              </span>
+            </div>
+            <textarea
+              placeholder="Add adjustment notes..."
+              value={adjustmentComment}
+              onChange={(e) => {
+                if (e.target.value.length <= 400) {
+                  setAdjustmentComment(e.target.value);
+                  setAdjustmentError("");
+                }
+              }}
+              style={{
+                width: "100%",
+                height: "120px",
+                padding: "12px 16px",
+                borderRadius: "12px",
+                border: `1px solid ${adjustmentError ? "var(--status-red-primary)" : "var(--neutral-line-separator-1)"}`,
+                outline: "none",
+                fontSize: "var(--text-subtitle-1)",
+                fontFamily: "inherit",
+                resize: "none",
+                boxSizing: "border-box",
+                background: "var(--neutral-surface-primary)",
+                color: "var(--neutral-on-surface-primary)",
+                transition: "border-color 0.2s ease"
+              }}
+            />
+            {adjustmentError && (
+              <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>{adjustmentError}</span>
+            )}
+          </div>
+        </div>
+      </GeneralModal>
 
       {/* Dispose Confirmation Modal */}
       <GeneralModal

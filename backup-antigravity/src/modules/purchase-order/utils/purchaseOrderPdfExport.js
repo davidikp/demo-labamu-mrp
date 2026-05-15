@@ -181,6 +181,7 @@ export const exportPurchaseOrderPdf = async ({ data }) => {
   }
 
   const blob = await generatePurchaseOrderPdfBlob(data);
-  const fileName = `${sanitizeFileName(`Purchase-Order-${data?.poNumber || "export"}`)}.pdf`;
+  const dateStr = new Date().toISOString().split("T")[0];
+  const fileName = `${sanitizeFileName(`${data?.poNumber || "PO"}_${dateStr}`)}.pdf`;
   downloadBlob(blob, fileName);
 };

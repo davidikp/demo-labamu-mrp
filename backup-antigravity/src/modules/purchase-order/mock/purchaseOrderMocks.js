@@ -279,6 +279,29 @@ export const MOCK_PO_TABLE_DATA = [
     sBadge: "grey",
     invoices: [],
     payments: []
+  },
+  {
+    poNumber: "PO-202603-0099",
+    vendorName: "PT Mitra Sejahtera",
+    amount: "IDR 50,000,000",
+    createdDate: "2026-03-31",
+    status: "Draft",
+    statusKey: "draft",
+    sBadge: "grey",
+    lines: [
+      {
+        id: 1,
+        type: "wo",
+        item: "Luxury Cabinet Canceled",
+        code: "CAB-LUX-CAN",
+        desc: "High-end luxury cabinet that has been canceled.",
+        woRef: "WO-202603-099",
+        qty: 50,
+        price: 1000000,
+      }
+    ],
+    invoices: [],
+    payments: []
   }
 ];
 

@@ -32,6 +32,7 @@ const DropdownSelect = ({
   showDivider = false,
   footer = null,
   maxOptionsVisible = null,
+  renderValue = null,
 }) => {
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
@@ -81,7 +82,16 @@ const DropdownSelect = ({
     
     let estimatedMenuHeight;
     if (maxOptionsVisible) {
-      estimatedMenuHeight = 4 + (maxOptionsVisible * 40) + (footer ? 48 : 0);
+      // Base height for options
+      let height = (maxOptionsVisible * 40) + 4;
+      // Add height for header if variant is filter
+      if (variant === "filter") height += 44; // Title + Padding
+      // Add height for search bar if searchable
+      if (searchable && variant === "filter") height += 48; // Search bar + Padding
+      // Add height for footer if present
+      if (footer) height += 48;
+      
+      estimatedMenuHeight = height;
     } else {
       estimatedMenuHeight = Math.min(
         16 + Math.max(visibleOptions.length, 1) * 41 + (footer ? 48 : 0),
@@ -229,7 +239,7 @@ const DropdownSelect = ({
           ...style,
         }}
       >
-        {isOpen && searchable ? (
+        {isOpen && searchable && variant !== "filter" ? (
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
@@ -300,7 +310,7 @@ const DropdownSelect = ({
                     : "var(--neutral-on-surface-tertiary)",
             }}
           >
-            {hasValue ? selectedOption?.label : placeholder}
+            {hasValue ? (renderValue ? renderValue(selectedOption) : selectedOption?.label) : placeholder}
           </span>
         )}
         <ChevronDownIcon
@@ -351,7 +361,7 @@ const DropdownSelect = ({
                 alignItems: "center",
                 justifyContent: "space-between",
                 gap: "12px",
-                marginBottom: "4px",
+                marginBottom: searchable ? "0" : "4px",
               }}
             >
               <span
@@ -382,6 +392,49 @@ const DropdownSelect = ({
               >
                 Remove Filter
               </button>
+            </div>
+          )}
+
+          {variant === "filter" && searchable && (
+            <div style={{ padding: "0 16px 12px" }}>
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  padding: "0 12px",
+                  height: "36px",
+                  background: "var(--neutral-surface-grey-lighter)",
+                  borderRadius: "8px",
+                  border: "1px solid var(--neutral-line-separator-2)",
+                }}
+              >
+                <SearchIcon
+                  size={16}
+                  color="var(--neutral-on-surface-tertiary)"
+                />
+                <input
+                  type="text"
+                  autoFocus
+                  placeholder={searchPlaceholder}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === " ") e.stopPropagation();
+                  }}
+                  style={{
+                    flex: 1,
+                    border: "none",
+                    background: "transparent",
+                    outline: "none",
+                    fontSize: "var(--text-title-3)",
+                    color: "var(--neutral-on-surface-primary)",
+                    width: "100%",
+                  }}
+                />
+              </div>
             </div>
           )}
 

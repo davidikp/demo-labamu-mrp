@@ -36,7 +36,7 @@ const MOCK_ATTACHMENTS_DATA = [
   { id: 1, name: "invoice-march-2026.pdf", documentType: "invoice", uploadedBy: "Joko", date: "Mar 20, 2026", size: "2.4 MB", type: "pdf", meta: "Uploaded by Joko on Mar 20, 2026" },
   { id: 2, name: "delivery-note-batch-14.pdf", documentType: "delivery_note", uploadedBy: "Natasha Smith", date: "Mar 20, 2026", size: "1.1 MB", type: "pdf", meta: "Uploaded by Natasha Smith on Mar 20, 2026" },
   { id: 3, name: "vendor-quotation.pdf", documentType: "quotation_vendor", uploadedBy: "Joko", date: "Mar 19, 2026", size: "860 KB", type: "pdf", meta: "Uploaded by Joko on Mar 19, 2026" },
-  { id: 4, name: "packing-list-wood-frame.png", documentType: "packing_list", uploadedBy: "Natasha Smith", date: "Mar 18, 2026", size: "540 KB", type: "image", meta: "Uploaded by Natasha Smith on Mar 18, 2026" },
+  { id: 4, name: "packing-list-wood-frame.png", documentType: "packing_list", uploadedBy: "Natasha Smith", date: "Mar 18, 2026", size: "540 KB", type: "image", previewUrl: "https://images.unsplash.com/photo-1586769852836-bc069f19e1b6?w=400&h=400&fit=crop", meta: "Uploaded by Natasha Smith on Mar 18, 2026" },
   { id: 5, name: "manual-x200.pdf", documentType: "other", uploadedBy: "Admin", date: "Mar 15, 2026", size: "15.2 MB", type: "pdf", meta: "Uploaded by Admin on Mar 15, 2026" },
 ];
 
@@ -405,181 +405,10 @@ const tabButtonStyle = (isActive) => ({
 });
 
 
-const ProductsTab = ({ onNavigate }) => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterTriggerRect, setFilterTriggerRect] = useState(null);
-
-  const [hoveredSku, setHoveredSku] = useState(null);
-
-  const filteredData = React.useMemo(() => {
-    let result = [...MOCK_ORDER_PRODUCTS_DATA];
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(p => 
-        p.name.toLowerCase().includes(q) ||
-        p.sku.toLowerCase().includes(q)
-      );
-    }
-    if (statusFilter.length > 0) {
-      result = result.filter(p => statusFilter.includes(p.status));
-    }
-    return result;
-  }, [searchQuery, statusFilter]);
-
-  const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-  const visibleData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
-  const statusOptions = ["Not Started", "In Progress", "Ready"];
-
-  const handleFilterToggle = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setFilterTriggerRect(rect);
-    setIsFilterOpen(!isFilterOpen);
-  };
-
-  const toggleStatus = (status) => {
-    setStatusFilter(prev => 
-      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
-    );
-  };
-
-  const gridTemplate = "2.2fr 1.2fr 1.8fr 1fr 1.2fr";
-  const rowHeight = 72;
-
-  return (
-    <div style={{ width: "100%", background: "var(--neutral-surface-primary)", display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <div onClick={handleFilterToggle}>
-            <FilterPill label="Status" count={statusFilter.length} active={statusFilter.length > 0} isOpen={isFilterOpen} />
-          </div>
-          {isFilterOpen && (
-            <>
-              {createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setIsFilterOpen(false)} />, document.body)}
-              {createPortal(
-                <div style={{
-                  position: "fixed",
-                  top: `${filterTriggerRect.bottom + 8}px`,
-                  left: `${filterTriggerRect.left}px`,
-                  width: "240px",
-                  background: "var(--neutral-surface-primary)",
-                  border: "1px solid var(--neutral-line-separator-1)",
-                  borderRadius: "16px",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                  padding: "16px",
-                  zIndex: 14001,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "16px"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Status</span>
-                    <button onClick={() => { setStatusFilter([]); setIsFilterOpen(false); }} style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Remove Filter</button>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {statusOptions.map(opt => (
-                      <label key={opt} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
-                        <Checkbox checked={statusFilter.includes(opt)} onChange={() => toggleStatus(opt)} />
-                        {opt}
-                      </label>
-                    ))}
-                  </div>
-                </div>,
-                document.body
-              )}
-            </>
-          )}
-        </div>
-        <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Product, SKU" width="320px" />
-      </div>
-      <div style={{ height: "1px", background: "var(--neutral-line-separator-1)", width: "100%" }} />
-      <div style={{ width: "100%", overflowX: "auto" }}>
-        <div style={{ minWidth: "1000px", width: "100%" }}>
-          <div style={{ display: "grid", gridTemplateColumns: gridTemplate, borderBottom: "1px solid var(--neutral-line-separator-1)", background: "var(--neutral-surface-primary)", alignItems: "center" }}>
-            <div style={{ padding: "16px 12px 16px 24px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Product</div>
-            <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Linked WO</div>
-            <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Linked Material</div>
-            <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Ordered Qty</div>
-            <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Production Status</div>
-          </div>
-          <div>
-            {visibleData.length > 0 ? visibleData.map((p, idx) => (
-              <div key={idx} style={{ display: "grid", gridTemplateColumns: gridTemplate, minHeight: `${rowHeight}px`, alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-1)", cursor: "default", width: "100%", padding: "8px 0" }}>
-                <div style={{ padding: "0 12px 0 24px", display: "flex", alignItems: "center", gap: "12px", overflow: "hidden" }}>
-                  <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: "var(--neutral-surface-grey-lighter)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                    {p.image ? <img src={p.image} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <Box size={20} color="var(--neutral-on-surface-tertiary)" />}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-                    <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</span>
-                    <span 
-                      onClick={() => onNavigate("product_detail", { sku: p.sku })}
-                      onMouseEnter={() => setHoveredSku(p.sku)}
-                      onMouseLeave={() => setHoveredSku(null)}
-                      style={{ 
-                        fontSize: "var(--text-body)", 
-                        color: "var(--feature-brand-primary)", 
-                        cursor: "pointer",
-                        textDecoration: hoveredSku === p.sku ? "underline" : "none"
-                      }}
-                    >
-                      {p.sku}
-                    </span>
-                  </div>
-                </div>
-                <div style={{ padding: "0 12px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                  {p.linkedWO.map((wo, wIdx) => (
-                    <span 
-                      key={wIdx}
-                      onClick={() => onNavigate("wo_detail", { woNo: wo })}
-                      style={{ fontSize: "13px", color: "var(--feature-brand-primary)", cursor: "pointer", fontWeight: "bold" }}
-                      onMouseEnter={(e) => e.target.style.textDecoration = "underline"}
-                      onMouseLeave={(e) => e.target.style.textDecoration = "none"}
-                    >
-                      {wo}
-                    </span>
-                  ))}
-                </div>
-                <div style={{ padding: "0 12px", display: "flex", flexWrap: "wrap", gap: "4px" }}>
-                  {p.linkedMaterial.map((m, mIdx) => (
-                    <span 
-                      key={mIdx}
-                      style={{ 
-                        fontSize: "12px", 
-                        padding: "2px 8px", 
-                        borderRadius: "100px", 
-                        background: "var(--neutral-surface-grey-lighter)", 
-                        color: "var(--neutral-on-surface-secondary)",
-                        cursor: "pointer"
-                      }}
-                      onMouseEnter={(e) => { e.target.style.background = "#EAF1FF"; e.target.style.color = "var(--feature-brand-primary)"; }}
-                      onMouseLeave={(e) => { e.target.style.background = "var(--neutral-surface-grey-lighter)"; e.target.style.color = "var(--neutral-on-surface-secondary)"; }}
-                      onClick={() => onNavigate("material_detail", { name: m })}
-                    >
-                      {m}
-                    </span>
-                  ))}
-                </div>
-                <div style={{ padding: "0 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>{p.orderedQty}</div>
-                <div style={{ padding: "0 12px" }}>
-                  <StatusBadge variant={p.sBadge}>{p.status}</StatusBadge>
-                </div>
-              </div>
-            )) : <div style={{ padding: "40px", textAlign: "center", color: "var(--neutral-on-surface-tertiary)" }}>No results found.</div>}
-          </div>
-        </div>
-      </div>
-      <div style={{ padding: "0 4px" }}>
-        <TablePaginationFooter currentPage={currentPage} totalPages={totalPages} rowsPerPage={rowsPerPage} totalRows={filteredData.length} onPageChange={setCurrentPage} onRowsPerPageChange={setRowsPerPage} />
-      </div>
-    </div>
-  );
-};
 
 
-const WorkOrderTab = ({ orderNo, onNavigate }) => {
+
+const WorkOrderTab = ({ orderNo, orderStatus, onNavigate }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -684,9 +513,9 @@ const WorkOrderTab = ({ orderNo, onNavigate }) => {
       <div style={{ width: "100%", overflowX: "auto" }}>
         <div style={{ minWidth: "1000px", width: "100%" }}>
           <div style={{ display: "grid", gridTemplateColumns: gridTemplate, borderBottom: "1px solid var(--neutral-line-separator-1)", background: "var(--neutral-surface-primary)", alignItems: "center" }}>
-            <div style={{ padding: "16px 12px 16px 24px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>WO Number</div>
-            <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Product</div>
-            <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>WO Qty</div>
+            <div style={{ padding: "16px 12px 16px 24px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Product</div>
+            <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>WO Number</div>
+            <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Ordered Qty</div>
             <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Planned Start</div>
             <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Planned End</div>
             <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Status</div>
@@ -694,29 +523,7 @@ const WorkOrderTab = ({ orderNo, onNavigate }) => {
           <div style={{ display: "block", maxHeight: `${maxBodyHeight}px`, overflowY: "auto", width: "100%" }}>
             {visibleData.length > 0 ? visibleData.map((wo, idx) => (
               <div key={idx} style={{ display: "grid", gridTemplateColumns: gridTemplate, height: `${rowHeight}px`, alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-1)", transition: "background 0.2s ease", cursor: "default", width: "100%" }}>
-                <div style={{ padding: "0 12px 0 24px", overflow: "hidden", display: "flex" }}>
-                  <Tooltip content={wo.wo} checkTruncation={true} style={{ width: "100%" }}>
-                    <span 
-                      onClick={(e) => { e.stopPropagation(); onNavigate("wo_detail", { woNo: wo.wo }); }} 
-                      onMouseEnter={() => setHoveredWo(`${wo.wo}-${idx}`)} 
-                      onMouseLeave={() => setHoveredWo(null)} 
-                      style={{ 
-                        fontSize: "var(--text-title-3)", 
-                        fontWeight: "var(--font-weight-bold)", 
-                        color: "var(--feature-brand-primary)", 
-                        cursor: "pointer", 
-                        textDecoration: hoveredWo === `${wo.wo}-${idx}` ? "underline" : "none", 
-                        whiteSpace: "nowrap", 
-                        overflow: "hidden", 
-                        textOverflow: "ellipsis",
-                        display: "block"
-                      }}
-                    >
-                      {wo.wo}
-                    </span>
-                  </Tooltip>
-                </div>
-                <div style={{ padding: "0 12px", display: "flex", alignItems: "center", gap: "12px", overflow: "hidden" }}>
+                <div style={{ padding: "0 12px 0 24px", display: "flex", alignItems: "center", gap: "12px", overflow: "hidden" }}>
                   <div style={{ width: "40px", height: "40px", borderRadius: "8px", background: "var(--neutral-surface-grey-lighter)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <Box size={20} color="var(--neutral-on-surface-tertiary)" />
                   </div>
@@ -736,6 +543,32 @@ const WorkOrderTab = ({ orderNo, onNavigate }) => {
                     </Tooltip>
                     <span onClick={(e) => { e.stopPropagation(); onNavigate("product_detail", { sku: wo.sku }); }} onMouseEnter={() => setHoveredSku(`${wo.wo}-${idx}`)} onMouseLeave={() => setHoveredSku(null)} style={{ fontSize: "var(--text-body)", color: "var(--feature-brand-primary)", cursor: "pointer", textDecoration: hoveredSku === `${wo.wo}-${idx}` ? "underline" : "none" }}>{wo.sku}</span>
                   </div>
+                </div>
+                <div style={{ padding: "0 12px", overflow: "hidden", display: "flex" }}>
+                  {["Not Started", "Waiting for Approval", "Need Revision"].includes(orderStatus) ? (
+                    <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-tertiary)" }}>-</span>
+                  ) : (
+                    <Tooltip content={wo.wo} checkTruncation={true} style={{ width: "100%" }}>
+                      <span 
+                        onClick={(e) => { e.stopPropagation(); onNavigate("wo_detail", { woNo: wo.wo }); }} 
+                        onMouseEnter={() => setHoveredWo(`${wo.wo}-${idx}`)} 
+                        onMouseLeave={() => setHoveredWo(null)} 
+                        style={{ 
+                          fontSize: "var(--text-title-3)", 
+                          fontWeight: "var(--font-weight-bold)", 
+                          color: "var(--feature-brand-primary)", 
+                          cursor: "pointer", 
+                          textDecoration: hoveredWo === `${wo.wo}-${idx}` ? "underline" : "none", 
+                          whiteSpace: "nowrap", 
+                          overflow: "hidden", 
+                          textOverflow: "ellipsis",
+                          display: "block"
+                        }}
+                      >
+                        {wo.wo}
+                      </span>
+                    </Tooltip>
+                  )}
                 </div>
                 <div style={{ padding: "0 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>{wo.qty}</div>
                 <div style={{ padding: "0 12px", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>{wo.start || "-"}</div>
@@ -962,12 +795,17 @@ const InvoicesTab = ({ onNavigate }) => {
   );
 };
 
-const AttachmentsTab = ({ onNavigate }) => {
+const AttachmentsTab = ({ onNavigate, showSnackbar }) => {
+  const [attachments, setAttachments] = useState(MOCK_ATTACHMENTS_DATA);
   const [view, setView] = useState("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filterTriggerRect, setFilterTriggerRect] = useState(null);
+  const [openMenuId, setOpenMenuId] = useState(null);
+  const [menuTriggerRect, setMenuTriggerRect] = useState(null);
+  const MAX_ATTACHMENTS = 10;
+  const isLimitReached = attachments.length >= MAX_ATTACHMENTS;
 
   // Modals
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -976,26 +814,24 @@ const AttachmentsTab = ({ onNavigate }) => {
   
   // Modal Form States
   const [selectedDocId, setSelectedDocId] = useState(null);
-  const [uploadDocType, setUploadDocType] = useState("other");
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadDescription, setUploadDescription] = useState("");
   const [uploadError, setUploadError] = useState("");
 
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [editType, setEditType] = useState("other");
+  const [uploadDescriptionError, setUploadDescriptionError] = useState("");
+  const [editNameError, setEditNameError] = useState("");
+  const [editDescriptionError, setEditDescriptionError] = useState("");
 
   const filteredData = React.useMemo(() => {
-    let result = [...MOCK_ATTACHMENTS_DATA];
+    let result = [...attachments];
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(doc => (doc.title || doc.name).toLowerCase().includes(q));
     }
-    if (typeFilter.length > 0) {
-      result = result.filter(doc => typeFilter.includes(doc.documentType));
-    }
     return result;
-  }, [searchQuery, typeFilter]);
+  }, [attachments, searchQuery]);
 
   const documentTypeOptions = [
     { value: "invoice", label: "Invoice" },
@@ -1013,16 +849,9 @@ const AttachmentsTab = ({ onNavigate }) => {
     if (doc.type === "image" && doc.previewUrl) {
       return <img src={doc.previewUrl} alt={doc.name} style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: radius, display: "block" }} />;
     }
-    if (doc.type === "image") {
-      return (
-        <div style={{ width: "100%", height: "100%", background: "linear-gradient(180deg, #CFE1FF 0%, #F6E6C9 100%)", borderRadius: radius, position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", left: compact ? "18px" : "56px", bottom: compact ? "11px" : "34px", width: compact ? "18px" : "50px", height: compact ? "14px" : "34px", background: "#6E9FD8", transform: "skewX(-18deg)", borderRadius: "4px" }} />
-        </div>
-      );
-    }
     return (
-      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: radius }}>
-        <DocumentTypeBadge fileName={doc.name} type={doc.type} size="preview" />
+      <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: radius, background: "var(--neutral-surface-grey-lighter)" }}>
+        <DocumentTypeBadge fileName={doc.name} type={doc.type} size={compact ? "small" : "preview"} />
       </div>
     );
   };
@@ -1034,13 +863,81 @@ const AttachmentsTab = ({ onNavigate }) => {
   };
 
   const resetUploadState = () => {
-    setUploadDocType("other");
     setUploadFile(null);
     setUploadDescription("");
     setUploadError("");
+    setUploadDescriptionError("");
   };
 
-  const gridTemplate = "2.2fr 1fr 1.2fr 1fr 0.9fr 132px";
+  const handleUpload = () => {
+    let hasError = false;
+    if (!uploadFile) {
+      setUploadError("Please choose a file");
+      hasError = true;
+    } else {
+      setUploadError("");
+    }
+    if (!uploadDescription.trim()) {
+      setUploadDescriptionError("Field cannot be empty");
+      hasError = true;
+    } else {
+      setUploadDescriptionError("");
+    }
+    if (hasError) return;
+    
+    const newDoc = {
+      id: Date.now(),
+      name: uploadFile.name,
+      title: uploadFile.name.split('.')[0],
+      description: uploadDescription,
+      documentType: "other",
+      uploadedBy: "Joko",
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      size: `${(uploadFile.size / (1024 * 1024)).toFixed(1)} MB`,
+      type: uploadFile.type.includes('pdf') ? 'pdf' : 'image',
+      meta: `Uploaded by Joko on ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+    };
+
+    setAttachments(prev => [newDoc, ...prev]);
+    setShowUploadModal(false);
+    resetUploadState();
+    showSnackbar?.("Document successfully uploaded");
+  };
+
+  const handleEdit = () => {
+    let hasError = false;
+    if (!editName.trim()) {
+      setEditNameError("Field cannot be empty");
+      hasError = true;
+    } else {
+      setEditNameError("");
+    }
+    if (!editDescription.trim()) {
+      setEditDescriptionError("Field cannot be empty");
+      hasError = true;
+    } else {
+      setEditDescriptionError("");
+    }
+    if (hasError) return;
+
+    setAttachments(prev => prev.map(doc => 
+      doc.id === selectedDocId 
+        ? { ...doc, title: editName.trim(), description: editDescription.trim() } 
+        : doc
+    ));
+    setShowEditModal(false);
+    showSnackbar?.("Document successfully updated");
+  };
+
+  const handleDelete = () => {
+    if (selectedDocId === null) return;
+    setAttachments(prev => prev.filter(doc => doc.id !== selectedDocId));
+    setShowDeleteModal(false);
+    setSelectedDocId(null);
+    showSnackbar?.("Document successfully deleted", "black");
+  };
+
+  const gridTemplate = "2.2fr 1.2fr 1fr 0.9fr 132px";
   const rowHeight = 72;
 
   return (
@@ -1048,45 +945,7 @@ const AttachmentsTab = ({ onNavigate }) => {
       {/* Header Section */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <div onClick={handleFilterToggle}>
-            <FilterPill label="Document Type" count={typeFilter.length} active={typeFilter.length > 0} isOpen={isFilterOpen} />
-          </div>
-          {isFilterOpen && (
-            <>
-              {createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setIsFilterOpen(false)} />, document.body)}
-              {createPortal(
-                <div style={{
-                  position: "fixed",
-                  top: `${filterTriggerRect.bottom + 8}px`,
-                  left: `${filterTriggerRect.left}px`,
-                  width: "240px",
-                  background: "var(--neutral-surface-primary)",
-                  border: "1px solid var(--neutral-line-separator-1)",
-                  borderRadius: "16px",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                  padding: "16px",
-                  zIndex: 14001,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "16px"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Document Type</span>
-                    <button onClick={() => setTypeFilter([])} style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Remove Filter</button>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {documentTypeOptions.map(opt => (
-                      <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
-                        <Checkbox checked={typeFilter.includes(opt.value)} onChange={() => setTypeFilter(prev => prev.includes(opt.value) ? prev.filter(p => p !== opt.value) : [...prev, opt.value])} />
-                        {opt.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>,
-                document.body
-              )}
-            </>
-          )}
+          {/* Removed Document Type Filter */}
         </div>
         
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
@@ -1099,20 +958,42 @@ const AttachmentsTab = ({ onNavigate }) => {
               <GridViewIcon size={18} color={view === "grid" ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-tertiary)"} />
             </button>
           </div>
-          <Button variant="filled" leftIcon={UploadIcon} onClick={() => { resetUploadState(); setShowUploadModal(true); }}>Upload</Button>
+          <Button 
+            variant="filled" 
+            leftIcon={UploadIcon} 
+            disabled={isLimitReached}
+            onClick={() => { resetUploadState(); setShowUploadModal(true); }}
+          >
+            Upload
+          </Button>
         </div>
       </div>
 
       <div style={{ height: "1px", background: "var(--neutral-line-separator-1)", width: "100%" }} />
 
-      {/* Content Area */}
       <div style={{ padding: "0" }}>
+        {isLimitReached && (
+          <div style={{ 
+            margin: "20px 24px 0", 
+            display: "flex", 
+            alignItems: "flex-start", 
+            gap: "12px", 
+            padding: "12px 16px", 
+            borderRadius: "12px", 
+            background: "var(--feature-brand-container-lighter)", 
+            border: "1px solid var(--feature-brand-container-darker)" 
+          }}>
+            <Info size={16} strokeWidth={2.1} color="var(--feature-brand-primary)" style={{ flexShrink: 0, marginTop: "2px" }} />
+            <span style={{ fontSize: "var(--text-title-3)", color: "var(--feature-brand-primary)", lineHeight: "1.5" }}>
+              This order already has {MAX_ATTACHMENTS} documents attached. Remove a document before uploading a new one.
+            </span>
+          </div>
+        )}
         {view === "list" ? (
           <div style={{ width: "100%", overflowX: "auto" }}>
             <div style={{ minWidth: "1000px", width: "100%" }}>
               <div style={{ display: "grid", gridTemplateColumns: gridTemplate, borderBottom: "1px solid var(--neutral-line-separator-1)", background: "var(--neutral-surface-primary)", alignItems: "center" }}>
                 <div style={{ padding: "16px 12px 16px 24px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Name</div>
-                <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Document Type</div>
                 <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Uploaded By</div>
                 <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Date Modified</div>
                 <div style={{ padding: "16px 12px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>File Size</div>
@@ -1128,13 +1009,12 @@ const AttachmentsTab = ({ onNavigate }) => {
                         <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{doc.name}</span>
                       </div>
                     </div>
-                    <div style={{ padding: "0 12px", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-secondary)" }}>{getDocumentTypeLabel(doc.documentType)}</div>
                     <div style={{ padding: "0 12px", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>{doc.uploadedBy}</div>
                     <div style={{ padding: "0 12px", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>{doc.date}</div>
                     <div style={{ padding: "0 12px", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>{doc.size}</div>
                     <div style={{ padding: "0 24px 0 12px", display: "flex", justifyContent: "flex-end", gap: "6px" }}>
-                      <Tooltip content="Download"><IconButton icon={DownloadIcon} size="small" onClick={() => {}} /></Tooltip>
-                      <Tooltip content="Edit"><IconButton icon={EditIcon} size="small" onClick={() => { setSelectedDocId(doc.id); setEditName(doc.title || doc.name.split('.')[0]); setEditDescription(doc.description || ""); setEditType(doc.documentType); setShowEditModal(true); }} /></Tooltip>
+                      <Tooltip content="Download"><IconButton icon={DownloadIcon} size="small" onClick={() => { showSnackbar?.("Document successfully downloaded"); }} /></Tooltip>
+                      <Tooltip content="Edit"><IconButton icon={EditIcon} size="small" onClick={() => { setSelectedDocId(doc.id); setEditName(doc.title || doc.name.split('.')[0]); setEditDescription(doc.description || ""); setShowEditModal(true); }} /></Tooltip>
                       <Tooltip content="Delete"><IconButton icon={DeleteIcon} size="small" color="var(--status-red-primary)" hoverBackground="#FAE6E8" onClick={() => { setSelectedDocId(doc.id); setShowDeleteModal(true); }} /></Tooltip>
                     </div>
                   </div>
@@ -1143,20 +1023,100 @@ const AttachmentsTab = ({ onNavigate }) => {
             </div>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "16px", padding: "20px 24px", maxHeight: "450px", overflowY: "auto" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "16px", padding: "20px 24px" }}>
             {filteredData.length > 0 ? filteredData.map((doc) => (
               <div key={doc.id} style={{ border: "1px solid var(--neutral-line-separator-1)", borderRadius: "16px", background: "var(--neutral-surface-primary)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
                 <div style={{ height: "152px", overflow: "hidden" }}>{getDocumentPreview(doc, false)}</div>
                 <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "flex-start" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", alignItems: "flex-start", position: "relative" }}>
                     <div style={{ display: "flex", flexDirection: "column", gap: "2px", flex: 1, minWidth: 0 }}>
                       <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", lineHeight: "1.5", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{doc.title || doc.name.split('.')[0]}</span>
                       <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", lineHeight: "1.4", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{doc.name}</span>
                     </div>
-                    <IconButton icon={MoreVerticalIcon} size="small" color="var(--neutral-on-surface-secondary)" onClick={() => {}} />
+                    <IconButton 
+                      icon={MoreVerticalIcon} 
+                      size="small" 
+                      color="var(--neutral-on-surface-secondary)" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setMenuTriggerRect(rect);
+                        setOpenMenuId(openMenuId === doc.id ? null : doc.id);
+                      }} 
+                    />
+                    {openMenuId === doc.id && (
+                      <>
+                        {createPortal(
+                          <div 
+                            style={{ position: "fixed", inset: 0, zIndex: 100 }} 
+                            onClick={() => setOpenMenuId(null)} 
+                          />,
+                          document.body
+                        )}
+                        {createPortal(
+                          <div style={{
+                            position: "fixed",
+                            top: `${menuTriggerRect.bottom + 8}px`,
+                            left: `${menuTriggerRect.right - 160}px`,
+                            width: "160px",
+                            background: "var(--neutral-surface-primary)",
+                            border: "1px solid var(--neutral-line-separator-1)",
+                            borderRadius: "12px",
+                            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                            zIndex: 101,
+                            padding: "6px",
+                            display: "flex",
+                            flexDirection: "column"
+                          }}>
+                            {[
+                              { label: "Download", icon: <DownloadIcon size={16} />, color: "var(--neutral-on-surface-primary)", onClick: () => {
+                                showSnackbar?.("Document successfully downloaded");
+                                setOpenMenuId(null);
+                              }},
+                              { label: "Edit", icon: <EditIcon size={16} />, color: "var(--neutral-on-surface-primary)", onClick: () => {
+                                setSelectedDocId(doc.id);
+                                setEditName(doc.title || doc.name.split('.')[0]);
+                                setEditDescription(doc.description || "");
+                                setShowEditModal(true);
+                                setOpenMenuId(null);
+                              }},
+                              { label: "Delete", icon: <Trash2 size={16} />, color: "var(--status-red-primary)", onClick: () => {
+                                setSelectedDocId(doc.id);
+                                setShowDeleteModal(true);
+                                setOpenMenuId(null);
+                              }}
+                            ].map((opt, i, arr) => (
+                              <button
+                                key={i}
+                                onClick={(e) => { e.stopPropagation(); opt.onClick?.(); }}
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "10px",
+                                  padding: "10px 12px",
+                                  borderRadius: i === 0 ? "8px 8px 0 0" : i === arr.length - 1 ? "0 0 8px 8px" : "0",
+                                  border: "none",
+                                  borderBottom: i < arr.length - 1 ? "1px solid var(--neutral-line-separator-2)" : "none",
+                                  background: "none",
+                                  cursor: "pointer",
+                                  textAlign: "left",
+                                  width: "100%",
+                                  transition: "background 0.2s"
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.background = "var(--neutral-surface-grey-lighter)"}
+                                onMouseLeave={(e) => e.currentTarget.style.background = "none"}
+                              >
+                                {React.cloneElement(opt.icon, { color: opt.color })}
+                                <span style={{ fontSize: "13px", color: opt.color, fontWeight: "500" }}>{opt.label}</span>
+                              </button>
+                            ))}
+                          </div>,
+                          document.body
+                        )}
+                      </>
+                    )}
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                    <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>Document Type: {getDocumentTypeLabel(doc.documentType)}</span>
                     <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>Uploaded by: {doc.uploadedBy}</span>
                     <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>Date modified: {doc.date}</span>
                     <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>File size: {doc.size}</span>
@@ -1177,7 +1137,7 @@ const AttachmentsTab = ({ onNavigate }) => {
         footer={
           <div style={{ display: "flex", gap: "12px", width: "100%" }}>
             <Button variant="outlined" size="large" style={{ flex: 1 }} onClick={() => { setShowUploadModal(false); resetUploadState(); }}>Cancel</Button>
-            <Button variant="filled" size="large" style={{ flex: 1 }} disabled={!uploadDocType || !uploadFile} onClick={() => setShowUploadModal(false)}>Upload</Button>
+            <Button variant="filled" size="large" style={{ flex: 1 }} onClick={handleUpload}>Upload</Button>
           </div>
         }
       >
@@ -1185,18 +1145,29 @@ const AttachmentsTab = ({ onNavigate }) => {
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "2px", fontSize: "var(--text-body)" }}>
               <span style={{ color: "var(--status-red-primary)" }}>*</span>
-              <span style={{ color: "var(--neutral-on-surface-primary)" }}>Document Type</span>
-            </div>
-            <DropdownSelect value={uploadDocType} onChange={setUploadDocType} options={documentTypeOptions} borderRadius="12px" />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "2px", fontSize: "var(--text-body)" }}>
-              <span style={{ color: "var(--status-red-primary)" }}>*</span>
               <span style={{ color: "var(--neutral-on-surface-primary)" }}>Document Upload</span>
             </div>
-            <UploadDropzone maxFiles={1} disabled={!!uploadFile} onFilesSelected={(files) => { setUploadFile(files[0]); setUploadError(validateUploadFile(files[0])); }} error={uploadError} />
+            <UploadDropzone 
+              maxFiles={1} 
+              disabled={!!uploadFile} 
+              onFilesSelected={(files) => { setUploadFile(files[0]); setUploadError(validateUploadFile(files[0])); }} 
+              error={uploadError}
+              accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp"
+              allowedText="Allowed formats (PDF, DOC, XLSX, JPG, JPEG, PNG, WebP)"
+            />
+            {uploadError && (
+              <span
+                style={{
+                  fontSize: "var(--text-body)",
+                  color: "var(--status-red-primary)",
+                  marginTop: "2px",
+                }}
+              >
+                {uploadError}
+              </span>
+            )}
           </div>
-          {uploadFile && <UploadDescriptionCard file={{...uploadFile, description: uploadDescription}} onRemove={resetUploadState} onDescriptionChange={setUploadDescription} />}
+          {uploadFile && <UploadDescriptionCard file={{name: uploadFile.name, type: uploadFile.type, description: uploadDescription}} onRemove={resetUploadState} onDescriptionChange={setUploadDescription} descriptionRequired={true} descriptionError={uploadDescriptionError} />}
         </div>
       </GeneralModal>
 
@@ -1208,28 +1179,27 @@ const AttachmentsTab = ({ onNavigate }) => {
         footer={
           <div style={{ display: "flex", gap: "12px", width: "100%" }}>
             <Button variant="outlined" size="large" style={{ flex: 1 }} onClick={() => setShowEditModal(false)}>Cancel</Button>
-            <Button variant="filled" size="large" style={{ flex: 1 }} disabled={!editName.trim()} onClick={() => setShowEditModal(false)}>Save</Button>
+            <Button variant="filled" size="large" style={{ flex: 1 }} onClick={handleEdit}>Save</Button>
           </div>
         }
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-primary)" }}>Document Name</span>
-            <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Enter document name" style={{ height: "48px", border: "1px solid var(--neutral-line-separator-1)", borderRadius: "8px", padding: "0 16px", outline: "none" }} />
+            <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-primary)" }}>
+              Document Name <span style={{ color: "var(--status-red-primary)" }}>*</span>
+            </span>
+            <input type="text" value={editName} onChange={(e) => { setEditName(e.target.value); if (editNameError) setEditNameError(""); }} placeholder="Enter document name" style={{ height: "48px", border: editNameError ? "1px solid var(--status-red-primary)" : "1px solid var(--neutral-line-separator-1)", borderRadius: "8px", padding: "0 16px", outline: "none" }} />
+            {editNameError && <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>{editNameError}</span>}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-primary)" }}>File Description</span>
+              <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-primary)" }}>
+                File Description <span style={{ color: "var(--status-red-primary)" }}>*</span>
+              </span>
               <span style={{ fontSize: "var(--text-desc)", color: "var(--neutral-on-surface-tertiary)" }}>{editDescription.length}/{FILE_DESCRIPTION_MAX_LENGTH}</span>
             </div>
-            <input type="text" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="Enter File Description" maxLength={FILE_DESCRIPTION_MAX_LENGTH} style={{ height: "48px", border: "1px solid var(--neutral-line-separator-1)", borderRadius: "8px", padding: "0 16px", outline: "none" }} />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "2px", fontSize: "var(--text-body)" }}>
-              <span style={{ color: "var(--status-red-primary)" }}>*</span>
-              <span style={{ color: "var(--neutral-on-surface-primary)" }}>Document Type</span>
-            </div>
-            <DropdownSelect value={editType} onChange={setEditType} options={documentTypeOptions} borderRadius="12px" />
+            <input type="text" value={editDescription} onChange={(e) => { setEditDescription(e.target.value); if (editDescriptionError) setEditDescriptionError(""); }} placeholder="Enter File Description" maxLength={FILE_DESCRIPTION_MAX_LENGTH} style={{ height: "48px", border: editDescriptionError ? "1px solid var(--status-red-primary)" : "1px solid var(--neutral-line-separator-1)", borderRadius: "8px", padding: "0 16px", outline: "none" }} />
+            {editDescriptionError && <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>{editDescriptionError}</span>}
           </div>
         </div>
       </GeneralModal>
@@ -1243,7 +1213,7 @@ const AttachmentsTab = ({ onNavigate }) => {
         description="This document will be permanently removed from the order."
         footer={
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
-            <Button variant="filled" size="large" style={{ width: "100%" }} onClick={() => setShowDeleteModal(false)}>Yes, Delete</Button>
+            <Button variant="filled" size="large" style={{ width: "100%" }} onClick={handleDelete}>Yes, Delete</Button>
             <Button variant="outlined" size="large" style={{ width: "100%" }} onClick={() => setShowDeleteModal(false)}>Cancel</Button>
           </div>
         }
@@ -2261,7 +2231,6 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar }) => {
 
   const tabs = [
     { key: "products", label: "Products" },
-    { key: "work-orders", label: "Work Orders" },
     { key: "materials", label: "Materials" },
     { key: "traceability", label: "Traceability" },
     { key: "invoices", label: "Invoices" },
@@ -2396,16 +2365,13 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar }) => {
 
       {/* Tab Content */}
       <div style={{ 
-        background: ["materials", "products", "invoices"].includes(activeTab) ? "transparent" : "var(--neutral-surface-primary)", 
-        borderRadius: ["materials", "products", "invoices"].includes(activeTab) ? "0" : "var(--radius-card)", 
-        border: ["materials", "products", "invoices"].includes(activeTab) ? "none" : "1px solid var(--neutral-line-separator-1)",
+        background: ["materials", "invoices", "traceability"].includes(activeTab) ? "transparent" : "var(--neutral-surface-primary)", 
+        borderRadius: ["materials", "invoices", "traceability"].includes(activeTab) ? "0" : "var(--radius-card)", 
+        border: ["materials", "invoices", "traceability"].includes(activeTab) ? "none" : "1px solid var(--neutral-line-separator-1)",
         overflow: "hidden"
       }}>
         {activeTab === "products" && (
-          <ProductsTab onNavigate={onNavigate} />
-        )}
-        {activeTab === "work-orders" && (
-          <WorkOrderTab orderNo={orderData.orderNo} onNavigate={onNavigate} />
+          <WorkOrderTab orderNo={orderData.orderNo} orderStatus={orderData.status} onNavigate={onNavigate} />
         )}
         {activeTab === "materials" && (
           <MaterialsTab 
@@ -2422,7 +2388,7 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar }) => {
           <InvoicesTab onNavigate={onNavigate} />
         )}
         {activeTab === "attachments" && (
-          <AttachmentsTab onNavigate={onNavigate} />
+          <AttachmentsTab onNavigate={onNavigate} showSnackbar={showSnackbar} />
         )}
         {activeTab === "logs" && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "300px", color: "var(--neutral-on-surface-tertiary)" }}>

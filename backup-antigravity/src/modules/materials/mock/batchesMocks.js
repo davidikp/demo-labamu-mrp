@@ -17,7 +17,8 @@ export const MOCK_STOCK_BATCHES = [
       { id: "att-1", file: { name: "receipt-proof-completed.pdf" }, description: "Proof Document" },
       { id: "att-2", file: { name: "packing-list.pdf" }, description: "Packing List" }
     ],
-    status: "Received"
+    status: "Received",
+    poRef: "PO-202403-001"
   },
   {
     id: "batch-002",
@@ -36,7 +37,8 @@ export const MOCK_STOCK_BATCHES = [
     attachments: [
       { id: "att-3", file: { name: "receipt-proof-completed.pdf" }, description: "Proof Document" }
     ],
-    status: "Requested"
+    status: "Received",
+    poRef: "PO-202403-002"
   },
   {
     id: "batch-003",
@@ -54,5 +56,41 @@ export const MOCK_STOCK_BATCHES = [
     vendor: "Steel Works",
     attachments: [],
     status: "Delayed"
+  },
+  {
+    id: "batch-004",
+    materialId: "mat-001",
+    batchNo: "BN-202405-004",
+    initialQty: 150,
+    currentQty: 150,
+    reservedQty: 0,
+    costPerUnit: 420000,
+    purchaseDate: "2024-05-01",
+    expiryDate: "2025-05-01",
+    expectedDate: "2024-05-05",
+    receivedDate: "2024-05-05",
+    storageLocation: "Warehouse C",
+    vendor: "Pakar Besi",
+    attachments: [],
+    status: "Received",
+    poRef: null
+  },
+  {
+    id: "batch-005",
+    materialId: "mat-001",
+    batchNo: "BN-202405-005",
+    initialQty: 80,
+    currentQty: 80,
+    reservedQty: 0,
+    costPerUnit: 430000,
+    purchaseDate: "2024-05-10",
+    expiryDate: "2025-05-10",
+    expectedDate: "2024-05-15",
+    receivedDate: "2024-05-15",
+    storageLocation: "Warehouse A",
+    vendor: "Mitra Sejati",
+    attachments: [],
+    status: "Received",
+    poRef: null
   }
 ];

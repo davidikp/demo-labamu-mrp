@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { 
   ChevronRight, 
   ChevronLeft,
@@ -21,6 +21,94 @@ import { DropdownSelect } from "../../../components/common/DropdownSelect";
 import { Button } from "../../../components/common/Button";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter";
 import { TableSearchField } from "../../../components/table/TableSearchField";
+import { 
+  ChevronDown as ChevronDownIcon, 
+  ChevronUp as ChevronUpIcon 
+} from "../../../components/icons/Icons.jsx";
+import { createPortal } from "react-dom";
+
+const Tooltip = ({ content, children }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef(null);
+
+  const updateCoords = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.top,
+        left: rect.left + rect.width / 2,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isVisible) {
+      updateCoords();
+      window.addEventListener("scroll", updateCoords, true);
+      window.addEventListener("resize", updateCoords);
+    }
+    return () => {
+      window.removeEventListener("scroll", updateCoords, true);
+      window.removeEventListener("resize", updateCoords);
+    };
+  }, [isVisible]);
+
+  return (
+    <div
+      ref={triggerRef}
+      style={{
+        position: "relative",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }}
+      onMouseEnter={() => setIsVisible(true)}
+      onMouseLeave={() => setIsVisible(false)}
+    >
+      {children}
+      {isVisible &&
+        createPortal(
+          <div
+            style={{
+              position: "fixed",
+              top: coords.top - 8,
+              left: coords.left,
+              transform: "translate(-50%, -100%)",
+              width: "max-content",
+              maxWidth: "400px",
+              zIndex: 10001,
+              whiteSpace: "normal",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              background: "var(--neutral-on-surface-primary)",
+              color: "var(--neutral-surface-primary)",
+              fontSize: "var(--text-desc)",
+              lineHeight: "1.6",
+              boxShadow: "var(--elevation-sm)",
+              textAlign: "left",
+              pointerEvents: "none",
+            }}
+          >
+            {content}
+            <div
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: "50%",
+                transform: "translateX(-50%)",
+                borderWidth: "6px",
+                borderStyle: "solid",
+                borderColor:
+                  "var(--neutral-on-surface-primary) transparent transparent transparent",
+              }}
+            />
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+};
 
 const cellStyle = (overrides) => ({
   minWidth: 0,
@@ -251,6 +339,14 @@ const POReportPage = ({ onNavigate, t }) => {
     return d;
   });
   const [endDate, setEndDate] = useState(new Date());
+  const [sortConfig, setSortConfig] = useState({ key: 'poNumber', direction: 'asc' });
+
+  const toggleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
 
   const getActiveRangeLabel = () => {
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -300,7 +396,7 @@ const POReportPage = ({ onNavigate, t }) => {
 
   // Main filter logic
   const filteredData = useMemo(() => {
-    return filteredByDate.filter(po => {
+    let result = filteredByDate.filter(po => {
       const matchesVendor = vendorFilter === "all" || po.vendorName === vendorFilter;
       const matchesPoStatus = poStatusFilter === "all" || po.status === poStatusFilter;
       
@@ -317,7 +413,53 @@ const POReportPage = ({ onNavigate, t }) => {
 
       return matchesVendor && matchesPoStatus && matchesPaymentStatus && matchesSearch;
     });
-  }, [filteredByDate, vendorFilter, poStatusFilter, paymentStatusFilter, searchQuery]);
+
+    // Sorting logic
+    result.sort((a, b) => {
+      let aVal, bVal;
+      
+      const getInvoiced = (item) => item.invoices.reduce((s, i) => s + i.amount, 0);
+      const getPaid = (item) => item.invoices.reduce((s, i) => s + i.payments.reduce((sp, p) => sp + p.amount, 0), 0);
+
+      switch(sortConfig.key) {
+        case 'poDate':
+          aVal = new Date(a.createdDate).getTime();
+          bVal = new Date(b.createdDate).getTime();
+          break;
+        case 'poValue':
+          aVal = a.amount;
+          bVal = b.amount;
+          break;
+        case 'vendorInvoice':
+          aVal = getInvoiced(a);
+          bVal = getInvoiced(b);
+          break;
+        case 'paid':
+          aVal = getPaid(a);
+          bVal = getPaid(b);
+          break;
+        case 'outstanding':
+          aVal = getInvoiced(a) - getPaid(a);
+          bVal = getInvoiced(b) - getPaid(b);
+          break;
+        case 'poGap':
+          aVal = a.amount - getInvoiced(a);
+          bVal = b.amount - getInvoiced(b);
+          break;
+        default:
+          aVal = a[sortConfig.key] || '';
+          bVal = b[sortConfig.key] || '';
+          if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+          if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+      }
+
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [filteredByDate, vendorFilter, poStatusFilter, paymentStatusFilter, searchQuery, sortConfig]);
 
   // Summary Metrics
   const metrics = useMemo(() => {
@@ -351,15 +493,15 @@ const POReportPage = ({ onNavigate, t }) => {
   const paymentStatuses = ["all", "Unpaid", "Partially Paid", "Paid"];
 
   const tableColumns = [
-    { label: "PO No", flex: "1.4" },
-    { label: "PO Date", flex: "1.2" },
-    { label: "Vendor", flex: "1.8" },
-    { label: "PO Value", flex: "1.4" },
-    { label: "Invoiced", flex: "1.2" },
-    { label: "Paid", flex: "1.2" },
-    { label: "Outstanding", flex: "1.4" },
-    { label: "Payment Status", flex: "1.4" },
-    { label: "PO Status", flex: "1.2" },
+    { label: "PO No", flex: "1.4", key: "poNumber" },
+    { label: "PO Date", flex: "1.2", key: "poDate", sortable: true },
+    { label: "Vendor", flex: "1.8", key: "vendorName" },
+    { label: "PO Value", flex: "1.4", key: "poValue", sortable: true },
+    { label: "Vendor Invoice", flex: "1.2", key: "vendorInvoice", sortable: true },
+    { label: "Paid", flex: "1.2", key: "paid", sortable: true },
+    { label: "Outstanding", flex: "1.4", key: "outstanding", sortable: true, tooltip: "Amount that has not been paid from the vendor invoice" },
+    { label: "PO Gap", flex: "1.4", key: "poGap", sortable: true, tooltip: "Difference between the purchase order value and vendor invoice value" },
+    { label: "PO Status", flex: "1.2", key: "status" },
   ];
 
   const handleExport = () => {
@@ -527,6 +669,8 @@ const POReportPage = ({ onNavigate, t }) => {
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <DropdownSelect 
               variant="filter"
+              searchable={true}
+              maxOptionsVisible={4}
               fontSize="var(--text-title-3)"
               placeholder="Vendor"
               value={vendorFilter}
@@ -555,7 +699,7 @@ const POReportPage = ({ onNavigate, t }) => {
             <TableSearchField 
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              placeholder="Search PO no. or vendor name"
+              placeholder="Search PO number"
               style={{ width: "320px" }}
             />
           </div>
@@ -566,20 +710,43 @@ const POReportPage = ({ onNavigate, t }) => {
           {/* Header Row */}
           <div style={{ display: "flex", background: "var(--neutral-surface-primary)", borderBottom: "1px solid var(--neutral-line-separator-1)" }}>
             {tableColumns.map((col, idx) => (
-              <div key={idx} style={{ 
-                flex: col.flex, 
-                padding: "0 12px", 
-                height: "49px", 
-                display: "flex", 
-                alignItems: "center" 
-              }}>
+              <div 
+                key={idx} 
+                onClick={() => col.sortable && toggleSort(col.key)}
+                style={{ 
+                  flex: col.flex, 
+                  padding: "0 12px", 
+                  height: "49px", 
+                  display: "flex", 
+                  alignItems: "center",
+                  cursor: col.sortable ? "pointer" : "default",
+                  gap: "6px"
+                }}
+              >
                 <span style={{ 
                   fontSize: "var(--text-title-3)", 
                   fontWeight: "var(--font-weight-bold)", 
-                  color: "var(--neutral-on-surface-primary)"
+                  color: "var(--neutral-on-surface-primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px"
                 }}>
                   {col.label}
+                  {col.tooltip && (
+                    <Tooltip content={col.tooltip}>
+                      <Info size={14} color="var(--neutral-on-surface-tertiary)" style={{ cursor: "help" }} />
+                    </Tooltip>
+                  )}
                 </span>
+                {col.sortable && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", opacity: sortConfig.key === col.key ? 1 : 0.3 }}>
+                    {sortConfig.key === col.key && sortConfig.direction === 'asc' ? (
+                      <ChevronUpIcon size={12} color="var(--neutral-on-surface-primary)" />
+                    ) : (
+                      <ChevronDownIcon size={12} color="var(--neutral-on-surface-primary)" />
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -591,13 +758,6 @@ const POReportPage = ({ onNavigate, t }) => {
               const paid = po.invoices.reduce((s, i) => s + i.payments.reduce((sp, p) => sp + p.amount, 0), 0);
               const outstanding = invoiced - paid;
               
-              let payStatus = "Unpaid";
-              let payVariant = "orange-light";
-              if (paid > 0) {
-                if (paid >= invoiced) { payStatus = "Paid"; payVariant = "green-light"; }
-                else { payStatus = "Partially Paid"; payVariant = "blue-light"; }
-              }
-
               let poVariant = "blue";
               if (po.status === "Completed") poVariant = "green";
               if (po.status === "Revised") poVariant = "orange";
@@ -620,7 +780,7 @@ const POReportPage = ({ onNavigate, t }) => {
                   <div style={cellStyle({ flex: tableColumns[4].flex })}>{formatCurrency(invoiced, currency)}</div>
                   <div style={cellStyle({ flex: tableColumns[5].flex })}>{formatCurrency(paid, currency)}</div>
                   <div style={cellStyle({ flex: tableColumns[6].flex })}>{formatCurrency(outstanding, currency)}</div>
-                  <div style={cellStyle({ flex: tableColumns[7].flex })}><StatusBadge variant={payVariant}>{payStatus}</StatusBadge></div>
+                  <div style={cellStyle({ flex: tableColumns[7].flex })}>{formatCurrency(po.amount - invoiced, currency)}</div>
                   <div style={cellStyle({ flex: tableColumns[8].flex })}><StatusBadge variant={poVariant}>{po.status}</StatusBadge></div>
                 </div>
               );

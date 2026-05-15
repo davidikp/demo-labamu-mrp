@@ -302,6 +302,7 @@ const FormField = ({
         style={{
           fontSize: "var(--text-body)",
           color: "var(--status-red-primary)",
+          marginTop: "-4px",
         }}
       >
         {error}
@@ -312,6 +313,7 @@ const FormField = ({
         style={{
           fontSize: "var(--text-desc)",
           color: "var(--neutral-on-surface-secondary)",
+          marginTop: "-4px",
         }}
       >
         {helperText}
@@ -2398,6 +2400,8 @@ export const PurchaseOrderCreatePage = ({
   const [notes, setNotes] = useState(editFormData?.notes || "");
   const [terms, setTerms] = useState(editFormData?.terms || "");
   const [tax, setTax] = useState(String(editFormData?.tax ?? 11));
+  const [showCanceledWOBlocker, setShowCanceledWOBlocker] = useState(false);
+  const [canceledWOsFound, setCanceledWOsFound] = useState([]);
   const [feeLines, setFeeLines] = useState(
     editFormData?.feeLines?.length
       ? editFormData.feeLines
@@ -2407,6 +2411,7 @@ export const PurchaseOrderCreatePage = ({
   const [showEmptyDraftModal, setShowEmptyDraftModal] = useState(false);
   const [showSubmitConfirmModal, setShowSubmitConfirmModal] = useState(false);
   const [showZeroPriceWarningModal, setShowZeroPriceWarningModal] = useState(false);
+  const [showNoChangesModal, setShowNoChangesModal] = useState(false);
   const [revisionReason, setRevisionReason] = useState("");
   const [revisionReasonError, setRevisionReasonError] = useState("");
   const [showDiscardChangesModal, setShowDiscardChangesModal] = useState(false);
@@ -2663,6 +2668,7 @@ export const PurchaseOrderCreatePage = ({
       terms,
       shipTo: shipToInfo,
       documents: initialData?.formData?.documents || [],
+      receiptLogs: initialData?.formData?.receiptLogs || [],
     },
   });
 
@@ -2892,17 +2898,32 @@ export const PurchaseOrderCreatePage = ({
     setShowAddProductModal(true);
   };
 
+  const scrollToProductModalField = (fieldKey) => {
+    setTimeout(() => {
+      const el = document.getElementById(`modal-field-${fieldKey}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 100);
+  };
+
   const handleSaveProductLine = () => {
     if (productLineType === "manual") {
       const nextErrors = {};
       if (!productModalForm.manualName.trim())
         nextErrors.manualName = "Field cannot be empty";
-      if (!productModalForm.manualQty || parseInt(productModalForm.manualQty, 10) <= 0)
+      if (productModalForm.manualQty === "") {
+        nextErrors.manualQty = "Field cannot be empty";
+      } else if (parseInt(productModalForm.manualQty, 10) <= 0) {
         nextErrors.manualQty = "Quantity must be greater than 0";
+      }
       if (productModalForm.manualPrice === "")
         nextErrors.manualPrice = "Field cannot be empty";
       setProductModalFieldErrors(nextErrors);
-      if (Object.keys(nextErrors).length > 0) return;
+      if (Object.keys(nextErrors).length > 0) {
+        scrollToProductModalField(Object.keys(nextErrors)[0]);
+        return;
+      }
 
       const nextLine = {
         id: editingLineId || `manual-${Date.now()}`,
@@ -2940,14 +2961,19 @@ export const PurchaseOrderCreatePage = ({
       const nextErrors = {};
       if (!productModalForm.selectedMaterialLineId)
         nextErrors.selectedMaterialLineId = "Field cannot be empty";
-      if (productModalForm.manualPrice === "")
-        nextErrors.manualPrice = "Field cannot be empty";
-      if (!productModalForm.manualQty || parseInt(productModalForm.manualQty, 10) <= 0)
+      if (productModalForm.manualQty === "") {
+        nextErrors.manualQty = "Field cannot be empty";
+      } else if (parseInt(productModalForm.manualQty, 10) <= 0) {
         nextErrors.manualQty = "Quantity must be greater than 0";
+      }
       if (productModalForm.manualPrice === "")
         nextErrors.manualPrice = "Field cannot be empty";
       setProductModalFieldErrors(nextErrors);
-      if (Object.keys(nextErrors).length > 0 || !targetLine) return;
+      if (Object.keys(nextErrors).length > 0) {
+        scrollToProductModalField(Object.keys(nextErrors)[0]);
+        return;
+      }
+      if (!targetLine) return;
 
       const nextLine = {
         id: editingLineId || `material-${Date.now()}`,
@@ -2986,14 +3012,19 @@ export const PurchaseOrderCreatePage = ({
     const nextErrors = {};
     if (!productModalForm.selectedWorkOrderLineId)
       nextErrors.selectedWorkOrderLineId = "Field cannot be empty";
-    if (productModalForm.manualPrice === "")
-      nextErrors.manualPrice = "Field cannot be empty";
-    if (!productModalForm.manualQty || parseInt(productModalForm.manualQty, 10) <= 0)
+    if (productModalForm.manualQty === "") {
+      nextErrors.manualQty = "Field cannot be empty";
+    } else if (parseInt(productModalForm.manualQty, 10) <= 0) {
       nextErrors.manualQty = "Quantity must be greater than 0";
+    }
     if (productModalForm.manualPrice === "")
       nextErrors.manualPrice = "Field cannot be empty";
     setProductModalFieldErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0 || !targetLine) return;
+    if (Object.keys(nextErrors).length > 0) {
+      scrollToProductModalField(Object.keys(nextErrors)[0]);
+      return;
+    }
+    if (!targetLine) return;
 
     const nextLine = {
       id: editingLineId || `wo-${Date.now()}`,
@@ -3031,7 +3062,7 @@ export const PurchaseOrderCreatePage = ({
     );
 
   const handleSaveDraft = () => {
-    if (!isEditMode && !isFormDirty && !hasPrefilledDraftContent) {
+    if (!vendorSearch.trim()) {
       setShowEmptyDraftModal(true);
       return;
     }
@@ -3101,12 +3132,120 @@ export const PurchaseOrderCreatePage = ({
 
   const handleSubmitClick = () => {
     if (!validateMandatoryFields()) return;
+
+    // Check for canceled work orders
+    const canceledWOLines = lines.filter((line) => {
+      if (line.type !== "wo") return false;
+      const woData = MOCK_WO_TABLE_DATA.find((w) => w.wo === line.woRef);
+      return woData && woData.status === "Canceled";
+    });
+
+    if (canceledWOLines.length > 0) {
+      const canceledWoNumbers = Array.from(
+        new Set(canceledWOLines.map((l) => l.woRef))
+      );
+      setCanceledWOsFound(canceledWoNumbers);
+      setShowCanceledWOBlocker(true);
+      return;
+    }
+
+    // Check if PO date is in the future
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(poDate);
+    if (selectedDate > today) {
+      setFormErrors((prev) => ({
+        ...prev,
+        poDate: "Purchase order date cannot be later than today",
+      }));
+      if (pageTopRef.current) {
+        pageTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
+    }
+
+    if (isReviseMode && editFormData) {
+      const normalizeLine = (line) => ({
+        type: line.type || "manual",
+        item: (line.item || "").trim(),
+        code: (line.code || "").trim(),
+        desc: (line.desc || "").trim(),
+        qty: Number(line.qty) || 0,
+        price: Number(line.price) || 0,
+        uom: (line.uom || "").trim(),
+        woRef: (line.woRef || "").trim(),
+      });
+
+      const currentFormSnapshot = {
+        vendorName: vendorSearch.trim(),
+        vendorDetails: {
+          phone: (vendorDetails.phone || "").trim(),
+          email: (vendorDetails.email || "").trim(),
+          address: (vendorDetails.address || "").trim(),
+        },
+        poDate,
+        deliveryDate: deliveryDate || "",
+        currency: currency || "IDR",
+        shipTo: {
+          name: (shipToInfo.name || "").trim(),
+          phone: (shipToInfo.phone || "").trim(),
+          email: (shipToInfo.email || "").trim(),
+          address: (shipToInfo.address || "").trim(),
+        },
+        lines: lines.map(normalizeLine),
+        tax: Number(tax) || 0,
+        feeLines: (feeLines || [])
+          .filter(f => (f.name || "").trim() || (Number(f.amount) || 0) > 0)
+          .map(f => ({
+            name: (f.name || "").trim(),
+            amount: Number(f.amount) || 0,
+          })),
+        notes: notes.trim(),
+        terms: terms.trim(),
+      };
+
+      const originalFormSnapshot = {
+        vendorName: editFormData.vendorName.trim(),
+        vendorDetails: {
+          phone: (editFormData.vendorDetails?.phone || "").trim(),
+          email: (editFormData.vendorDetails?.email || "").trim(),
+          address: (editFormData.vendorDetails?.address || "").trim(),
+        },
+        poDate: editFormData.poDate,
+        deliveryDate: editFormData.deliveryDate || "",
+        currency: editFormData.currency || "IDR",
+        shipTo: {
+          name: (editFormData.shipTo?.name || "").trim(),
+          phone: (editFormData.shipTo?.phone || "").trim(),
+          email: (editFormData.shipTo?.email || "").trim(),
+          address: (editFormData.shipTo?.address || "").trim(),
+        },
+        lines: (editFormData.lines || []).map(normalizeLine),
+        tax: Number(editFormData.tax ?? 11),
+        feeLines: (editFormData.feeLines || [])
+          .filter(f => (f.name || "").trim() || (Number(f.amount) || 0) > 0)
+          .map(f => ({
+            name: (f.name || "").trim(),
+            amount: Number(f.amount) || 0,
+          })),
+        notes: (editFormData.notes || "").trim(),
+        terms: (editFormData.terms || "").trim(),
+      };
+
+      if (JSON.stringify(currentFormSnapshot) === JSON.stringify(originalFormSnapshot)) {
+        setShowNoChangesModal(true);
+        return;
+      }
+    }
+
     if (isReviseMode) {
       setRevisionReason("");
       setRevisionReasonError("");
     }
-    
-    const hasZeroPriceItem = lines.some(line => (parseFloat(line.price) || 0) === 0);
+
+    const hasZeroPriceItem = lines.some(
+      (line) => (parseFloat(line.price) || 0) === 0
+    );
     if (hasZeroPriceItem) {
       setShowZeroPriceWarningModal(true);
     } else {
@@ -3141,6 +3280,7 @@ export const PurchaseOrderCreatePage = ({
         storageLocation: "",
         vendor: vendorName,
         status: "Requested",
+        poRef: poNumber,
         attachments: 0,
       };
       const existing = MOCK_STOCK_BATCHES.find((b) => b.id === batchId);
@@ -3185,7 +3325,7 @@ export const PurchaseOrderCreatePage = ({
         payload.revisionReason = revisionReason;
 
         // Add to activity log
-        if (!payload.receiptLogs) payload.receiptLogs = [];
+        if (!payload.formData.receiptLogs) payload.formData.receiptLogs = [];
         const now = new Date();
         const yyyy = now.getFullYear();
         const mm = String(now.getMonth() + 1).padStart(2, "0");
@@ -3194,10 +3334,14 @@ export const PurchaseOrderCreatePage = ({
         const min = String(now.getMinutes()).padStart(2, "0");
         const formattedTimestamp = `${yyyy}-${mm}-${dd} at ${hh}:${min}`;
 
-        payload.receiptLogs.unshift({
+        const logTitle = approvalOn 
+          ? "Revise Requested" 
+          : `Revised to Version ${nextVersionNumber}.0`;
+
+        payload.formData.receiptLogs.unshift({
           name: "Joko",
           email: "joko@company.com",
-          title: `Purchase Order Revised to Version ${nextVersionNumber}.0`,
+          title: logTitle,
           desc: revisionReason,
           timestamp: formattedTimestamp
         });
@@ -3535,9 +3679,11 @@ export const PurchaseOrderCreatePage = ({
                           !!vendorSearch,
                           false
                         ),
-                        borderColor: isVendorFieldFocused
-                          ? "var(--feature-brand-primary)"
-                          : baseInputBorderColor,
+                        borderColor: formErrors.vendor
+                          ? "var(--status-red-primary)"
+                          : isVendorFieldFocused
+                            ? "var(--feature-brand-primary)"
+                            : baseInputBorderColor,
                         padding: "0 80px 0 16px",
                         background: (isFromWorkOrderAssignment || isEditMode || isReviseMode) && !isVendorEditingEnabled
                           ? "var(--neutral-surface-grey-lighter)"
@@ -3666,7 +3812,7 @@ export const PurchaseOrderCreatePage = ({
                   {formErrors.vendor ? (
                     <span
                       style={{
-                        marginTop: "6px",
+                        marginTop: "2px",
                         display: "block",
                         fontSize: "var(--text-body)",
                         color: "var(--status-red-primary)",
@@ -3745,20 +3891,8 @@ export const PurchaseOrderCreatePage = ({
                     type="date"
                     value={poDate}
                     onChange={(e) => setPoDate(e.target.value)}
-                    max={formatIsoDateString(new Date())}
+                    error={formErrors.poDate}
                   />
-                  {formErrors.poDate ? (
-                    <span
-                      style={{
-                        marginTop: "6px",
-                        display: "block",
-                        fontSize: "var(--text-body)",
-                        color: "var(--status-red-primary)",
-                      }}
-                    >
-                      {formErrors.poDate}
-                    </span>
-                  ) : null}
                 </div>
               </div>
               <div style={rowWrapStyle}>
@@ -3782,6 +3916,7 @@ export const PurchaseOrderCreatePage = ({
                   <DropdownSelect
                     value={currency}
                     onChange={(nextValue) => setCurrency(nextValue)}
+                    hasError={!!formErrors.currency}
                     options={[
                       { value: "IDR", label: "IDR - Indonesian Rupiah" },
                       { value: "USD", label: "USD - US Dollar" },
@@ -3790,7 +3925,7 @@ export const PurchaseOrderCreatePage = ({
                   {formErrors.currency ? (
                     <span
                       style={{
-                        marginTop: "6px",
+                        marginTop: "2px",
                         display: "block",
                         fontSize: "var(--text-body)",
                         color: "var(--status-red-primary)",
@@ -4476,6 +4611,7 @@ export const PurchaseOrderCreatePage = ({
             </div>
 
             <div
+              id="modal-scroll-body"
               style={{
                 display: "flex",
                 flexDirection: "column",
@@ -4648,7 +4784,7 @@ export const PurchaseOrderCreatePage = ({
                   <div style={{ gridColumn: "1 / -1" }}>
                     {renderProductImageUploader(false)}
                   </div>
-                  <div style={{ gridColumn: "1 / -1" }}>
+                  <div id="modal-field-manualName" style={{ gridColumn: "1 / -1" }}>
                     <InputField
                       label="Name"
                       required
@@ -4667,6 +4803,7 @@ export const PurchaseOrderCreatePage = ({
                           }));
                       }}
                       placeholder="Enter name"
+                      error={!!productModalFieldErrors.manualName}
                     />
                     {productModalFieldErrors.manualName ? (
                       <span
@@ -4690,7 +4827,7 @@ export const PurchaseOrderCreatePage = ({
                     }
                     placeholder="Enter code"
                   />
-                  <div>
+                  <div id="modal-field-manualQty">
                     <InputField
                       label="Quantity"
                       required
@@ -4708,6 +4845,7 @@ export const PurchaseOrderCreatePage = ({
                           }));
                       }}
                       placeholder="Enter quantity"
+                      error={!!productModalFieldErrors.manualQty}
                     />
                     {productModalFieldErrors.manualQty ? (
                       <span
@@ -4737,6 +4875,7 @@ export const PurchaseOrderCreatePage = ({
                     />
                   </div>
                   <div
+                    id="modal-field-manualPrice"
                     style={{
                       gridColumn: "1 / -1",
                       display: "flex",
@@ -4773,7 +4912,7 @@ export const PurchaseOrderCreatePage = ({
                       }}
                       placeholder="Enter unit price"
                       prefix={currencyPrefixLabel}
-                      hasError={!!productModalFieldErrors.manualPrice}
+                      error={!!productModalFieldErrors.manualPrice}
                     />
                     {productModalFieldErrors.manualPrice ? (
                       <span
@@ -4796,6 +4935,7 @@ export const PurchaseOrderCreatePage = ({
                   }}
                 >
                   <div
+                    id="modal-field-selectedMaterialLineId"
                     style={{
                       display: "flex",
                       flexDirection: "column",
@@ -4817,9 +4957,7 @@ export const PurchaseOrderCreatePage = ({
                     </div>
                     <DropdownSelect
                       value={productModalForm.selectedMaterialLineId}
-                      hasError={
-                        !!productModalFieldErrors.selectedMaterialLineId
-                      }
+                      hasError={!!productModalFieldErrors.selectedMaterialLineId}
                       onChange={(selectedId) => {
                         const targetLine = availableMaterialLines.find(
                           (line) => line.id === selectedId
@@ -4831,7 +4969,7 @@ export const PurchaseOrderCreatePage = ({
                           manualCode: targetLine?.code || "",
                           manualDesc: targetLine?.desc || "",
                           manualQty: "",
-                          manualPrice: targetLine ? String(targetLine.price) : "",
+                          manualPrice: targetLine?.price ? String(targetLine.price) : "",
                         });
                         setProductModalImages(
                           targetLine?.image
@@ -4862,7 +5000,7 @@ export const PurchaseOrderCreatePage = ({
                         <div style={{ display: "flex", alignItems: "center", gap: "6px", overflow: "hidden" }}>
                           <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{option.label}</span>
                           <span style={{ color: "var(--neutral-on-surface-tertiary)", flexShrink: 0 }}>·</span>
-                          <span style={{ color: "var(--neutral-on-surface-tertiary)", flexShrink: 0 }}>{option.code}</span>
+                          <span style={{ color: "var(--neutral-on-surface-tertiary)", flexShrink: 0, fontStyle: "italic" }}>{option.code}</span>
                         </div>
                       )}
                     />
@@ -4914,7 +5052,7 @@ export const PurchaseOrderCreatePage = ({
                         value={productModalForm.manualCode}
                         disabled
                       />
-                      <div>
+                      <div id="modal-field-manualQty">
                         <InputGroup
                           label="Quantity"
                           required
@@ -4962,7 +5100,7 @@ export const PurchaseOrderCreatePage = ({
                           placeholder="Enter description"
                         />
                       </div>
-                      <div
+                      <div id="modal-field-manualPrice"
                         style={{
                           gridColumn: "1 / -1",
                           display: "flex",
@@ -5024,6 +5162,7 @@ export const PurchaseOrderCreatePage = ({
                   }}
                 >
                   <div
+                    id="modal-field-selectedWorkOrderLineId"
                     style={{
                       display: "flex",
                       flexDirection: "column",
@@ -5095,6 +5234,13 @@ export const PurchaseOrderCreatePage = ({
                             label: line.item,
                             woRef: line.woRef,
                           }))}
+                          renderValue={(option) => (
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                              <span>{option.label}</span>
+                              <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>·</span>
+                              <span style={{ color: "var(--neutral-on-surface-tertiary)", fontStyle: "italic" }}>{option.woRef}</span>
+                            </div>
+                          )}
                           renderOption={(option) => (
                             <div
                               style={{
@@ -5125,6 +5271,7 @@ export const PurchaseOrderCreatePage = ({
                                 style={{
                                   color: "var(--neutral-on-surface-tertiary)",
                                   flexShrink: 0,
+                                  fontStyle: "italic",
                                 }}
                               >
                                 {option.woRef}
@@ -5191,7 +5338,7 @@ export const PurchaseOrderCreatePage = ({
                         value={productModalForm.manualCode}
                         disabled
                       />
-                      <div>
+                      <div id="modal-field-manualQty">
                         <InputField
                           label="Quantity"
                           required
@@ -5210,6 +5357,7 @@ export const PurchaseOrderCreatePage = ({
                               }));
                           }}
                           placeholder="Enter quantity"
+                          hasError={!!productModalFieldErrors.manualQty}
                         />
                         {productModalFieldErrors.manualQty ? (
                           <span
@@ -5238,7 +5386,7 @@ export const PurchaseOrderCreatePage = ({
                           placeholder="Enter description"
                         />
                       </div>
-                      <div
+                      <div id="modal-field-manualPrice"
                         style={{
                           gridColumn: "1 / -1",
                           display: "flex",
@@ -5354,8 +5502,23 @@ export const PurchaseOrderCreatePage = ({
               flexDirection: "column",
               gap: "16px",
               boxShadow: "var(--elevation-sm)",
+              position: "relative",
             }}
           >
+            <div
+              style={{
+                position: "absolute",
+                top: "20px",
+                right: "20px",
+              }}
+            >
+              <IconButton
+                icon={CloseIcon}
+                onClick={() => setShowEmptyDraftModal(false)}
+                size="small"
+                color="var(--neutral-on-surface-primary)"
+              />
+            </div>
             <h2
               style={{
                 margin: 0,
@@ -5364,7 +5527,7 @@ export const PurchaseOrderCreatePage = ({
                 fontWeight: "var(--font-weight-bold)",
               }}
             >
-              Save as Draft?
+              Vendor Name Required
             </h2>
             <p
               style={{
@@ -5375,15 +5538,18 @@ export const PurchaseOrderCreatePage = ({
                 lineHeight: "1.6",
               }}
             >
-              Fill at least one field in the form to proceed.
+              Fill in the vendor name before saving this purchase order as a
+              draft.
             </p>
-            <Button
-              size="large"
-              style={{ width: "100%" }}
-              onClick={() => setShowEmptyDraftModal(false)}
-            >
-              Okay
-            </Button>
+            <div style={{ marginTop: "8px" }}>
+              <Button
+                size="large"
+                style={{ width: "100%" }}
+                onClick={() => setShowEmptyDraftModal(false)}
+              >
+                Okay
+              </Button>
+            </div>
           </div>
         </div>
       ) : null}
@@ -5487,6 +5653,26 @@ export const PurchaseOrderCreatePage = ({
       </GeneralModal>
 
       <GeneralModal
+        isOpen={showNoChangesModal}
+        onClose={() => setShowNoChangesModal(false)}
+        title="No Changes Made"
+        description="Please update the purchase order before submitting the revision"
+        width="376px"
+        footer={
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+            <Button
+              variant="filled"
+              size="medium"
+              onClick={() => setShowNoChangesModal(false)}
+              fullWidth
+            >
+              Okay
+            </Button>
+          </div>
+        }
+      />
+
+      <GeneralModal
         isOpen={showDiscardChangesModal}
         onClose={() => setShowDiscardChangesModal(false)}
         title="Discard changes?"
@@ -5548,6 +5734,125 @@ export const PurchaseOrderCreatePage = ({
           }
         />
       )}
+      <CanceledWorkOrderBlockerModal
+        isOpen={showCanceledWOBlocker}
+        onClose={() => setShowCanceledWOBlocker(false)}
+        canceledWOs={canceledWOsFound}
+        mode="edit"
+      />
     </div>
   );
 };
+
+const CanceledWorkOrderBlockerModal = ({
+  isOpen,
+  onClose,
+  canceledWOs,
+  mode = "edit",
+  onEditPO,
+}) => (
+  <GeneralModal
+    isOpen={isOpen}
+    onClose={onClose}
+    width="520px"
+    title="Canceled Work Orders Found"
+    description="Some work orders in this purchase order have already been canceled."
+  >
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        textAlign: "center",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          background: "var(--feature-brand-container-lighter)",
+          borderRadius: "12px",
+          padding: "16px 20px",
+          display: "flex",
+          gap: "16px",
+          alignItems: "flex-start",
+          textAlign: "left",
+          marginBottom: "32px",
+        }}
+      >
+        <div style={{ marginTop: "2px" }}>
+          <Info size={20} color="var(--feature-brand-primary)" />
+        </div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
+          {canceledWOs.map((wo) => (
+            <div
+              key={wo}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                color: "var(--feature-brand-primary)",
+                fontSize: "16px",
+                fontWeight: "500",
+              }}
+            >
+              <div
+                style={{
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  background: "var(--feature-brand-primary)",
+                }}
+              />
+              {wo}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}
+      >
+        {mode === "detail" ? (
+          <>
+            <Button
+              variant="filled"
+              size="large"
+              onClick={onEditPO}
+              style={{ width: "100%", height: "56px", fontSize: "18px" }}
+            >
+              Edit PO
+            </Button>
+            <Button
+              variant="outline"
+              size="large"
+              onClick={onClose}
+              style={{ width: "100%", height: "56px", fontSize: "18px" }}
+            >
+              Close
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="filled"
+            size="large"
+            onClick={onClose}
+            style={{ width: "100%", height: "56px", fontSize: "18px" }}
+          >
+            Okay
+          </Button>
+        )}
+      </div>
+    </div>
+  </GeneralModal>
+);

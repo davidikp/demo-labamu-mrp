@@ -1,8 +1,11 @@
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { 
   ChevronLeft,
   ChevronRight,
+  ChevronDown as ChevronDownIcon,
+  ChevronUp as ChevronUpIcon,
   Search, 
   Download,
   FileText,
@@ -21,6 +24,89 @@ import { DropdownSelect } from "../../../components/common/DropdownSelect";
 import { Button } from "../../../components/common/Button";
 import { TableSearchField } from "../../../components/table/TableSearchField";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter";
+
+const Tooltip = ({ content, children }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef(null);
+
+  const updateCoords = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.top,
+        left: rect.left + rect.width / 2,
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isVisible) {
+      updateCoords();
+      window.addEventListener("scroll", updateCoords, true);
+      window.addEventListener("resize", updateCoords);
+    }
+    return () => {
+      window.removeEventListener("scroll", updateCoords, true);
+      window.removeEventListener("resize", updateCoords);
+    };
+  }, [isVisible]);
+
+  return (
+    <div
+      ref={triggerRef}
+      style={{
+        position: "relative",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }}
+      onMouseEnter={() => setIsVisible(true)}
+      onMouseLeave={() => setIsVisible(false)}
+    >
+      {children}
+      {isVisible &&
+        createPortal(
+          <div
+            style={{
+              position: "fixed",
+              top: coords.top - 8,
+              left: coords.left,
+              transform: "translate(-50%, -100%)",
+              width: "max-content",
+              maxWidth: "400px",
+              zIndex: 10001,
+              whiteSpace: "normal",
+              padding: "8px 12px",
+              borderRadius: "8px",
+              background: "var(--neutral-on-surface-primary)",
+              color: "var(--neutral-surface-primary)",
+              fontSize: "var(--text-desc)",
+              lineHeight: "1.6",
+              boxShadow: "var(--elevation-sm)",
+              textAlign: "left",
+              pointerEvents: "none",
+            }}
+          >
+            {content}
+            <div
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: "50%",
+                transform: "translateX(-50%)",
+                borderWidth: "6px",
+                borderStyle: "solid",
+                borderColor:
+                  "var(--neutral-on-surface-primary) transparent transparent transparent",
+              }}
+            />
+          </div>,
+          document.body
+        )}
+    </div>
+  );
+};
 
 const cellStyle = (overrides) => ({
   minWidth: 0,
@@ -41,6 +127,14 @@ const APAgingReportPage = ({ onNavigate, t }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [sortConfig, setSortConfig] = useState({ key: 'overdueDays', direction: 'desc' });
+
+  const toggleSort = (key) => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
+  };
 
   const today = new Date();
 
@@ -104,13 +198,31 @@ const APAgingReportPage = ({ onNavigate, t }) => {
     });
   }, [allInvoices, agingBucketFilter, vendorFilter, paymentStatusFilter, searchQuery]);
 
-  // Sorting: Highest overdue first, then highest outstanding
+  // Sorting logic
   const sortedData = useMemo(() => {
     return [...filteredData].sort((a, b) => {
-      if (b.overdueDays !== a.overdueDays) return b.overdueDays - a.overdueDays;
-      return b.outstanding - a.outstanding;
+      let aVal, bVal;
+      
+      switch (sortConfig.key) {
+        case 'dueDate':
+          aVal = new Date(a.dueDate).getTime();
+          bVal = new Date(b.dueDate).getTime();
+          break;
+        case 'outstanding':
+          aVal = a.outstanding;
+          bVal = b.outstanding;
+          break;
+        default:
+          // Default sorting: Highest overdue first, then highest outstanding
+          if (b.overdueDays !== a.overdueDays) return b.overdueDays - a.overdueDays;
+          return b.outstanding - a.outstanding;
+      }
+      
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
     });
-  }, [filteredData]);
+  }, [filteredData, sortConfig]);
 
   // Summary Metrics (based on ALL unpaid/partial invoices)
   const summary = useMemo(() => {
@@ -132,14 +244,14 @@ const APAgingReportPage = ({ onNavigate, t }) => {
   const paginatedData = sortedData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
   const tableColumns = [
-    { label: "Vendor", flex: "1.8" },
     { label: "PO No", flex: "1.2" },
+    { label: "Vendor", flex: "1.8" },
     { label: "Invoice No", flex: "1.4" },
     { label: "Invoice Date", flex: "1.2" },
-    { label: "Due Date", flex: "1.6" },
+    { label: "Due Date", flex: "1.6", key: "dueDate", sortable: true },
     { label: "Invoice Amount", flex: "1.4" },
     { label: "Paid Amount", flex: "1.4" },
-    { label: "Outstanding", flex: "1.4" },
+    { label: "Outstanding", flex: "1.4", key: "outstanding", sortable: true },
     { label: "Payment Status", flex: "1.2" },
     { label: "Aging Bucket", flex: "1.4" },
   ];
@@ -275,6 +387,8 @@ const APAgingReportPage = ({ onNavigate, t }) => {
             />
             <DropdownSelect 
               variant="filter"
+              searchable={true}
+              maxOptionsVisible={4}
               fontSize="var(--text-title-3)"
               placeholder="Vendor"
               value={vendorFilter}
@@ -301,7 +415,7 @@ const APAgingReportPage = ({ onNavigate, t }) => {
             <TableSearchField 
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              placeholder="Search invoice no. or vendor"
+              placeholder="Search PO or invoice number"
               style={{ width: "280px" }}
             />
           </div>
@@ -312,20 +426,44 @@ const APAgingReportPage = ({ onNavigate, t }) => {
           {/* Header Row */}
           <div style={{ display: "flex", background: "var(--neutral-surface-primary)", borderBottom: "1px solid var(--neutral-line-separator-1)" }}>
             {tableColumns.map((col, idx) => (
-              <div key={idx} style={{ 
-                flex: col.flex, 
-                padding: "0 12px", 
-                height: "49px", 
-                display: "flex", 
-                alignItems: "center" 
-              }}>
+              <div 
+                key={idx} 
+                onClick={() => col.sortable && toggleSort(col.key)}
+                style={{ 
+                  flex: `${col.flex} 1 0%`, 
+                  minWidth: 0,
+                  padding: "0 12px", 
+                  height: "49px", 
+                  display: "flex", 
+                  alignItems: "center",
+                  cursor: col.sortable ? "pointer" : "default",
+                  gap: "4px"
+                }}
+              >
                 <span style={{ 
                   fontSize: "var(--text-title-3)", 
                   fontWeight: "var(--font-weight-bold)", 
-                  color: "var(--neutral-on-surface-primary)"
+                  color: "var(--neutral-on-surface-primary)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px"
                 }}>
                   {col.label}
+                  {col.label === "Outstanding" && (
+                    <Tooltip content="Amount that has not been paid from the vendor invoice">
+                      <Info size={14} color="var(--neutral-on-surface-tertiary)" style={{ cursor: "help" }} />
+                    </Tooltip>
+                  )}
                 </span>
+                {col.sortable && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "2px", opacity: sortConfig.key === col.key ? 1 : 0.3 }}>
+                    {sortConfig.key === col.key && sortConfig.direction === 'asc' ? (
+                      <ChevronUpIcon size={12} color="var(--neutral-on-surface-primary)" />
+                    ) : (
+                      <ChevronDownIcon size={12} color="var(--neutral-on-surface-primary)" />
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -350,9 +488,8 @@ const APAgingReportPage = ({ onNavigate, t }) => {
                   onMouseEnter={(e) => e.currentTarget.style.background = "var(--neutral-surface-grey-lighter)"}
                   onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                 >
-                  <div style={cellStyle({ flex: tableColumns[0].flex, fontWeight: "600" })}>{inv.vendorName}</div>
                   <div style={cellStyle({ 
-                    flex: tableColumns[1].flex, 
+                    flex: `${tableColumns[0].flex} 1 0%`, 
                     color: "var(--feature-brand-primary)", 
                     fontWeight: "500",
                     position: "relative"
@@ -367,23 +504,30 @@ const APAgingReportPage = ({ onNavigate, t }) => {
                         wordBreak: "break-all",
                         lineHeight: "1.2"
                       }}
-                      title={inv.poNumber.length > 20 ? inv.poNumber : ""} // Simple check for tooltip
+                      title={inv.poNumber.length > 20 ? inv.poNumber : ""}
                     >
                       {inv.poNumber}
                     </div>
                   </div>
-                  <div style={cellStyle({ flex: tableColumns[2].flex, fontWeight: "400" })}>{inv.number}</div>
-                  <div style={cellStyle({ flex: tableColumns[3].flex })}>{inv.invoiceDate}</div>
-                  <div style={cellStyle({ flex: tableColumns[4].flex, color: isOverdue ? "var(--status-red-primary)" : "var(--neutral-on-surface-primary)", fontWeight: isOverdue ? "700" : "400", flexDirection: "column", alignItems: "flex-start", justifyContent: "center" })}>
+                  <div style={cellStyle({ flex: `${tableColumns[1].flex} 1 0%`, fontWeight: "400" })}>{inv.vendorName}</div>
+                  <div style={cellStyle({ flex: `${tableColumns[2].flex} 1 0%`, fontWeight: "400" })}>{inv.number}</div>
+                  <div style={cellStyle({ flex: `${tableColumns[3].flex} 1 0%` })}>{inv.invoiceDate}</div>
+                  <div style={cellStyle({ flex: `${tableColumns[4].flex} 1 0%`, color: isOverdue ? "var(--status-red-primary)" : "var(--neutral-on-surface-primary)", fontWeight: isOverdue ? "700" : "400", flexDirection: "column", alignItems: "flex-start", justifyContent: "center" })}>
                     <div>{inv.dueDate}</div>
                     {isOverdue && <div style={{ fontSize: "11px", fontWeight: "600" }}>({inv.overdueDays}d overdue)</div>}
                   </div>
-                  <div style={cellStyle({ flex: tableColumns[5].flex })}>{formatCurrency(inv.amount, currency)}</div>
-                  <div style={cellStyle({ flex: tableColumns[6].flex })}>{formatCurrency(inv.paidAmount, currency)}</div>
-                  <div style={cellStyle({ flex: tableColumns[7].flex, fontWeight: "400", color: isOverdue ? "var(--status-red-primary)" : "var(--neutral-on-surface-primary)" })}>{formatCurrency(inv.outstanding, currency)}</div>
-                  <div style={cellStyle({ flex: tableColumns[8].flex })}><StatusBadge variant={statusVariant}>{inv.status}</StatusBadge></div>
-                  <div style={cellStyle({ flex: tableColumns[9].flex })}>
-                    <StatusBadge variant={inv.agingBucket === "Not Due" ? "grey-light" : (inv.agingBucket === "Late 90+" ? "red-light" : "orange-light")}>
+                  <div style={cellStyle({ flex: `${tableColumns[5].flex} 1 0%` })}>{formatCurrency(inv.amount, currency)}</div>
+                  <div style={cellStyle({ flex: `${tableColumns[6].flex} 1 0%` })}>{formatCurrency(inv.paidAmount, currency)}</div>
+                  <div style={cellStyle({ flex: `${tableColumns[7].flex} 1 0%`, fontWeight: "400", color: isOverdue ? "var(--status-red-primary)" : "var(--neutral-on-surface-primary)" })}>{formatCurrency(inv.outstanding, currency)}</div>
+                  <div style={cellStyle({ flex: `${tableColumns[8].flex} 1 0%` })}><StatusBadge variant={statusVariant}>{inv.status}</StatusBadge></div>
+                  <div style={cellStyle({ flex: `${tableColumns[9].flex} 1 0%` })}>
+                    <StatusBadge variant={
+                      inv.agingBucket === "Not Due" ? "grey-light" : 
+                      inv.agingBucket === "Late 1-30" ? "blue-light" :
+                      inv.agingBucket === "Late 31-60" ? "yellow-light" :
+                      inv.agingBucket === "Late 61-90" ? "orange-light" :
+                      "red-light"
+                    }>
                       {inv.agingBucket}
                     </StatusBadge>
                   </div>

@@ -12,9 +12,6 @@ import { TablePaginationFooter } from "../../../components/table/TablePagination
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { FilterPill } from "../../../components/common/FilterPill.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
-import { MOCK_STOCK_TRANSACTIONS } from "../mock/transactionsMocks.js";
-import { MOCK_PO_TABLE_DATA } from "../../purchase-order/mock/purchaseOrderMocks.js";
-import { MOCK_MATERIALS_DATA } from "../mock/materialsMocks.js";
 
 const Tooltip = ({ content, children }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -545,39 +542,7 @@ export const StockTransactionsTab = ({ materialId, onNavigate, localTransactions
                     color: "var(--neutral-on-surface-secondary)", 
                     flexShrink: 0 
                   }}>
-                    {(() => {
-                      const poMatch = row.reason?.match(/PO-[A-Z0-9-]+/);
-                      if (poMatch) {
-                        const poNum = poMatch[0];
-                        const parts = row.reason.split(poNum);
-                        return (
-                          <>
-                            {parts[0]}
-                            <span 
-                              style={{ color: "var(--feature-brand-primary)", cursor: "pointer", textDecoration: "underline" }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (onNavigate) {
-                                  const materialData = MOCK_MATERIALS_DATA.find(m => m.id === materialId);
-                                  onNavigate("purchase_order_detail", {
-                                    poNumber: poNum,
-                                    from: "material_detail",
-                                    returnTo: {
-                                      view: "materials_detail",
-                                      data: materialData
-                                    }
-                                  });
-                                }
-                              }}
-                            >
-                              {poNum}
-                            </span>
-                            {parts[1]}
-                          </>
-                        );
-                      }
-                      return row.reason;
-                    })()}
+                    {row.reason}
                   </div>
                   <div style={{ width: columns[7].width, padding: "0 12px", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", flexShrink: 0 }}>{row.actionBy}</div>
                 </div>

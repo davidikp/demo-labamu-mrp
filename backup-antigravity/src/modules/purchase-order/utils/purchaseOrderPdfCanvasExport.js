@@ -1,5 +1,6 @@
 import { formatCurrency, formatNumberWithCommas, parseNumberFromCommas } from "../../../utils/format/formatUtils.js";
 const GENERIC_LOGO_SRC = "https://placehold.co/400x120/f3f4f6/1f2937?text=LOGO";
+// PDF Export Version: 1.0.2
 
 const CSS_DPI = 96;
 const PDF_DPI = 180;
@@ -13,6 +14,46 @@ const A4_CSS_HEIGHT = 1123;
 const PAGE_WIDTH = px(A4_CSS_WIDTH);
 const PAGE_HEIGHT = px(A4_CSS_HEIGHT);
 
+const numberToWords = (n) => {
+  if (n === 0) return "Zero";
+  const units = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
+  const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  const scales = ["", "Thousand", "Million", "Billion", "Trillion"];
+
+  const convertThreeDigit = (num) => {
+    let str = "";
+    if (num >= 100) {
+      str += units[Math.floor(num / 100)] + " Hundred ";
+      num %= 100;
+    }
+    if (num >= 10 && num <= 19) {
+      str += teens[num - 10] + " ";
+    } else {
+      if (num >= 20) {
+        str += tens[Math.floor(num / 10)] + " ";
+        num %= 10;
+      }
+      if (num > 0) {
+        str += units[num] + " ";
+      }
+    }
+    return str;
+  };
+
+  let word = "";
+  let i = 0;
+  let tempN = Math.round(n);
+  while (tempN > 0) {
+    if (tempN % 1000 !== 0) {
+      word = convertThreeDigit(tempN % 1000) + scales[i] + " " + word;
+    }
+    tempN = Math.floor(tempN / 1000);
+    i++;
+  }
+  return word.trim();
+};
+
 const COLORS = {
   text: "#1F1F1F",
   muted: "#676767",
@@ -23,6 +64,8 @@ const COLORS = {
   footerLine: "#4A4A4A",
   white: "#FFFFFF",
   totalFill: "#F5F5F5",
+  black: "#000000",
+  blackBar: "#1F1F1F",
 };
 
 const DIMENSIONS = {
@@ -255,34 +298,46 @@ const drawWrappedText = (ctx, text, x, y, maxWidth, font, color, options = {}) =
 
   paragraphs.forEach((paragraph, paragraphIndex) => {
     const lines = measureLines(ctx, paragraph, maxWidth, font);
-    lines.forEach((line, lineIndex) => {
-      drawText(ctx, line, x, cursorY, font, color, options);
-      cursorY += lineHeight;
-      if (lineIndex < lines.length - 1) {
-        // keep compact line spacing
-      }
+    const totalBlockHeight = lines.length * lineHeight;
+    let currentY = cursorY;
+    
+    if (options.baseline === "middle") {
+      currentY = cursorY - (totalBlockHeight / 2) + (lineHeight / 2);
+    }
+    
+    lines.forEach((line) => {
+      drawText(ctx, line, x, currentY, font, color, options);
+      currentY += lineHeight;
     });
+    
     if (paragraphIndex < paragraphs.length - 1) {
-      cursorY += gap;
+      cursorY += (lines.length * lineHeight) + gap;
+    } else {
+      cursorY += (lines.length * lineHeight);
     }
   });
 
   return cursorY - y;
 };
 
-const drawImageCover = (ctx, image, x, y, width, height, align = "center") => {
+const drawImageCover = (ctx, image, x, y, width, height, align = "center", fit = "cover") => {
   if (!image) return false;
   const sourceWidth = image.naturalWidth || image.width || 0;
   const sourceHeight = image.naturalHeight || image.height || 0;
   if (!sourceWidth || !sourceHeight) return false;
 
-  const ratio = Math.max(width / sourceWidth, height / sourceHeight);
+  const ratio = fit === "contain" 
+    ? Math.min(width / sourceWidth, height / sourceHeight)
+    : Math.max(width / sourceWidth, height / sourceHeight);
+  
   const drawWidth = sourceWidth * ratio;
   const drawHeight = sourceHeight * ratio;
   
   let offsetX = x;
   if (align === "center") {
     offsetX = x + (width - drawWidth) / 2;
+  } else if (align === "right") {
+    offsetX = x + (width - drawWidth);
   }
   
   const offsetY = y + (height - drawHeight) / 2;
@@ -336,10 +391,9 @@ const buildDescriptionBlocks = (line) => {
 };
 
 const getHeaderMetaRows = (data) => [
-  ["PO Number", data.poNumber || "-"],
-  ["PO Date", data.createdDate || "-"],
-  ["Expected Delivery Date", data.expectedDeliveryDate || "-"],
-  ["Created By", data.createdBy || "-"],
+  ["PO Number", `: ${data.poNumber || "-"}`],
+  ["PO Date", `: ${data.createdDate || "-"}`],
+  ["Currency", `: ${data.currency || "-"}`],
 ];
 
 const measureMetaBlockHeight = (ctx, data, width) => {
@@ -498,16 +552,7 @@ const measureDescriptionBlockHeight = (ctx, blocks, width) => {
   return height;
 };
 
-const measureLineHeight = (ctx, line, tableWidth) => {
-  const descriptionWidth =
-    tableWidth -
-    TABLE.colNo -
-    TABLE.colImage -
-    TABLE.colPrice -
-    TABLE.colQty -
-    TABLE.colAmount -
-    TABLE.cellPaddingX * 10;
-
+const measureLineHeight = (ctx, line, descriptionWidth) => {
   const descHeight = measureDescriptionBlockHeight(
     ctx,
     line.descriptionBlocks || [],
@@ -619,134 +664,161 @@ const drawMetaBlock = (ctx, data, x, y, width) => {
 
 const drawHeader = async (ctx, pageType, data, assets) => {
   const isFirst = pageType === "first";
-  const logoWidth = isFirst ? DIMENSIONS.headerLogoWidth : DIMENSIONS.continuationLogoWidth;
-  const logoHeight = Math.round(logoWidth * 0.35);
+  const logoWidth = isFirst ? px(48) : px(38); 
+  const logoHeight = logoWidth;
   const logoX = DIMENSIONS.marginX;
-  const logoY = DIMENSIONS.marginTop;
+  const logoY = isFirst ? DIMENSIONS.marginTop + px(44) : DIMENSIONS.marginTop;
 
-  if (assets.logo) {
-    drawImageCover(ctx, assets.logo, logoX, logoY, logoWidth, logoHeight, "left");
-  } else {
-    drawText(ctx, data.company?.name || "Labamu Manufacturing", logoX, logoY + px(22), FONTS.title, COLORS.text);
+  // 1. Draw "PURCHASE ORDER" label bar on first page
+  if (isFirst) {
+    const labelWidth = px(154);
+    const labelHeight = px(24);
+    ctx.fillStyle = COLORS.blackBar;
+    ctx.fillRect(logoX, DIMENSIONS.marginTop, labelWidth, labelHeight);
+    drawText(
+      ctx,
+      "PURCHASE ORDER",
+      logoX + labelWidth / 2,
+      DIMENSIONS.marginTop + labelHeight / 2 + px(3),
+      { size: px(12), weight: 700 },
+      COLORS.white,
+      { align: "center", baseline: "middle" }
+    );
   }
 
-  let cursorY = logoY + logoHeight + px(8);
+  // 2. Draw Logo and Company Name
+  if (assets.logo) {
+    drawImageCover(ctx, assets.logo, logoX, logoY, logoWidth, logoHeight, "left", "contain");
+  }
+  
+  if (isFirst) {
+    drawText(
+      ctx,
+      data.company?.name || "Labamu Manufacturing",
+      logoX + logoWidth + px(16),
+      logoY + logoHeight / 2 + px(4),
+      { size: px(14), weight: 700 },
+      COLORS.text,
+      { baseline: "middle" }
+    );
+  }
+
+  let cursorY = logoY + logoHeight + px(12);
 
   if (isFirst) {
     // Draw company info below logo
-    drawText(ctx, data.company?.name || "Labamu Manufacturing", logoX, cursorY, FONTS.bodyBold, COLORS.text, { baseline: "top" });
-    cursorY += px(18);
-    
-    const addressWidth = logoWidth * 2.2;
-    const addressHeight = drawWrappedText(ctx, data.company?.address || "-", logoX, cursorY, addressWidth, FONTS.tiny, COLORS.muted, { baseline: "top", lineHeight: COMPANY_INFO_LINE_HEIGHT });
-    cursorY += addressHeight + px(2);
-
-    const contactLine = [data.company?.phone, data.company?.email].filter(Boolean).join(" | ");
-    drawText(ctx, contactLine || "-", logoX, cursorY, FONTS.tiny, COLORS.muted, { baseline: "top" });
-    cursorY += COMPANY_INFO_LINE_HEIGHT;
+    const addressWidth = px(360);
+    const lineGap = px(13);
+    const textOptions = { baseline: "top" };
+    drawText(ctx, data.company?.phone || "-", logoX, cursorY, FONTS.tiny, COLORS.muted, textOptions);
+    cursorY += lineGap;
+    drawText(ctx, data.company?.email || "-", logoX, cursorY, FONTS.tiny, COLORS.muted, textOptions);
+    cursorY += lineGap;
+    cursorY += drawWrappedText(
+      ctx,
+      data.company?.address || "-",
+      logoX,
+      cursorY,
+      addressWidth,
+      FONTS.tiny,
+      COLORS.muted,
+      { ...textOptions, lineHeight: lineGap }
+    );
   }
 
+  // 3. Meta information on the right
   const titleX = PAGE_WIDTH - DIMENSIONS.marginX - DIMENSIONS.topMetaWidth;
-  if (isFirst) {
-    drawText(ctx, "Purchase Order", titleX, logoY + px(12), FONTS.title, COLORS.text);
-  }
-
-  const metaY = logoY + (isFirst ? px(34) : px(4));
+  const metaY = isFirst ? DIMENSIONS.marginTop : logoY + px(4);
   const metaHeight = drawMetaBlock(ctx, data, titleX, metaY, DIMENSIONS.topMetaWidth);
   
   const headerBottom = Math.max(cursorY + px(10), metaY + metaHeight + px(14));
-  drawLine(ctx, DIMENSIONS.marginX, headerBottom, PAGE_WIDTH - DIMENSIONS.marginX, headerBottom, COLORS.line, px(0.8));
+  // Removed separator line as requested
   
   return headerBottom + px(14);
 };
 
 const drawInfoColumns = (ctx, data, y) => {
-  const columnGap = px(22);
-  const columnWidth = (PAGE_WIDTH - DIMENSIONS.marginX * 2 - columnGap) / 2;
-  const labelWidth = px(84);
+  const contentWidth = PAGE_WIDTH - DIMENSIONS.marginX * 2;
+  const colWidth = contentWidth / 2;
+  const xLeft = DIMENSIONS.marginX;
+  const xRight = DIMENSIONS.marginX + colWidth;
   const blockTop = y;
+  const lineSpacing = px(14);
 
-  const drawBlock = (x, title, fields) => {
-    drawText(ctx, title, x, blockTop, FONTS.section, COLORS.text);
-    let cursorY = blockTop + px(18);
-    fields.forEach(([label, value], index) => {
-      drawText(ctx, label, x, cursorY, FONTS.tinyBold, COLORS.muted);
-      drawWrappedText(
-        ctx,
-        value || "-",
-        x + labelWidth,
-        cursorY,
-        columnWidth - labelWidth,
-        FONTS.body,
-        COLORS.text,
-        { lineHeight: Math.round(FONTS.body.size * 1.42) }
-      );
-      cursorY += Math.max(
-        Math.round(FONTS.body.size * 1.42),
-        measureLines(ctx, value || "-", columnWidth - labelWidth, FONTS.body).length *
-          Math.round(FONTS.body.size * 1.42)
-      );
-      if (index < fields.length - 1) {
-        cursorY += px(4);
-      }
+  const drawStackedInfo = (ctx, title, name, phone, email, address, x) => {
+    let cursorY = blockTop;
+    drawText(ctx, title, x, cursorY, FONTS.body, COLORS.muted);
+    cursorY += px(22);
+    drawText(ctx, name, x, cursorY, FONTS.section, COLORS.text, { weight: 700 });
+    cursorY += px(18);
+    
+    const details = [phone, email, address].filter(Boolean);
+    details.forEach(line => {
+      drawText(ctx, line, x, cursorY, FONTS.body, COLORS.text);
+      cursorY += lineSpacing;
     });
   };
 
-  drawBlock(DIMENSIONS.marginX, "Vendor Information", [
-    ["Vendor Name", data.vendorInfo?.name || "-"],
-    [
-      "Contact",
-      [data.vendorInfo?.phone, data.vendorInfo?.email].filter(Boolean).join(" | ") || "-",
-    ],
-    ["Address", data.vendorInfo?.address || "-"],
-  ]);
+  drawStackedInfo(
+    ctx, 
+    "Vendor Information", 
+    data.vendorInfo?.name || "-", 
+    data.vendorInfo?.phone,
+    data.vendorInfo?.email,
+    data.vendorInfo?.address,
+    xLeft
+  );
 
-  drawBlock(DIMENSIONS.marginX + columnWidth + columnGap, "Recipient Information", [
-    ["Recipient Name", data.shipToInfo?.name || "-"],
-    [
-      "Contact",
-      [data.shipToInfo?.phone, data.shipToInfo?.email].filter(Boolean).join(" | ") || "-",
-    ],
-    ["Address", data.shipToInfo?.address || "-"],
-  ]);
+  drawStackedInfo(
+    ctx, 
+    "Recipient Information", 
+    data.shipToInfo?.name || "-", 
+    data.shipToInfo?.phone,
+    data.shipToInfo?.email,
+    data.shipToInfo?.address,
+    xRight
+  );
 
-  const approxHeight = px(106);
-  return blockTop + approxHeight;
+  const approxHeight = px(112);
+  const infoBottom = blockTop + approxHeight;
+  
+  return infoBottom;
 };
 
 const drawTableHeader = (ctx, x, y, widths) => {
   const headerHeight = DIMENSIONS.tableHeaderHeight;
-  ctx.fillStyle = COLORS.headerFill;
-  ctx.fillRect(x, y, widths.reduce((sum, width) => sum + width, 0), headerHeight);
-
-  const labels = ["No", "Image", "Description", "Price", "Qty", "Amount"];
+  // No fill for header as requested
+  
+  const labels = ["No", "Image", "Item", "Description", "Price", "Quantity", "Amount"];
   let cursorX = x;
   labels.forEach((label, index) => {
     const width = widths[index];
+    const isLeftAlign = index === 2 || index === 3; // Item and Description
     drawText(
       ctx,
       label,
-      cursorX + width / 2,
+      isLeftAlign ? cursorX + TABLE.cellPaddingX : cursorX + width / 2,
       y + headerHeight / 2 + px(3),
       FONTS.tableHead,
       COLORS.text,
-      { align: "center", baseline: "middle" }
+      { align: isLeftAlign ? "left" : "center", baseline: "middle" }
     );
     cursorX += width;
   });
 
   const tableWidth = widths.reduce((sum, width) => sum + width, 0);
-  drawLine(ctx, x, y, x + tableWidth, y, COLORS.line, px(0.8));
-  drawLine(ctx, x, y + headerHeight, x + tableWidth, y + headerHeight, COLORS.line, px(0.8));
+  drawLine(ctx, x, y, x + tableWidth, y, COLORS.softLine, px(0.8));
+  drawLine(ctx, x, y + headerHeight, x + tableWidth, y + headerHeight, COLORS.softLine, px(0.8));
 };
 
 const drawTableRow = async (ctx, row, x, y, widths, assets, currency) => {
-  const rowHeight = measureLineHeight(ctx, row, widths.reduce((sum, width) => sum + width, 0));
+  const rowHeight = measureLineHeight(ctx, row, widths[3]);
   const imageX = x + widths[0];
-  const descX = imageX + widths[1];
-  const priceX = descX + widths[2];
-  const qtyX = priceX + widths[3];
-  const amountX = qtyX + widths[4];
+  const itemX = imageX + widths[1];
+  const descX = itemX + widths[2];
+  const priceX = descX + widths[3];
+  const qtyX = priceX + widths[4];
+  const amountX = qtyX + widths[5];
   const contentTop = y + TABLE.cellPaddingY;
   const contentLineHeight = Math.round(FONTS.tableBody.size * 1.34);
 
@@ -763,136 +835,61 @@ const drawTableRow = async (ctx, row, x, y, widths, assets, currency) => {
   const imageBox = TABLE.imageBox;
   const imageCenterX = imageX + widths[1] / 2;
   const imageLeft = imageCenterX - imageBox / 2;
-  const imageTop = y + (rowHeight - imageBox) / 2;
+  const imageTop = y + TABLE.cellPaddingY + px(2); // Top aligned with small offset
 
   if (row.image?.src && assets.images[row.id]) {
-    drawRoundedRect(
-      ctx,
-      imageLeft,
-      imageTop,
-      imageBox,
-      imageBox,
-      px(4),
-      COLORS.white,
-      COLORS.softLine,
-      px(0.8)
-    );
-    drawImageCover(ctx, assets.images[row.id], imageLeft, imageTop, imageBox, imageBox);
+    drawImageCover(ctx, assets.images[row.id], imageLeft, imageTop, imageBox, imageBox, "center", "contain");
   } else {
-    const placeholderFill = "#F3F3F3";
-    const placeholderStroke = "#D8D8D8";
-    const iconStroke = "#A2A2A2";
-    drawRoundedRect(
-      ctx,
-      imageLeft,
-      imageTop,
-      imageBox,
-      imageBox,
-      px(7),
-      placeholderFill,
-      placeholderStroke,
-      px(0.8)
-    );
-
-    const iconSize = Math.min(imageBox * 0.5, px(24));
-    const iconX = imageCenterX - iconSize / 2;
-    const iconY = imageTop + imageBox / 2 - iconSize / 2;
-    const iconStrokeWidth = Math.max(px(0.8), 1);
-    ctx.strokeStyle = iconStroke;
-    ctx.fillStyle = iconStroke;
-    ctx.lineWidth = iconStrokeWidth;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-
-    // simple photo-style icon centered in the placeholder
-    drawRoundedRect(ctx, iconX, iconY, iconSize, iconSize * 0.72, px(2), null, iconStroke, iconStrokeWidth);
-    const framePadding = iconSize * 0.14;
-    const innerLeft = iconX + framePadding;
-    const innerRight = iconX + iconSize - framePadding;
-    const innerBottom = iconY + iconSize * 0.72 - framePadding;
-    const sunRadius = Math.max(iconSize * 0.08, px(1.2));
-    ctx.beginPath();
-    ctx.arc(iconX + iconSize * 0.72, iconY + iconSize * 0.22, sunRadius, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(innerLeft, innerBottom);
-    ctx.lineTo(iconX + iconSize * 0.42, iconY + iconSize * 0.38);
-    ctx.lineTo(iconX + iconSize * 0.58, innerBottom);
-    ctx.lineTo(innerRight, innerBottom);
-    ctx.stroke();
+    drawText(ctx, "-", imageCenterX, imageTop + px(8), FONTS.tableBody, COLORS.text, { align: "center", baseline: "top" });
   }
 
-  const descWidth = widths[2] - TABLE.cellPaddingX * 2;
-  const descXText = descX + TABLE.cellPaddingX;
-  const titleBlock = row.descriptionBlocks?.[0];
+  // Item Column (Item Name + SKU)
+  const itemWidth = widths[2] - TABLE.cellPaddingX * 2;
   let cursorY = contentTop + contentLineHeight;
-  const titleLines = measureLines(
-    ctx,
-    titleBlock?.value || "-",
-    descWidth,
-    FONTS.tableBodyBold
-  );
-  titleLines.forEach((line, index) => {
-    drawText(
-      ctx,
-      line,
-      descXText,
-      cursorY,
-      FONTS.tableBodyBold,
-      COLORS.text
-    );
-    cursorY += Math.round(FONTS.tableBodyBold.size * 1.28);
-    if (index < titleLines.length - 1) {
-      cursorY += px(1);
-    }
+  const itemName = row.descriptionBlocks?.[0]?.value || "-";
+  const itemNameLines = measureLines(ctx, itemName, itemWidth, FONTS.tableBody);
+  itemNameLines.forEach(line => {
+    drawText(ctx, line, itemX + TABLE.cellPaddingX, cursorY, FONTS.tableBody, COLORS.text);
+    cursorY += contentLineHeight;
   });
-  cursorY += px(2);
+  
+  const sku = row.descriptionBlocks?.find(b => b.label === "SKU / Code")?.value;
+  if (sku) {
+    drawText(ctx, sku, itemX + TABLE.cellPaddingX, cursorY, FONTS.tiny, COLORS.muted);
+  }
 
-  (row.descriptionBlocks || []).slice(1).forEach((block, index) => {
-    const labelWidth = px(62);
-    drawText(ctx, block.label || "", descXText, cursorY, FONTS.tinyBold, COLORS.muted);
-    const valueX = descXText + labelWidth;
-    const valueWidth = descWidth - labelWidth;
-    const valueLines = measureLines(ctx, block.value || "-", valueWidth, FONTS.tiny);
-    valueLines.forEach((line, lineIndex) => {
-      drawText(ctx, line, valueX, cursorY, FONTS.tiny, COLORS.text);
-      cursorY += Math.round(FONTS.tiny.size * 1.28);
-      if (lineIndex < valueLines.length - 1) {
-        cursorY += px(1);
-      }
-    });
-    if (index < (row.descriptionBlocks || []).slice(1).length - 1) {
-      cursorY += px(1);
-    }
-  });
+  // Description Column
+  const descWidth = widths[3] - TABLE.cellPaddingX * 2;
+  const desc = row.descriptionBlocks?.find(b => b.label === "Description")?.value || "-";
+  drawWrappedText(ctx, desc, descX + TABLE.cellPaddingX, contentTop + contentLineHeight, descWidth, FONTS.tableBody, COLORS.text, { lineHeight: contentLineHeight });
 
-  const numericCenterY = y + rowHeight / 2 + px(3);
+  const numericY = contentTop + contentLineHeight;
   drawText(
     ctx,
     formatCurrency(row.unitPrice, currency),
-    priceX + widths[3] - TABLE.cellPaddingX,
-    numericCenterY,
+    priceX + widths[4] - TABLE.cellPaddingX,
+    numericY,
     FONTS.tableBody,
     COLORS.text,
-    { align: "right", baseline: "middle" }
+    { align: "right" }
   );
   drawText(
     ctx,
     row.quantityLabel,
-    qtyX + widths[4] - TABLE.cellPaddingX,
-    numericCenterY,
+    qtyX + widths[5] - TABLE.cellPaddingX,
+    numericY,
     FONTS.tableBody,
     COLORS.text,
-    { align: "right", baseline: "middle" }
+    { align: "right" }
   );
   drawText(
     ctx,
     formatCurrency(row.amount, currency),
-    amountX + widths[5] - TABLE.cellPaddingX,
-    numericCenterY,
+    amountX + widths[6] - TABLE.cellPaddingX,
+    numericY,
     FONTS.tableBodyBold,
     COLORS.text,
-    { align: "right", baseline: "middle" }
+    { align: "right" }
   );
 
   return rowHeight;
@@ -906,40 +903,72 @@ const drawSummary = (ctx, summary, currency, x, y, width) => {
       label: fee.name,
       value: formatCurrency(fee.amount || 0, currency),
     })),
+    { label: "Total", value: formatCurrency(summary?.total || 0, currency), isTotal: true },
   ];
 
   let cursorY = y;
-  const rowLineHeight = Math.round(FONTS.body.size * 1.42);
-  const labelWidth = width - px(96);
+  const rowLineHeight = Math.round(FONTS.body.size * 1.55);
+  const labelWidth = width - px(100);
   rows.forEach((row) => {
-    const labelLines = measureLines(ctx, row.label, labelWidth, FONTS.body);
-    const valueLines = measureLines(ctx, row.value, px(90), FONTS.bodyBold);
+    const isTotal = row.isTotal;
+    const labelLines = measureLines(ctx, row.label, labelWidth, isTotal ? FONTS.section : FONTS.body);
+    const valueLines = measureLines(ctx, row.value, px(100), isTotal ? FONTS.section : FONTS.bodyBold);
     const rowHeight = Math.max(labelLines.length, valueLines.length) * rowLineHeight;
-    drawText(ctx, row.label, x, cursorY + rowLineHeight, FONTS.body, COLORS.muted);
+    
+    if (isTotal) {
+      drawLine(ctx, x, cursorY + px(4), x + width, cursorY + px(4), COLORS.line, px(0.8));
+      cursorY += px(8);
+    }
+
+    drawText(ctx, row.label, x, cursorY + rowLineHeight, isTotal ? FONTS.section : FONTS.body, COLORS.muted);
     drawText(
       ctx,
       row.value,
       x + width,
       cursorY + rowLineHeight,
-      FONTS.bodyBold,
+      isTotal ? FONTS.section : FONTS.bodyBold,
       COLORS.text,
       { align: "right" }
     );
-    cursorY += rowHeight + px(1);
+    cursorY += rowHeight + px(2);
   });
 
-  drawLine(ctx, x, cursorY + px(2), x + width, cursorY + px(2), COLORS.line, px(0.8));
-  drawText(ctx, "Total", x, cursorY + px(18), FONTS.section, COLORS.text);
-  drawText(
+  // Add Currency Explanation (In Words)
+  const amountInWords = `${numberToWords(summary?.total || 0)} ${currency === "IDR" ? "Rupiah" : currency}`;
+  const explanationY = cursorY + px(18);
+  const explanationWidth = width;
+  
+  const wrappedExplanationHeight = measureLines(
     ctx,
-    formatCurrency(summary?.total || 0, currency),
-    x + width,
-    cursorY + px(18),
-    FONTS.section,
-    COLORS.text,
-    { align: "right" }
+    amountInWords,
+    explanationWidth - px(24),
+    { size: px(11), weight: 400, italic: true }
+  ).length * px(14);
+  
+  const containerHeight = Math.max(px(32), wrappedExplanationHeight + px(16));
+
+  drawRoundedRect(
+    ctx,
+    x,
+    explanationY,
+    explanationWidth,
+    containerHeight,
+    px(6),
+    "#F5F5F5"
   );
-  return cursorY + px(32) - y;
+  
+  drawWrappedText(
+    ctx,
+    amountInWords,
+    x + explanationWidth / 2,
+    explanationY + containerHeight / 2,
+    explanationWidth - px(24),
+    { size: px(11), weight: 400, italic: true },
+    COLORS.muted,
+    { align: "center", baseline: "middle", lineHeight: px(14) }
+  );
+
+  return explanationY + containerHeight + px(8) - y;
 };
 
 const drawTextBlock = (ctx, title, paragraphs, x, y, width) => {
@@ -984,22 +1013,32 @@ const drawAssignmentField = (ctx, value, x, y, width) => {
 };
 
 const drawDisclaimer = (ctx, y, pageIndex, pageCount) => {
-  const disclaimerText = "This document is issued by Labamu Manufacturing. Labamu is not responsible for its content.";
+  const disclaimerText = "This document is issued by the merchant via Labamu. Labamu is not responsible for its content.";
   const paginationText = `Page ${pageIndex + 1} of ${pageCount}`;
   
   const marginX = DIMENSIONS.marginX;
-  const contentWidth = PAGE_WIDTH - marginX * 2;
-  
-  // Draw disclaimer centered
-  drawText(ctx, disclaimerText, PAGE_WIDTH / 2, y, FONTS.disclaimer, COLORS.light, {
-    align: "center",
-    baseline: "top",
+  const footerBarHeight = px(28);
+  const barY = PAGE_HEIGHT - footerBarHeight;
+
+  // Draw black bar
+  ctx.fillStyle = COLORS.blackBar;
+  ctx.fillRect(0, barY, PAGE_WIDTH, footerBarHeight);
+
+  // Draw "Powered by"
+  drawText(ctx, "Powered by", marginX, barY + footerBarHeight / 2 + px(3), { size: px(8), weight: 400 }, "#FFFFFF", {
+    baseline: "middle",
   });
 
-  // Draw pagination on the right, same line
-  drawText(ctx, paginationText, PAGE_WIDTH - marginX, y, FONTS.disclaimer, COLORS.light, {
+  // Draw disclaimer centered
+  drawText(ctx, disclaimerText, PAGE_WIDTH / 2, barY + footerBarHeight / 2 + px(3), { size: px(8), weight: 400 }, "#FFFFFF", {
+    align: "center",
+    baseline: "middle",
+  });
+
+  // Draw pagination on the right
+  drawText(ctx, paginationText, PAGE_WIDTH - marginX, barY + footerBarHeight / 2 + px(3), { size: px(8), weight: 400 }, "#FFFFFF", {
     align: "right",
-    baseline: "top",
+    baseline: "middle",
   });
 };
 
@@ -1122,28 +1161,22 @@ const renderPurchaseOrderPage = async ({
   ctx.fillRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT);
 
   const contentWidth = PAGE_WIDTH - DIMENSIONS.marginX * 2;
-  const tableWidth =
-    TABLE.colNo +
-    TABLE.colImage +
-    (contentWidth - TABLE.colNo - TABLE.colImage - TABLE.colPrice - TABLE.colQty - TABLE.colAmount) +
-    TABLE.colPrice +
-    TABLE.colQty +
-    TABLE.colAmount;
+  const tableWidth = PAGE_WIDTH - DIMENSIONS.marginX * 2;
   const widths = [
-    TABLE.colNo,
-    TABLE.colImage,
-    tableWidth - TABLE.colNo - TABLE.colImage - TABLE.colPrice - TABLE.colQty - TABLE.colAmount,
-    TABLE.colPrice,
-    TABLE.colQty,
-    TABLE.colAmount,
+    px(32),
+    px(64),
+    px(180),
+    contentWidth - px(576),
+    px(110),
+    px(80),
+    px(110),
   ];
 
   let cursorY = await drawHeader(ctx, pageType, data, assets);
 
   if (pageType === "first") {
-    cursorY += px(8);
     cursorY = drawInfoColumns(ctx, data, cursorY);
-    cursorY += px(16);
+    cursorY += px(8);
   }
 
   const tableTop = cursorY;
@@ -1162,36 +1195,16 @@ const renderPurchaseOrderPage = async ({
       data.currency
     );
     currentY += rowHeight;
+    drawLine(ctx, DIMENSIONS.marginX, currentY, DIMENSIONS.marginX + tableWidth, currentY, COLORS.line, px(0.8));
   }
 
   const tableBottom = currentY;
-  const fullTableHeight = tableBottom - tableTop;
-  let verticalX = DIMENSIONS.marginX;
-  widths.forEach((width, index) => {
-    if (index > 0) {
-      drawLine(ctx, verticalX, tableTop, verticalX, tableBottom, COLORS.line, px(0.8));
-    }
-    verticalX += width;
-  });
-  drawLine(ctx, DIMENSIONS.marginX, tableTop, DIMENSIONS.marginX + tableWidth, tableTop, COLORS.line, px(0.8));
-  drawLine(
-    ctx,
-    DIMENSIONS.marginX,
-    tableBottom,
-    DIMENSIONS.marginX + tableWidth,
-    tableBottom,
-    COLORS.line,
-    px(0.8)
-  );
-  drawLine(
-    ctx,
-    DIMENSIONS.marginX + tableWidth,
-    tableTop,
-    DIMENSIONS.marginX + tableWidth,
-    tableBottom,
-    COLORS.line,
-    px(0.8)
-  );
+  // No vertical grid lines as per Image 2
+  // Bottom line is already drawn by the loop for the last row, or we can ensure it here
+  drawLine(ctx, DIMENSIONS.marginX, tableBottom, DIMENSIONS.marginX + tableWidth, tableBottom, COLORS.softLine, px(0.8));
+
+  // "Showing 1-X of X products" text below table
+  drawText(ctx, `Showing 1-${rows.length} of ${data.lineItems.length} products`, DIMENSIONS.marginX, tableBottom + px(24), FONTS.bodyBold, COLORS.text);
 
   if (isLastPage) {
     const summaryWidth = px(250);
@@ -1244,20 +1257,14 @@ const planPages = (data) => {
   ctx.imageSmoothingQuality = "high";
 
   const contentWidth = PAGE_WIDTH - DIMENSIONS.marginX * 2;
-  const tableWidth =
-    TABLE.colNo +
-    TABLE.colImage +
-    (contentWidth - TABLE.colNo - TABLE.colImage - TABLE.colPrice - TABLE.colQty - TABLE.colAmount) +
-    TABLE.colPrice +
-    TABLE.colQty +
-    TABLE.colAmount;
   const widths = [
-    TABLE.colNo,
-    TABLE.colImage,
-    tableWidth - TABLE.colNo - TABLE.colImage - TABLE.colPrice - TABLE.colQty - TABLE.colAmount,
-    TABLE.colPrice,
-    TABLE.colQty,
-    TABLE.colAmount,
+    px(32),
+    px(64),
+    px(180),
+    contentWidth - px(576),
+    px(110),
+    px(80),
+    px(110),
   ];
 
   const firstHeaderHeight = measureHeaderHeight(ctx, data, "first");
@@ -1292,7 +1299,7 @@ const planPages = (data) => {
     firstInfoHeight +
     DIMENSIONS.sectionGap +
     DIMENSIONS.tableHeaderHeight;
-  const rowMeasure = (row) => measureLineHeight(ctx, row, widths.reduce((sum, width) => sum + width, 0));
+  const rowMeasure = (row) => measureLineHeight(ctx, row, widths[3]);
 
   data.lineItems.forEach((row, index) => {
     const rowHeight = rowMeasure(row);

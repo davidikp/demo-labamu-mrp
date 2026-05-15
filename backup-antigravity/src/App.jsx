@@ -892,10 +892,10 @@ export default function App() {
         navigate(path, { state: data });
         return;
       }
-      if (view.startsWith("materials_")) {
-        let subView = view.replace("materials_", "");
+      if (view.startsWith("materials_") || view === "material_detail") {
+        let subView = view.startsWith("materials_") ? view.replace("materials_", "") : "detail";
         if (subView === "settings") subView = "manage";
-        const path = subView === "list" ? "/materials" : `/materials/${subView}`;
+        const path = subView === "list" ? "/materials" : (subView === "detail" ? `/materials/${data?.sku || "detail"}` : `/materials/${subView}`);
         navigate(path, { state: data });
         return;
       }
@@ -1034,7 +1034,7 @@ export default function App() {
                 padding: "12px 16px",
                 borderRadius: "var(--radius-small)",
                 boxShadow: "var(--elevation-sm)",
-                zIndex: 1000,
+                zIndex: 20000,
                 display: "flex",
                 alignItems: "center",
                 gap: "12px",

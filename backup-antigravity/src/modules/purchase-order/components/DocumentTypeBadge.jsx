@@ -2,10 +2,15 @@ import React from "react";
 import { getFileExtension } from "../../../utils/upload/uploadUtils.js";
 
 export const DocumentTypeBadge = ({ fileName = "", type = "", size = "default" }) => {
-  const normalizedType = (
-    getFileExtension(fileName) ||
-    (type === "pdf" ? "PDF" : type === "image" ? "JPG" : "DOC")
-  ).toUpperCase();
+  const extension = getFileExtension(fileName).toUpperCase();
+  const extensionMap = {
+    "XLSX": "XLS",
+    "DOCX": "DOC",
+    "PPTX": "PPT",
+    "PPT": "PPT",
+  };
+  const normalizedType = extensionMap[extension] || extension || (type === "pdf" ? "PDF" : type === "image" ? "JPG" : "DOC");
+  
   const palette = {
     DOC: { bg: "#6E90C7", fold: "#A8BFE2" },
     XLS: { bg: "#0D7C44", fold: "#56B182" },
@@ -16,6 +21,7 @@ export const DocumentTypeBadge = ({ fileName = "", type = "", size = "default" }
     PNG: { bg: "#456FB4", fold: "#A9BDE2" },
     SVG: { bg: "#605CED", fold: "#AFAEFF" },
     WEBP: { bg: "#767F90", fold: "#AEB5C1" },
+    PPT: { bg: "#D14424", fold: "#F3A18E" },
   }[normalizedType] || { bg: "#6E90C7", fold: "#A8BFE2" };
   const sizeMap = {
     compact: {

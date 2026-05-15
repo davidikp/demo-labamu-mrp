@@ -37,7 +37,6 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
   const currency = "IDR";
   const [vendorFilter, setVendorFilter] = useState("all");
   const [sortConfig, setSortConfig] = useState({ key: "total", direction: "desc" });
-  const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
@@ -91,11 +90,9 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
   // Filter and Search
   const filteredData = useMemo(() => {
     return vendorLiabilities.filter(v => {
-      const matchesVendor = vendorFilter === "all" || v.name === vendorFilter;
-      const matchesSearch = v.name.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesVendor && matchesSearch;
+      return vendorFilter === "all" || v.name === vendorFilter;
     });
-  }, [vendorLiabilities, vendorFilter, searchQuery]);
+  }, [vendorLiabilities, vendorFilter]);
 
   // Sort Logic
   const sortedData = useMemo(() => {
@@ -260,22 +257,16 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <DropdownSelect 
               variant="filter"
+              searchable={true}
+              maxOptionsVisible={4}
               fontSize="var(--text-title-3)"
-              placeholder="Vendor Name"
+              placeholder="Vendor"
               value={vendorFilter}
-              options={["all", ...new Set(vendorLiabilities.map(v => v.name))].map(v => ({ value: v, label: v === "all" ? "Vendor Name" : v }))}
+              options={["all", ...new Set(vendorLiabilities.map(v => v.name))].map(v => ({ value: v, label: v === "all" ? "Vendor" : v }))}
               onChange={(val) => { setVendorFilter(val); setCurrentPage(1); }}
             />
           </div>
 
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <TableSearchField 
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              placeholder="Search vendor name"
-              style={{ width: "280px" }}
-            />
-          </div>
         </div>
 
         {/* Table Content */}

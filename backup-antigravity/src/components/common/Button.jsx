@@ -15,9 +15,10 @@ const Button = ({
 }) => {
   const isFilled = variant === "filled";
   const isDanger = variant === "danger";
+  const isDangerFilled = variant === "danger-filled";
   const isGhost = variant === "ghost";
   const isTertiary = variant === "tertiary";
-  const isOutlined = !isFilled && !isDanger && !isGhost && !isTertiary;
+  const isOutlined = !isFilled && !isDanger && !isDangerFilled && !isGhost && !isTertiary;
 
   const sizeStyles = {
     xlarge: {
@@ -68,6 +69,12 @@ const Button = ({
     border = "1px solid var(--status-red-primary)";
     bg = "transparent";
     textCol = "var(--status-red-primary)";
+  }
+
+  if (isDangerFilled) {
+    border = "1px solid var(--status-red-primary)";
+    bg = "var(--status-red-primary)";
+    textCol = "#FFFFFF";
   }
 
   if (isGhost) {
@@ -123,6 +130,9 @@ const Button = ({
           e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,104,255,0.28)";
         } else if (isDanger) {
           e.currentTarget.style.background = "var(--status-red-container)";
+        } else if (isDangerFilled) {
+          e.currentTarget.style.background = "var(--status-red-primary)";
+          e.currentTarget.style.opacity = "0.9";
         } else if (isGhost) {
           e.currentTarget.style.background =
             "var(--neutral-surface-grey-lighter)";
@@ -142,6 +152,9 @@ const Button = ({
           e.currentTarget.style.boxShadow = "none";
         } else if (isDanger) {
           e.currentTarget.style.background = "transparent";
+        } else if (isDangerFilled) {
+          e.currentTarget.style.background = "var(--status-red-primary)";
+          e.currentTarget.style.opacity = "1";
         } else if (isGhost) {
           e.currentTarget.style.background = "transparent";
           e.currentTarget.style.color = "var(--neutral-on-surface-secondary)";

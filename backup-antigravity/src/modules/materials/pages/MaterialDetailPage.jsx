@@ -278,6 +278,8 @@ export const MaterialDetailPage = ({ material, onNavigate, showSnackbar, t }) =>
               localTransactions={localTransactions}
               setLocalTransactions={setLocalTransactions}
               showSnackbar={showSnackbar}
+              onNavigate={onNavigate}
+              currentMaterial={currentMaterial}
             />
           ) : (
             <StockTransactionsTab 

@@ -41,8 +41,9 @@ export const buildReceiptStateFromLines = (
   );
   const normalizedSeededLogs = (seededLogs || []).map((log, index) => ({
     id: log.id || `receipt-log-seed-${index}`,
-    receiptNumber:
-      log.receiptNumber || `RCPT-${String(index + 1).padStart(4, "0")}`,
+    receiptNumber: log.title
+      ? log.receiptNumber
+      : log.receiptNumber || `RCPT-${String(index + 1).padStart(4, "0")}`,
     date: log.date || "-",
     time: log.time || "-",
     receivedBy: log.receivedBy || "-",
@@ -191,7 +192,7 @@ export const ensureCompletedLogIsLatest = (logs = [], currentStatus) => {
   if (currentStatus !== "Completed") return sortedLogs;
 
   const completedLogIndex = sortedLogs.findIndex(
-    (log) => log.title === "PO Completed"
+    (log) => log.title === "Completed"
   );
   if (completedLogIndex === -1) return sortedLogs;
 
