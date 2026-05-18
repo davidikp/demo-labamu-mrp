@@ -7,6 +7,19 @@ export const MOCK_PO_TABLE_DATA = [
     status: "Completed",
     statusKey: "completed",
     sBadge: "green",
+    subtotal: 15000000,
+    lines: [
+      {
+        id: 1,
+        type: "material",
+        item: "Standard Wood Frame Support",
+        code: "WDF-SUP-01",
+        desc: "Standard wood frame support for tables.",
+        woRef: "-",
+        qty: 150,
+        price: 100000,
+      }
+    ],
     invoices: [
       {
         id: "inv-1-1",
@@ -42,6 +55,19 @@ export const MOCK_PO_TABLE_DATA = [
     status: "Issued",
     statusKey: "issued",
     sBadge: "blue",
+    subtotal: 8500000,
+    lines: [
+      {
+        id: 1,
+        type: "material",
+        item: "Steel Frame Support",
+        code: "STL-SUP-02",
+        desc: "Heavy-duty steel support frame.",
+        woRef: "-",
+        qty: 85,
+        price: 100000,
+      }
+    ],
     invoices: [
       {
         id: "inv-2-1",
@@ -76,6 +102,19 @@ export const MOCK_PO_TABLE_DATA = [
     status: "Waiting for Approval",
     statusKey: "ready_to_send",
     sBadge: "orange",
+    subtotal: 22000000,
+    lines: [
+      {
+        id: 1,
+        type: "material",
+        item: "Luxury Mahogany Support",
+        code: "MAH-SUP-03",
+        desc: "Luxury mahogany furniture support.",
+        woRef: "-",
+        qty: 220,
+        price: 100000,
+      }
+    ],
     invoices: [],
     payments: []
   },
@@ -87,6 +126,19 @@ export const MOCK_PO_TABLE_DATA = [
     status: "Issued",
     statusKey: "issued",
     sBadge: "blue",
+    subtotal: 5250000,
+    lines: [
+      {
+        id: 1,
+        type: "material",
+        item: "Aluminium Frame Support",
+        code: "ALU-SUP-01",
+        desc: "Structural aluminium support frame.",
+        woRef: "-",
+        qty: 35,
+        price: 150000,
+      }
+    ],
     invoices: [
       {
         id: "inv-4-1",
@@ -109,6 +161,19 @@ export const MOCK_PO_TABLE_DATA = [
     status: "Completed",
     statusKey: "completed",
     sBadge: "green",
+    subtotal: 11000000,
+    lines: [
+      {
+        id: 1,
+        type: "material",
+        item: "Premium Teak Wood Planks",
+        code: "TEAK-PLK-05",
+        desc: "Premium grade seasoned teak wood planks.",
+        woRef: "-",
+        qty: 110,
+        price: 100000,
+      }
+    ],
     invoices: [
       {
         id: "inv-5-1",
@@ -131,6 +196,19 @@ export const MOCK_PO_TABLE_DATA = [
     status: "Canceled",
     statusKey: "rejected",
     sBadge: "red",
+    subtotal: 7000000,
+    lines: [
+      {
+        id: 1,
+        type: "material",
+        item: "Standard Plywood Sheets",
+        code: "PLY-STD-02",
+        desc: "Standard furniture grade plywood sheets.",
+        woRef: "-",
+        qty: 70,
+        price: 100000,
+      }
+    ],
     invoices: [],
     payments: []
   },
