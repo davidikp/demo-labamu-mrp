@@ -143,12 +143,12 @@ const PoInvoicePaymentTab = ({
                 display: "flex", 
                 justifyContent: "space-between", 
                 alignItems: "center", 
-                fontSize: "12px",
+                fontSize: "13px",
                 paddingBottom: "8px",
                 borderBottom: "1px solid var(--neutral-line-separator-1)",
                 marginBottom: "2px"
               }}>
-                <span style={{ color: "var(--neutral-on-surface-secondary)" }}>Uninvoiced Amount</span>
+                <span style={{ color: "var(--neutral-on-surface-secondary)", fontWeight: "500" }}>Uninvoiced Amount</span>
                 <span style={{ fontWeight: "600", color: "var(--neutral-on-surface-primary)" }}>{formatCurrency(poGap, currency)}</span>
               </div>
               {[
@@ -159,6 +159,11 @@ const PoInvoicePaymentTab = ({
                   <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                     <div style={{ width: "8px", height: "8px", borderRadius: "2px", background: item.color }} />
                     <span style={{ color: "var(--neutral-on-surface-secondary)" }}>{item.label}</span>
+                    {item.label === "Total Invoiced" && totalInvoiced > total && (
+                      <div style={{ marginLeft: "6px", display: "inline-flex" }}>
+                        <StatusBadge variant="orange-light">Mismatch</StatusBadge>
+                      </div>
+                    )}
                   </div>
                   <span style={{ fontWeight: "600", color: "var(--neutral-on-surface-primary)" }}>{formatCurrency(item.value, currency)}</span>
                 </div>

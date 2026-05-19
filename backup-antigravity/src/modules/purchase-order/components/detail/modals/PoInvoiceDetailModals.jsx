@@ -905,13 +905,18 @@ const PoInvoiceDetailModals = ({
                                   >
                                     {pay.id}
                                   </div>
-                                  <StatusBadge
-                                    variant={
-                                      pay.isVoid ? "grey-light" : "blue-light"
-                                    }
-                                  >
-                                    {pay.isVoid ? "Voided" : pay.method}
-                                  </StatusBadge>
+                                   <StatusBadge
+                                     variant={(() => {
+                                       if (pay.isVoid) return "grey-light";
+                                       const m = String(pay.method || "").toLowerCase();
+                                       if (m.includes("cash")) return "green-light";
+                                       if (m.includes("transfer")) return "blue-light";
+                                       if (m.includes("giro")) return "grey-light";
+                                       return "blue-light";
+                                     })()}
+                                   >
+                                     {pay.isVoid ? "Voided" : pay.method}
+                                   </StatusBadge>
                                 </div>
                                 <div
                                   style={{

@@ -186,7 +186,6 @@ const Tooltip = ({ content, children, style = {} }) => {
             left: "50%",
             transform: "translateX(-50%)",
             marginBottom: "8px",
-            width: "80vw",
             maxWidth: "1600px",
             width: "max-content",
             padding: "8px 12px",
@@ -1630,6 +1629,43 @@ const ImageUploadField = ({
     onFilesSelected?.(nextFiles);
   };
 
+  const renderDisabledEmptyTile = () => (
+    <div
+      style={{
+        width: "120px",
+        height: "120px",
+        borderRadius: "12px",
+        border: "1px dashed var(--neutral-line-separator-2)",
+        background: "var(--neutral-surface-grey-lighter)",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "6px",
+        cursor: "not-allowed",
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          width: "36px",
+          height: "36px",
+          borderRadius: "999px",
+          background: "var(--neutral-surface-primary)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          border: "1px solid var(--neutral-line-separator-1)",
+        }}
+      >
+        <AddIcon size={20} color="var(--neutral-on-surface-tertiary)" style={{ opacity: 0.5 }} />
+      </div>
+      <span style={{ fontSize: "var(--text-desc)", color: "var(--neutral-on-surface-tertiary)" }}>
+        No Image
+      </span>
+    </div>
+  );
+
   const renderEmptyTile = () => (
     <label
       onDragOver={(e) => {
@@ -1778,6 +1814,7 @@ const ImageUploadField = ({
         })}
 
         {canAddMore ? renderEmptyTile() : null}
+        {disabled && normalizedImages.length === 0 ? renderDisabledEmptyTile() : null}
       </div>
 
       {error ? (
@@ -2547,6 +2584,26 @@ export const PurchaseOrderCreatePage = ({
     desc: m.description,
     image: m.image,
   }));
+
+  lines.forEach((line) => {
+    if (
+      line.type === "material" &&
+      !availableMaterialLines.some(
+        (m) => m.code === line.code || m.item === line.item
+      )
+    ) {
+      availableMaterialLines.push({
+        id: line.sourceMaterialLineId || `temp-mat-${line.id}`,
+        item: line.item,
+        code: line.code,
+        price: line.price,
+        uom: line.uom || "Pcs",
+        desc: line.desc || "",
+        image: line.image || null,
+      });
+    }
+  });
+
   const selectedMaterialLine = productModalForm.selectedMaterialLineId
     ? availableMaterialLines.find(
       (line) => line.id === productModalForm.selectedMaterialLineId
@@ -2860,7 +2917,8 @@ export const PurchaseOrderCreatePage = ({
       ? availableMaterialLines.find(
         (material) =>
           (line.sourceMaterialLineId && material.id === line.sourceMaterialLineId) ||
-          (material.item === line.item && material.code === line.code)
+          material.code === line.code ||
+          material.item === line.item
       )
       : null;
     const fallbackGeneratedLineId =
@@ -3286,6 +3344,12 @@ export const PurchaseOrderCreatePage = ({
       const existing = MOCK_STOCK_BATCHES.find((b) => b.id === batchId);
       if (!existing) {
         MOCK_STOCK_BATCHES.push(newBatch);
+      } else {
+        existing.initialQty = Number(line.qty) || 0;
+        existing.costPerUnit = Number(line.price) || 0;
+        existing.vendor = vendorName;
+        existing.purchaseDate = poDate;
+        existing.expectedDate = deliveryDate;
       }
     });
   };
@@ -3510,8 +3574,12 @@ export const PurchaseOrderCreatePage = ({
   };
 
   const renderProductImageUploader = (disabled = false, helperTextOverride = "") => {
-    const helperText = helperTextOverride || (disabled
+    const defaultDisabledHelperText = productLineType === "wo"
       ? "Image is taken from the selected work order."
+      : "Allowed formats (JPG, JPEG, PNG, WebP), Max size 25MB per file";
+
+    const helperText = helperTextOverride || (disabled
+      ? defaultDisabledHelperText
       : "Allowed formats (JPG, JPEG, PNG, WebP), Max size 25MB per file");
 
     return (
@@ -3892,6 +3960,7 @@ export const PurchaseOrderCreatePage = ({
                     value={poDate}
                     onChange={(e) => setPoDate(e.target.value)}
                     error={formErrors.poDate}
+                    disabled={isReviseMode}
                   />
                 </div>
               </div>
@@ -3904,6 +3973,7 @@ export const PurchaseOrderCreatePage = ({
                   type="date"
                   value={deliveryDate}
                   onChange={(e) => setDeliveryDate(e.target.value)}
+                  disabled={isReviseMode}
                 />
               </div>
               <div style={rowWrapStyle}>
@@ -3921,6 +3991,7 @@ export const PurchaseOrderCreatePage = ({
                       { value: "IDR", label: "IDR - Indonesian Rupiah" },
                       { value: "USD", label: "USD - US Dollar" },
                     ]}
+                    disabled={isReviseMode}
                   />
                   {formErrors.currency ? (
                     <span
@@ -4019,6 +4090,7 @@ export const PurchaseOrderCreatePage = ({
                 size="small"
                 leftIcon={AddIcon}
                 onClick={openAddProductModal}
+                disabled={isReviseMode}
               >
                 Add PO Line
               </Button>
@@ -4256,9 +4328,9 @@ export const PurchaseOrderCreatePage = ({
                                 variant="tertiary"
                                 size="small"
                                 onClick={() => handleRemoveLine(line.id)}
-                                disabled={isLockedWorkOrderLine || (isReviseMode && line.type === "wo")}
+                                disabled={isLockedWorkOrderLine || isReviseMode}
                                 style={{ 
-                                  color: (isLockedWorkOrderLine || (isReviseMode && line.type === "wo")) 
+                                  color: (isLockedWorkOrderLine || isReviseMode) 
                                     ? "var(--neutral-on-surface-tertiary)" 
                                     : "var(--status-red-primary)",
                                   padding: "0 4px"
@@ -4694,25 +4766,30 @@ export const PurchaseOrderCreatePage = ({
                           setProductModalError("");
                         }
                       }}
-                      disabled={isEditingLockedWorkOrderLine}
+                      disabled={isEditingLockedWorkOrderLine || isReviseMode}
                       style={{
                         border:
                           productLineType === option.key
                             ? "2px solid var(--feature-brand-primary)"
-                            : "1px solid var(--neutral-line-separator-2)",
+                            : (isReviseMode
+                              ? "1px solid var(--neutral-line-outline)"
+                              : "1px solid var(--neutral-line-separator-2)"),
                         borderRadius: "24px",
                         background:
                           productLineType === option.key
                             ? "var(--feature-brand-container-lighter)"
-                            : "var(--neutral-surface-primary)",
+                            : (isReviseMode
+                              ? "var(--neutral-surface-grey-lighter)"
+                              : "var(--neutral-surface-primary)"),
                         padding: "22px 24px",
                         display: "flex",
                         alignItems: "flex-start",
                         gap: "14px",
-                        cursor: isEditingLockedWorkOrderLine
+                        cursor: (isEditingLockedWorkOrderLine || isReviseMode)
                           ? "not-allowed"
                           : "pointer",
                         textAlign: "left",
+                        opacity: (isReviseMode && productLineType !== option.key) ? 0.6 : 1,
                       }}
                     >
                       <div
@@ -4729,6 +4806,7 @@ export const PurchaseOrderCreatePage = ({
                           justifyContent: "center",
                           flexShrink: 0,
                           marginTop: "2px",
+                          opacity: (isReviseMode && productLineType !== option.key) ? 0.5 : 1,
                         }}
                       >
                         {productLineType === option.key ? (
@@ -4753,7 +4831,9 @@ export const PurchaseOrderCreatePage = ({
                           style={{
                             fontSize: "16px",
                             fontWeight: "var(--font-weight-bold)",
-                            color: "var(--neutral-on-surface-primary)",
+                            color: (isReviseMode && productLineType !== option.key)
+                              ? "var(--neutral-on-surface-tertiary)"
+                              : "var(--neutral-on-surface-primary)",
                           }}
                         >
                           {option.title}
@@ -4761,7 +4841,9 @@ export const PurchaseOrderCreatePage = ({
                         <span
                           style={{
                             fontSize: "14px",
-                            color: "var(--neutral-on-surface-secondary)",
+                            color: (isReviseMode && productLineType !== option.key)
+                              ? "var(--neutral-on-surface-tertiary)"
+                              : "var(--neutral-on-surface-secondary)",
                             lineHeight: "1.5",
                           }}
                         >
@@ -4782,7 +4864,7 @@ export const PurchaseOrderCreatePage = ({
                   }}
                 >
                   <div style={{ gridColumn: "1 / -1" }}>
-                    {renderProductImageUploader(false)}
+                    {renderProductImageUploader(isReviseMode)}
                   </div>
                   <div id="modal-field-manualName" style={{ gridColumn: "1 / -1" }}>
                     <InputField
@@ -4804,6 +4886,7 @@ export const PurchaseOrderCreatePage = ({
                       }}
                       placeholder="Enter name"
                       error={!!productModalFieldErrors.manualName}
+                      disabled={isReviseMode}
                     />
                     {productModalFieldErrors.manualName ? (
                       <span
@@ -4826,6 +4909,7 @@ export const PurchaseOrderCreatePage = ({
                       })
                     }
                     placeholder="Enter code"
+                    disabled={isReviseMode}
                   />
                   <div id="modal-field-manualQty">
                     <InputField
@@ -4872,6 +4956,7 @@ export const PurchaseOrderCreatePage = ({
                         })
                       }
                       placeholder="Enter description"
+                      disabled={isReviseMode}
                     />
                   </div>
                   <div
@@ -4913,6 +4998,7 @@ export const PurchaseOrderCreatePage = ({
                       placeholder="Enter unit price"
                       prefix={currencyPrefixLabel}
                       error={!!productModalFieldErrors.manualPrice}
+                      disabled={isReviseMode}
                     />
                     {productModalFieldErrors.manualPrice ? (
                       <span
@@ -4991,6 +5077,7 @@ export const PurchaseOrderCreatePage = ({
                       searchPlaceholder="Search material..."
                       placeholder="Select material"
                       showDivider
+                      disabled={isReviseMode}
                       options={availableMaterialLines.map((line) => ({
                         value: line.id,
                         label: line.item,
@@ -5035,7 +5122,7 @@ export const PurchaseOrderCreatePage = ({
                     >
                       <div style={{ gridColumn: "1 / -1" }}>
                         {renderProductImageUploader(
-                          false
+                          isReviseMode
                         )}
                       </div>
                       <div style={{ gridColumn: "1 / -1" }}>
@@ -5098,6 +5185,7 @@ export const PurchaseOrderCreatePage = ({
                             })
                           }
                           placeholder="Enter description"
+                          disabled={isReviseMode}
                         />
                       </div>
                       <div id="modal-field-manualPrice"
@@ -5138,6 +5226,7 @@ export const PurchaseOrderCreatePage = ({
                           placeholder="Enter unit price"
                           prefix={currencyPrefixLabel}
                           hasError={!!productModalFieldErrors.manualPrice}
+                          disabled={isReviseMode}
                         />
                         {productModalFieldErrors.manualPrice ? (
                           <span
@@ -5633,6 +5722,8 @@ export const PurchaseOrderCreatePage = ({
                   setRevisionReason(e.target.value);
                   if (e.target.value.trim()) setRevisionReasonError("");
                 }}
+                onFocus={(e) => focusInputFrame(e.currentTarget)}
+                onBlur={(e) => blurInputFrame(e.currentTarget, false, !!revisionReasonError)}
                 placeholder="Input revision reason"
                 style={{
                   width: "100%",
@@ -5644,7 +5735,8 @@ export const PurchaseOrderCreatePage = ({
                   fontSize: "var(--text-subtitle-1)",
                   fontFamily: "Lato, sans-serif",
                   resize: "none",
-                  boxSizing: "border-box"
+                  boxSizing: "border-box",
+                  transition: "border-color 0.2s ease, box-shadow 0.2s ease",
                 }}
               />
             </FormField>

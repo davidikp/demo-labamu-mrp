@@ -21,6 +21,7 @@ import { MOCK_REPORT_POS } from "../mock/reportMocks";
 import { formatCurrency } from "../../../utils/format/formatUtils";
 import { StatusBadge } from "../../../components/common/StatusBadge";
 import { DropdownSelect } from "../../../components/common/DropdownSelect";
+import { MultiSelectDropdown } from "../../../components/common/MultiSelectDropdown.jsx";
 import { Button } from "../../../components/common/Button";
 import { TableSearchField } from "../../../components/table/TableSearchField";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter";
@@ -121,9 +122,9 @@ const cellStyle = (overrides) => ({
 
 const APAgingReportPage = ({ onNavigate, t }) => {
   const currency = "IDR";
-  const [agingBucketFilter, setAgingBucketFilter] = useState("all");
-  const [vendorFilter, setVendorFilter] = useState("all");
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
+  const [agingBucketFilter, setAgingBucketFilter] = useState([]);
+  const [vendorFilter, setVendorFilter] = useState([]);
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
@@ -180,14 +181,13 @@ const APAgingReportPage = ({ onNavigate, t }) => {
   // Filter Logic
   const filteredData = useMemo(() => {
     return allInvoices.filter(inv => {
-      const matchesAging = agingBucketFilter === "all" || inv.agingBucket === agingBucketFilter;
-      const matchesVendor = vendorFilter === "all" || inv.vendorName === vendorFilter;
+      const matchesAging = agingBucketFilter.length === 0 || agingBucketFilter.includes(inv.agingBucket);
+      const matchesVendor = vendorFilter.length === 0 || vendorFilter.includes(inv.vendorName);
       
       let matchesStatus = true;
-      if (paymentStatusFilter === "Unpaid + Partial") {
-        matchesStatus = inv.status === "Unpaid" || inv.status === "Partially Paid";
-      } else if (paymentStatusFilter !== "all") {
-        matchesStatus = inv.status === paymentStatusFilter;
+      if (paymentStatusFilter.length > 0) {
+        matchesStatus = paymentStatusFilter.includes(inv.status) || 
+          (paymentStatusFilter.includes("Unpaid + Partial") && (inv.status === "Unpaid" || inv.status === "Partially Paid"));
       }
 
       const matchesSearch = inv.number.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -370,42 +370,33 @@ const APAgingReportPage = ({ onNavigate, t }) => {
         {/* Filters Header */}
         <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <DropdownSelect 
-              variant="filter"
-              fontSize="var(--text-title-3)"
+            <MultiSelectDropdown 
               placeholder="Aging Bucket"
               value={agingBucketFilter}
               options={[
-                { value: "all", label: "Aging Bucket" },
                 { value: "Not Due", label: "Not Due" },
-                { value: "1-30", label: "1-30 Days" },
-                { value: "31-60", label: "31-60 Days" },
-                { value: "61-90", label: "61-90 Days" },
-                { value: "90+", label: "90+ Days" }
+                { value: "Late 1-30", label: "Late 1-30" },
+                { value: "Late 31-60", label: "Late 31-60" },
+                { value: "Late 61-90", label: "Late 61-90" },
+                { value: "Late 90+", label: "Late 90+" }
               ]}
               onChange={(val) => { setAgingBucketFilter(val); setCurrentPage(1); }}
             />
-            <DropdownSelect 
-              variant="filter"
+            <MultiSelectDropdown 
               searchable={true}
-              maxOptionsVisible={4}
-              fontSize="var(--text-title-3)"
               placeholder="Vendor"
               value={vendorFilter}
               options={["all", ...new Set(allInvoices.map(inv => inv.vendorName))].map(v => ({ value: v, label: v === "all" ? "Vendor" : v }))}
               onChange={(val) => { setVendorFilter(val); setCurrentPage(1); }}
             />
-            <DropdownSelect 
-              variant="filter"
-              fontSize="var(--text-title-3)"
+            <MultiSelectDropdown 
               placeholder="Status"
               value={paymentStatusFilter}
               options={[
                 { value: "Unpaid + Partial", label: "Unpaid + Partial" },
                 { value: "Unpaid", label: "Unpaid" },
                 { value: "Partially Paid", label: "Partially Paid" },
-                { value: "Paid", label: "Paid" },
-                { value: "all", label: "Show All" }
+                { value: "Paid", label: "Paid" }
               ]}
               onChange={(val) => { setPaymentStatusFilter(val); setCurrentPage(1); }}
             />

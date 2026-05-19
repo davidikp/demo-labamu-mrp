@@ -910,7 +910,7 @@ export const TraceabilityTab = ({ onNavigate, showSnackbar }) => {
                     <div style={{ padding: "0 12px", overflow: "hidden" }}>
                       <span 
                         onClick={() => onNavigate("batch_detail", { batchNo: item.batchNo })}
-                        style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--feature-brand-primary)", cursor: "pointer" }}
+                        style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-regular)", color: "var(--feature-brand-primary)", cursor: "pointer" }}
                         onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
                         onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
                       >
@@ -922,7 +922,7 @@ export const TraceabilityTab = ({ onNavigate, showSnackbar }) => {
                         <span 
                           key={i}
                           onClick={() => onNavigate("wo_detail", { woNo: wo })}
-                          style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--feature-brand-primary)", cursor: "pointer", whiteSpace: "nowrap" }}
+                          style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-regular)", color: "var(--feature-brand-primary)", cursor: "pointer", whiteSpace: "nowrap" }}
                           onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
                           onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
                         >

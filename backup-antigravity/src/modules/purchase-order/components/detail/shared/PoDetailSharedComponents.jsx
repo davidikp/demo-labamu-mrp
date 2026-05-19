@@ -554,6 +554,7 @@ export const DateInputControl = ({
   borderRadius = "10px",
   fontSize = "var(--text-subtitle-1)",
   style = {},
+  maxDate,
 }) => {
   const triggerRef = useRef(null);
   const popoverRef = useRef(null);
@@ -849,12 +850,15 @@ export const DateInputControl = ({
                 {calendarDays.map((day) => {
                   const isSelected = day.iso === value;
                   const isToday = day.iso === todayIso;
+                  const isFuture = maxDate ? day.iso > maxDate : false;
                   
                   return (
                     <button
                       key={day.iso}
                       type="button"
+                      disabled={isFuture}
                       onClick={() => {
+                        if (isFuture) return;
                         onChange?.(createSyntheticInputEvent(day.iso));
                         setIsOpen(false);
                       }}
@@ -869,17 +873,20 @@ export const DateInputControl = ({
                           : isToday
                             ? "var(--feature-brand-container)"
                             : "transparent",
-                        color: isSelected
-                          ? "var(--feature-brand-on-primary)"
-                          : isToday
-                            ? "var(--feature-brand-primary)"
-                            : day.isCurrentMonth
-                              ? "var(--neutral-on-surface-primary)"
-                              : "var(--neutral-line-separator-2)",
+                        color: isFuture
+                          ? "var(--neutral-on-surface-tertiary)"
+                          : isSelected
+                            ? "var(--feature-brand-on-primary)"
+                            : isToday
+                              ? "var(--feature-brand-primary)"
+                              : day.isCurrentMonth
+                                ? "var(--neutral-on-surface-primary)"
+                                : "var(--neutral-line-separator-2)",
                         fontSize: "var(--text-subtitle-1)",
                         fontWeight: isToday || isSelected ? "var(--font-weight-bold)" : "var(--font-weight-regular)",
-                        cursor: "pointer",
+                        cursor: isFuture ? "not-allowed" : "pointer",
                         position: "relative",
+                        opacity: isFuture ? 0.35 : 1,
                       }}
                     >
                       {day.day}
@@ -1218,6 +1225,7 @@ export const InputField = ({
           disabled={disabled}
           hasError={!!error}
           placeholder={placeholder || "yyyy-mm-dd"}
+          maxDate={max}
         />
       ) : (
         <div

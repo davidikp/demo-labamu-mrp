@@ -10,6 +10,7 @@ export const usePoInvoices = ({
   poTotal = 0,
   poNumber = "",
   vendorName = "",
+  showToast,
 } = {}) => {
   // --- Core Data State ---
   const [invoices, setInvoices] = useState(initialInvoices);
@@ -41,6 +42,7 @@ export const usePoInvoices = ({
   const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState(null);
   const [showDeleteInvoiceConfirm, setShowDeleteInvoiceConfirm] = useState(false);
   const [showVoidConfirmModal, setShowVoidConfirmModal] = useState(false);
+  const [showExceedConfirmModal, setShowExceedConfirmModal] = useState(false);
   const [paymentToVoid, setPaymentToVoid] = useState(null);
 
   // Form States
@@ -89,7 +91,6 @@ export const usePoInvoices = ({
   }, [payments]);
 
   const getAgingStatus = useCallback((dueDate, outstanding) => {
-    if (outstanding <= 0) return { text: "Settled", variant: "green-light" };
     const today = new Date();
     const due = new Date(dueDate);
     if (due >= today) return { text: "Not Due", variant: "grey-light" };
@@ -113,18 +114,17 @@ export const usePoInvoices = ({
       return { text: "Partially Paid", variant: "blue-light" };
     }
     if (isOverdue) return { text: "Overdue", variant: "red-light" };
-    return { text: "Open", variant: "blue-light" };
+    return { text: "Open", variant: "grey-light" };
   }, []);
 
   const addInvoicePaymentLog = useCallback((title, desc) => {
     const now = new Date();
-    const formattedDate = now.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).replace(",", "");
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const hh = String(now.getHours()).padStart(2, "0");
+    const min = String(now.getMinutes()).padStart(2, "0");
+    const formattedTimestamp = `${yyyy}-${mm}-${dd} at ${hh}:${min}`;
 
     setInvoicePaymentLogs(prev => [
       {
@@ -132,7 +132,7 @@ export const usePoInvoices = ({
         email: "natasha.smith@company.com",
         title,
         desc,
-        timestamp: formattedDate,
+        timestamp: formattedTimestamp,
       },
       ...prev,
     ]);
@@ -206,16 +206,39 @@ export const usePoInvoices = ({
     }, 1200);
   }, [autoPrefillPayment]);
 
+  const getRemainingPoQty = useCallback((itemId, currentInvoiceId) => {
+    const poLine = mockLines.find((line) => (line.id || line.item) === itemId);
+    if (!poLine) return 0;
+    const totalOrdered = poLine.qty || poLine.orderedQty || 0;
+
+    const totalInvoicedQty = invoices.reduce((sum, inv) => {
+      if (currentInvoiceId && inv.id === currentInvoiceId) return sum;
+      
+      const matchingLine = (inv.itemLines || []).find((il) => il.id === itemId);
+      if (matchingLine) {
+        return sum + (parseFloat(matchingLine.qty) || 0);
+      }
+      return sum;
+    }, 0);
+
+    return Math.max(totalOrdered - totalInvoicedQty, 0);
+  }, [mockLines, invoices]);
+
   const handleEditInvoice = useCallback(() => {
     const inv = selectedInvoiceForDetail;
     if (!inv) return;
     setIsEditingInvoice(true);
+
+    const termsParts = (inv.terms || "30 Days").trim().split(" ");
+    const termsValue = termsParts[0] || "30";
+    const termsUnit = termsParts[1] ? (termsParts[1].charAt(0).toUpperCase() + termsParts[1].slice(1)) : "Days";
+
     setAddInvoiceFormData({
       id: inv.id,
       number: inv.number,
       date: inv.date,
-      termsValue: "30",
-      termsUnit: "Days",
+      termsValue,
+      termsUnit,
       amount: String(inv.amount),
       notes: inv.notes || "",
       attachments: inv.attachments || [],
@@ -227,52 +250,42 @@ export const usePoInvoices = ({
     setShowAddInvoiceDrawer(true);
   }, [selectedInvoiceForDetail]);
 
-  const handleAddInvoice = useCallback(() => {
-    let hasError = false;
-    const nextErrors = {};
-    if (!addInvoiceFormData.number) { nextErrors.number = "Field cannot be empty"; hasError = true; }
-    if (!addInvoiceFormData.amount) { nextErrors.amount = "Field cannot be empty"; hasError = true; }
-    
-    const itemLineErrors = addInvoiceFormData.itemLines.map((il) => {
-      const err = {};
-      if (!il.id) { err.id = "Item required"; hasError = true; }
-      if (!il.qty) { err.qty = "Qty required"; hasError = true; }
-      return err;
-    });
-    if (hasError) {
-      setFormErrors({ ...nextErrors, itemLines: itemLineErrors });
-      return;
-    }
+  const saveInvoice = useCallback(() => {
+    const terms = `${addInvoiceFormData.termsValue} ${addInvoiceFormData.termsUnit.toLowerCase()}`;
 
     if (isEditingInvoice) {
+      const updatedInvoice = {
+        id: addInvoiceFormData.id,
+        number: addInvoiceFormData.number,
+        date: addInvoiceFormData.date,
+        dueDate: calculatedDueDate,
+        terms,
+        amount: parseFloat(addInvoiceFormData.amount) || 0,
+        notes: addInvoiceFormData.notes,
+        attachments: addInvoiceFormData.attachments,
+        itemLines: addInvoiceFormData.itemLines,
+        bankDetails: {
+          bankName: addInvoiceFormData.bankName,
+          accountNumber: addInvoiceFormData.accountNumber,
+          accountName: addInvoiceFormData.accountName,
+        },
+      };
+
       setInvoices((prev) =>
-        prev.map((inv) =>
-          inv.id === addInvoiceFormData.id
-            ? {
-                ...inv,
-                number: addInvoiceFormData.number,
-                date: addInvoiceFormData.date,
-                dueDate: calculatedDueDate,
-                amount: parseFloat(addInvoiceFormData.amount) || 0,
-                notes: addInvoiceFormData.notes,
-                attachments: addInvoiceFormData.attachments,
-                itemLines: addInvoiceFormData.itemLines,
-                bankDetails: {
-                  bankName: addInvoiceFormData.bankName,
-                  accountNumber: addInvoiceFormData.accountNumber,
-                  accountName: addInvoiceFormData.accountName,
-                },
-              }
-            : inv
-        )
+        prev.map((inv) => inv.id === addInvoiceFormData.id ? updatedInvoice : inv)
       );
+      setSelectedInvoiceForDetail(updatedInvoice);
       addInvoicePaymentLog("Invoice Updated", `Invoice #${addInvoiceFormData.number} details were updated.`);
+      if (showToast) {
+        showToast("Invoice successfully updated");
+      }
     } else {
       const newInvoice = {
         id: `inv-${Date.now()}`,
         number: addInvoiceFormData.number,
         date: addInvoiceFormData.date,
         dueDate: calculatedDueDate,
+        terms,
         amount: parseFloat(addInvoiceFormData.amount) || 0,
         status: "Open",
         notes: addInvoiceFormData.notes,
@@ -286,12 +299,82 @@ export const usePoInvoices = ({
       };
       setInvoices((prev) => [newInvoice, ...prev]);
       addInvoicePaymentLog("Invoice Added", `New invoice #${addInvoiceFormData.number} for ${currency} ${parseFloat(addInvoiceFormData.amount).toLocaleString()} was added.`);
+      if (showToast) {
+        showToast("Invoice successfully added");
+      }
     }
 
     setShowAddInvoiceDrawer(false);
     setIsEditingInvoice(false);
     setFormErrors({});
-  }, [addInvoiceFormData, isEditingInvoice, calculatedDueDate, currency, addInvoicePaymentLog]);
+  }, [addInvoiceFormData, isEditingInvoice, calculatedDueDate, currency, addInvoicePaymentLog, showToast, setSelectedInvoiceForDetail]);
+
+  const handleAddInvoice = useCallback(() => {
+    let hasError = false;
+    const nextErrors = {};
+    if (!addInvoiceFormData.number) {
+      nextErrors.number = "Field cannot be empty";
+      hasError = true;
+    } else {
+      const isDuplicate = invoices.some(
+        (inv) =>
+          inv.number.trim().toLowerCase() === addInvoiceFormData.number.trim().toLowerCase() &&
+          (!isEditingInvoice || inv.id !== addInvoiceFormData.id)
+      );
+      if (isDuplicate) {
+        nextErrors.number = "Invoice number already exist";
+        hasError = true;
+      }
+    }
+
+    if (!addInvoiceFormData.amount) {
+      nextErrors.amount = "Field cannot be empty";
+      hasError = true;
+    }
+    
+    const itemLineErrors = addInvoiceFormData.itemLines.map((il) => {
+      const err = {};
+      if (!il.id) {
+        err.id = "Field cannot be empty";
+        hasError = true;
+      }
+      if (!il.qty) {
+        err.qty = "Field cannot be empty";
+        hasError = true;
+      } else if (il.id) {
+        const qtyVal = parseFloat(il.qty) || 0;
+        const remainingQty = getRemainingPoQty(il.id, isEditingInvoice ? addInvoiceFormData.id : null);
+        if (qtyVal > remainingQty) {
+          err.qty = `Item quantity cannot exceed the remaining PO quantity (${remainingQty})`;
+          hasError = true;
+        }
+      }
+      if (!il.ocrRef || !il.ocrRef.trim()) {
+        err.ocrRef = "Field cannot be empty";
+        hasError = true;
+      }
+      return err;
+    });
+    if (hasError) {
+      setFormErrors({ ...nextErrors, itemLines: itemLineErrors });
+      return;
+    }
+
+    // Check if potential total invoiced exceeds PO value
+    const otherInvoicesTotal = invoices.reduce(
+      (sum, inv) => (isEditingInvoice && inv.id === addInvoiceFormData.id ? sum : sum + (inv.amount || 0)),
+      0
+    );
+    const newAmount = parseFloat(addInvoiceFormData.amount) || 0;
+    const potentialTotalInvoiced = otherInvoicesTotal + newAmount;
+
+    if (potentialTotalInvoiced > poTotal) {
+      setShowExceedConfirmModal(true);
+      return;
+    }
+
+    saveInvoice();
+  }, [addInvoiceFormData, isEditingInvoice, invoices, poTotal, saveInvoice, getRemainingPoQty]);
 
   const handleDeleteInvoice = useCallback(() => {
     if (!selectedInvoiceForDetail) return;
@@ -299,9 +382,12 @@ export const usePoInvoices = ({
     setInvoices((prev) => prev.filter((i) => i.id !== selectedInvoiceForDetail.id));
     setPayments((prev) => prev.filter((p) => p.invoiceId !== selectedInvoiceForDetail.id));
     addInvoicePaymentLog("Invoice Deleted", `Invoice #${invNumber} and its associated payments were removed.`);
+    if (showToast) {
+      showToast("Invoice successfully deleted");
+    }
     setShowDeleteInvoiceConfirm(false);
     setShowInvoiceDetailDrawer(false);
-  }, [selectedInvoiceForDetail, addInvoicePaymentLog]);
+  }, [selectedInvoiceForDetail, addInvoicePaymentLog, showToast]);
 
   const handleAddPayment = useCallback(() => {
     let hasError = false;
@@ -335,18 +421,27 @@ export const usePoInvoices = ({
 
     setPayments((prev) => [newPayment, ...prev]);
     addInvoicePaymentLog("Payment Added", `Payment of ${currency} ${parseFloat(paymentFormData.amount).toLocaleString()} added to Invoice #${selectedInvoiceForPayment?.number}.`);
+    if (showToast) {
+      showToast("Payment successfully added");
+    }
     setShowAddPaymentDrawer(false);
+    setShowInvoiceDetailDrawer(true);
+    setSelectedInvoiceForDetail(selectedInvoiceForPayment);
+    setActiveInvoiceTab("Payment History");
     setPaymentFormErrors({});
-  }, [paymentFormData, selectedInvoiceForPayment, getInvoiceMetrics, currency, addInvoicePaymentLog]);
+  }, [paymentFormData, selectedInvoiceForPayment, getInvoiceMetrics, currency, addInvoicePaymentLog, showToast, setShowInvoiceDetailDrawer, setSelectedInvoiceForDetail, setActiveInvoiceTab]);
 
   const handleVoidPayment = useCallback(() => {
     if (!paymentToVoid) return;
     const associatedInv = invoices.find(i => i.id === paymentToVoid.invoiceId);
     setPayments(prev => prev.map(p => p.id === paymentToVoid.id ? { ...p, isVoid: true, voidedAt: new Date().toISOString() } : p));
     addInvoicePaymentLog("Payment Voided", `Payment of ${currency} ${paymentToVoid.amount.toLocaleString()} for Invoice #${associatedInv?.number || "Unknown"} was voided.`);
+    if (showToast) {
+      showToast("Payment successfully voided");
+    }
     setShowVoidConfirmModal(false);
     setPaymentToVoid(null);
-  }, [paymentToVoid, invoices, currency, addInvoicePaymentLog]);
+  }, [paymentToVoid, invoices, currency, addInvoicePaymentLog, showToast]);
 
   return {
     // Data State
@@ -424,6 +519,10 @@ export const usePoInvoices = ({
     poInvoicedRatio,
     poGap,
     calculatedDueDate,
+
+    showExceedConfirmModal,
+    setShowExceedConfirmModal,
+    saveInvoice,
 
     // Handlers
     simulateInvoiceOcr,

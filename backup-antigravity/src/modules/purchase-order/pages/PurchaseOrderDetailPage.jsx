@@ -111,7 +111,7 @@ export const PurchaseOrderDetailPage = ({
     cb(...args);
   };
   const pageTopRef = useRef(null);
-  const basePoData = useMemo(() => {
+  const [localPoData, setLocalPoData] = useState(() => {
     const pNum =
       typeof initialData === "string" ? initialData : initialData?.poNumber;
     if (pNum) {
@@ -121,11 +121,30 @@ export const PurchaseOrderDetailPage = ({
         initialData !== null &&
         (initialData.formData || initialData.receiptLines)
       ) {
-        return initialData;
+        return mockMatch ? { ...mockMatch, ...initialData } : initialData;
       }
       return mockMatch || initialData;
     }
     return initialData;
+  });
+
+  useEffect(() => {
+    const pNum =
+      typeof initialData === "string" ? initialData : initialData?.poNumber;
+    if (pNum) {
+      const mockMatch = MOCK_PO_TABLE_DATA.find((p) => p.poNumber === pNum);
+      if (
+        typeof initialData === "object" &&
+        initialData !== null &&
+        (initialData.formData || initialData.receiptLines)
+      ) {
+        setLocalPoData(mockMatch ? { ...mockMatch, ...initialData } : initialData);
+      } else {
+        setLocalPoData(mockMatch || initialData);
+      }
+    } else {
+      setLocalPoData(initialData);
+    }
   }, [initialData]);
 
   const {
@@ -139,7 +158,7 @@ export const PurchaseOrderDetailPage = ({
     isHistoricalVersion,
     displayData,
     handleVersionChange,
-  } = usePoVersions({ basePoData });
+  } = usePoVersions({ basePoData: localPoData });
 
   const poNumber = typeof initialData === 'string' ? initialData : (initialData?.poNumber || "PO-202603-0001");
   const [currentStatus, setCurrentStatus] = useState(
@@ -298,7 +317,14 @@ export const PurchaseOrderDetailPage = ({
     initialLogs: [],
     currentStatus,
   });
-  const initialReceiptLines = useMemo(() => displayData?.receiptLines || displayData?.formData?.receiptLines || [], [displayData]);
+  const initialReceiptLines = useMemo(() => 
+    displayData?.receiptLines || 
+    displayData?.formData?.receiptLines || 
+    displayData?.lines || 
+    displayData?.formData?.lines || 
+    [], 
+    [displayData]
+  );
   const initialReceiptLogs = useMemo(() => displayData?.receiptLogs || displayData?.formData?.receiptLogs || [], [displayData]);
 
   const {
@@ -420,6 +446,9 @@ export const PurchaseOrderDetailPage = ({
     handleDeleteInvoice,
     handleAddPayment,
     handleVoidPayment,
+    showExceedConfirmModal,
+    setShowExceedConfirmModal,
+    saveInvoice,
   } = usePoInvoices({
     initialInvoices,
     initialPayments,
@@ -429,6 +458,7 @@ export const PurchaseOrderDetailPage = ({
     poTotal: total,
     poNumber,
     vendorName: initialData?.vendorName,
+    showToast,
   });
 
   const [threeWaysMatchCurrentPage, setThreeWaysMatchCurrentPage] = useState(1);
@@ -748,8 +778,9 @@ export const PurchaseOrderDetailPage = ({
     const vendorName = vendorInfo.name;
     const poDate = createdDate;
     const expectedDate = expectedDeliveryDate;
+    const targetLines = payload.customLines || mockLines;
 
-    mockLines.forEach(line => {
+    targetLines.forEach(line => {
       // Find matching material
       const material = MOCK_MATERIALS_DATA.find(m => m.sku === line.code || m.name === line.item);
       if (!material) return;
@@ -777,6 +808,12 @@ export const PurchaseOrderDetailPage = ({
         const existing = MOCK_STOCK_BATCHES.find(b => b.id === batchId);
         if (!existing) {
           MOCK_STOCK_BATCHES.push(newBatch);
+        } else {
+          existing.initialQty = Number(line.qty) || 0;
+          existing.costPerUnit = Number(line.price) || 0;
+          existing.vendor = vendorName;
+          existing.purchaseDate = poDate;
+          existing.expectedDate = expectedDate;
         }
       } else if (action === 'receipt') {
         const batch = MOCK_STOCK_BATCHES.find(b => b.id === batchId);
@@ -840,6 +877,7 @@ export const PurchaseOrderDetailPage = ({
         statusKey: nextStatusKey,
         sBadge: nextBadge
       };
+      setLocalPoData(MOCK_PO_TABLE_DATA[poIndex]);
     }
 
     if (nextStatus === "Issued") {
@@ -1053,13 +1091,13 @@ export const PurchaseOrderDetailPage = ({
     } else {
       setCurrentStatus("Issued");
       setCurrentBadge("blue");
-      syncPoToStockBatches("issue");
+      syncPoToStockBatches("issue", { customLines: mockLines });
       setRevisionMessage("");
       setCanceledMessage("");
       setApprovalComment(trimmedComment);
 
-      const versionNum = versions.length > 0 ? versions.length : 1;
-      const logTitle = versions.length > 1 ? `Revised to Version ${versionNum}.0` : "Approved";
+      const versionNum = latestVersionNum;
+      const logTitle = versionNum > 1 ? `Revised to Version ${versionNum}.0` : "Approved";
 
       const approvalLog = {
         name: "Natasha Smith",
@@ -1071,16 +1109,17 @@ export const PurchaseOrderDetailPage = ({
       const nextReceiptLogs = [approvalLog, ...receiptLogs];
       setReceiptLogs(nextReceiptLogs);
 
-      // Persist to mock data
       const poIndex = MOCK_PO_TABLE_DATA.findIndex(p => p.poNumber === poNumber);
       if (poIndex !== -1) {
         MOCK_PO_TABLE_DATA[poIndex] = {
           ...MOCK_PO_TABLE_DATA[poIndex],
+          ...displayData,
           status: "Issued",
           statusKey: resolvePoStatusKey("Issued"),
           sBadge: "blue",
           receiptLogs: nextReceiptLogs
         };
+        setLocalPoData(MOCK_PO_TABLE_DATA[poIndex]);
       }
 
       if (
@@ -1437,7 +1476,6 @@ export const PurchaseOrderDetailPage = ({
       receiptLines: nextReceiptLines,
     });
 
-    // Persist to mock data
     const poIndex = MOCK_PO_TABLE_DATA.findIndex(p => p.poNumber === poNumber);
     if (poIndex !== -1) {
       MOCK_PO_TABLE_DATA[poIndex] = {
@@ -1448,6 +1486,7 @@ export const PurchaseOrderDetailPage = ({
         receiptLogs: nextReceiptLogs,
         receiptLines: nextReceiptLines
       };
+      setLocalPoData(MOCK_PO_TABLE_DATA[poIndex]);
     }
 
     setCurrentStatus(nextPoStatus);
@@ -1616,7 +1655,7 @@ export const PurchaseOrderDetailPage = ({
         <div
           style={{
             position: "fixed",
-            top: "84px",
+            top: "24px",
             right: "24px",
             background: showDocumentToast
               ? (documentToastVariant === "dark" ? "var(--neutral-on-surface-primary)" : "var(--status-green-primary)")
@@ -1634,7 +1673,7 @@ export const PurchaseOrderDetailPage = ({
             alignItems: "center",
             gap: "12px",
             boxShadow: "var(--elevation-sm)",
-            zIndex: 1000,
+            zIndex: 15000,
             minWidth: "320px",
             justifyContent: "space-between",
           }}
@@ -2862,6 +2901,9 @@ export const PurchaseOrderDetailPage = ({
         paymentToVoid={paymentToVoid}
         formatCurrency={formatCurrency}
         handleVoidPayment={handleVoidPayment}
+        showExceedConfirmModal={showExceedConfirmModal}
+        setShowExceedConfirmModal={setShowExceedConfirmModal}
+        saveInvoice={saveInvoice}
       />
 
       {/* Add Payment Drawer */}

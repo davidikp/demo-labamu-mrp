@@ -26,9 +26,10 @@ import {
   createUploadDocumentRecord 
 } from "../../../utils/upload/uploadUtils.js";
 import { MOCK_WO_TABLE_DATA } from "../../work-order/mock/workOrderMocks.js";
-import { MOCK_ORDER_MATERIALS_DATA, MOCK_ORDER_PRODUCTS_DATA } from "../mock/orderMocks.js";
+import { MOCK_ORDER_TABLE_DATA, MOCK_ORDER_MATERIALS_DATA, MOCK_ORDER_PRODUCTS_DATA } from "../mock/orderMocks.js";
 import { MOCK_PO_TABLE_DATA } from "../../../modules/purchase-order/mock/purchaseOrderMocks.js";
 import { TraceabilityTab } from "../components/TraceabilityTab.jsx";
+import { DateInputControl } from "../../../modules/purchase-order/components/detail/shared/PoDetailSharedComponents.jsx";
 
 
 // Mock Data for Attachments (Updated to match PO screenshot)
@@ -555,7 +556,7 @@ const WorkOrderTab = ({ orderNo, orderStatus, onNavigate }) => {
                         onMouseLeave={() => setHoveredWo(null)} 
                         style={{ 
                           fontSize: "var(--text-title-3)", 
-                          fontWeight: "var(--font-weight-bold)", 
+                          fontWeight: "var(--font-weight-regular)", 
                           color: "var(--feature-brand-primary)", 
                           cursor: "pointer", 
                           textDecoration: hoveredWo === `${wo.wo}-${idx}` ? "underline" : "none", 
@@ -1660,6 +1661,468 @@ const NewPOModal = ({ isOpen, onClose, selectedMaterials, onNavigate, showSnackb
   );
 };
 
+const EditOrderModal = ({ isOpen, onClose, orderData, onSave }) => {
+  const [poNo, setPoNo] = useState("");
+  const [priority, setPriority] = useState("Normal");
+  const [plannedStart, setPlannedStart] = useState("");
+  const [plannedEnd, setPlannedEnd] = useState("");
+  const [remarks, setRemarks] = useState("");
+
+  const [isFocusedOrderNo, setIsFocusedOrderNo] = useState(false);
+  const [isFocusedRemarks, setIsFocusedRemarks] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && orderData) {
+      setPoNo(orderData.poNo || "");
+      setPriority(orderData.priority || "Normal");
+      setPlannedStart(orderData.plannedStart || "");
+      setPlannedEnd(orderData.plannedEnd || "");
+      setRemarks(orderData.remarks || "");
+    }
+  }, [isOpen, orderData]);
+
+  const handleSubmit = () => {
+    onSave({
+      poNo,
+      priority,
+      plannedStart,
+      plannedEnd,
+      remarks
+    });
+    onClose();
+  };
+
+  return (
+    <GeneralModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit Order Information"
+      width="640px"
+      footer={
+        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+          <Button variant="outlined" size="large" style={{ flex: 1 }} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="filled" size="large" style={{ flex: 1 }} onClick={handleSubmit}>
+            Save Changes
+          </Button>
+        </div>
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        {/* Purchase Order Number */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <label style={{ fontSize: "14px", fontWeight: "var(--font-weight-regular)", color: "var(--neutral-on-surface-primary)" }}>
+            Purchase Order Number
+          </label>
+          <input
+            type="text"
+            value={poNo}
+            onChange={(e) => setPoNo(e.target.value)}
+            onFocus={() => setIsFocusedOrderNo(true)}
+            onBlur={() => setIsFocusedOrderNo(false)}
+            placeholder="Enter Purchase Order Number"
+            style={{
+              height: "44px",
+              border: `1px solid ${isFocusedOrderNo ? "var(--feature-brand-primary)" : "var(--neutral-line-separator-1)"}`,
+              boxShadow: isFocusedOrderNo ? "0 0 0 3px rgba(0, 104, 255, 0.08)" : "none",
+              borderRadius: "12px",
+              padding: "0 16px",
+              fontSize: "var(--text-subtitle-1)",
+              color: "var(--neutral-on-surface-primary)",
+              outline: "none",
+              transition: "border-color 0.2s ease, box-shadow 0.2s ease"
+            }}
+          />
+        </div>
+
+        {/* Priority */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <label style={{ fontSize: "14px", fontWeight: "var(--font-weight-regular)", color: "var(--neutral-on-surface-primary)" }}>
+            Priority
+          </label>
+          <DropdownSelect
+            value={priority}
+            onChange={(val) => setPriority(val)}
+            options={[
+              { value: "Low", label: "Low" },
+              { value: "Normal", label: "Normal" },
+              { value: "High", label: "High" }
+            ]}
+            placeholder="Select Priority"
+            fieldHeight="44px"
+            borderRadius="12px"
+          />
+        </div>
+
+        {/* Planned Start & End Dates as 2 separate fields using our DateInputControl picker */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <label style={{ fontSize: "14px", fontWeight: "var(--font-weight-regular)", color: "var(--neutral-on-surface-primary)" }}>
+              Planned Start Date
+            </label>
+            <DateInputControl
+              value={plannedStart}
+              onChange={(e) => setPlannedStart(e.target.value)}
+              placeholder="yyyy-mm-dd"
+              fieldHeight="44px"
+              borderRadius="12px"
+            />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <label style={{ fontSize: "14px", fontWeight: "var(--font-weight-regular)", color: "var(--neutral-on-surface-primary)" }}>
+              Planned End Date
+            </label>
+            <DateInputControl
+              value={plannedEnd}
+              onChange={(e) => setPlannedEnd(e.target.value)}
+              placeholder="yyyy-mm-dd"
+              fieldHeight="44px"
+              borderRadius="12px"
+            />
+          </div>
+        </div>
+
+        {/* Remarks with 1000 char max counter */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <label style={{ fontSize: "14px", fontWeight: "var(--font-weight-regular)", color: "var(--neutral-on-surface-primary)" }}>
+              Remarks
+            </label>
+            <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>
+              {(remarks || "").length}/1000
+            </span>
+          </div>
+          <textarea
+            value={remarks}
+            onChange={(e) => {
+              if (e.target.value.length <= 1000) {
+                setRemarks(e.target.value);
+              }
+            }}
+            onFocus={() => setIsFocusedRemarks(true)}
+            onBlur={() => setIsFocusedRemarks(false)}
+            placeholder="Enter remarks..."
+            style={{
+              height: "120px",
+              border: `1px solid ${isFocusedRemarks ? "var(--feature-brand-primary)" : "var(--neutral-line-separator-1)"}`,
+              boxShadow: isFocusedRemarks ? "0 0 0 3px rgba(0, 104, 255, 0.08)" : "none",
+              borderRadius: "12px",
+              padding: "12px 16px",
+              fontSize: "var(--text-subtitle-1)",
+              color: "var(--neutral-on-surface-primary)",
+              outline: "none",
+              resize: "none",
+              fontFamily: "inherit",
+              transition: "border-color 0.2s ease, box-shadow 0.2s ease"
+            }}
+          />
+        </div>
+      </div>
+    </GeneralModal>
+  );
+};
+
+const CancelOrderModal = ({ isOpen, onClose, onSubmit }) => {
+  const [comment, setComment] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setComment("");
+      setError("");
+    }
+  }, [isOpen]);
+
+  const handleSubmit = () => {
+    if (!comment.trim()) {
+      setError("Please fill in the cancellation reason");
+      return;
+    }
+    onSubmit(comment);
+  };
+
+  return (
+    <GeneralModal
+      isOpen={isOpen}
+      onClose={() => {
+        onClose();
+        setError("");
+      }}
+      title="Cancel Order"
+      width="440px"
+      footer={
+        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+          <Button
+            variant="outlined"
+            size="large"
+            style={{ flex: 1 }}
+            onClick={() => {
+              onClose();
+              setError("");
+            }}
+          >
+            Back
+          </Button>
+          <Button
+            variant="filled"
+            size="large"
+            style={{ flex: 1, backgroundColor: "var(--status-red-primary)", borderColor: "var(--status-red-primary)" }}
+            onClick={handleSubmit}
+          >
+            Submit
+          </Button>
+        </div>
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <span style={{ color: "var(--status-red-primary)", fontSize: "var(--text-body)" }}>*</span>
+              <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                Cancellation Reason
+              </span>
+            </div>
+            <span style={{ fontSize: "var(--text-desc)", color: "var(--neutral-on-surface-tertiary)" }}>
+              {comment.length}/400
+            </span>
+          </div>
+          <textarea
+            value={comment}
+            maxLength={400}
+            onChange={(e) => {
+              setComment(e.target.value);
+              if (error) setError("");
+            }}
+            placeholder="Add a reason for canceling this order."
+            style={{
+              minHeight: "120px",
+              border: error
+                ? "1px solid var(--status-red-primary)"
+                : "1px solid var(--neutral-line-separator-2)",
+              borderRadius: "12px",
+              padding: "12px 16px",
+              background: "var(--neutral-surface-primary)",
+              fontSize: "var(--text-subtitle-1)",
+              color: "var(--neutral-on-surface-primary)",
+              width: "100%",
+              outline: "none",
+              fontFamily: "inherit",
+              resize: "vertical",
+              boxSizing: "border-box",
+            }}
+          />
+          {error && (
+            <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>
+              {error}
+            </span>
+          )}
+        </div>
+      </div>
+    </GeneralModal>
+  );
+};
+
+const UpdateStatusModal = ({ isOpen, onClose, currentStatus, onSubmit }) => {
+  const [selectedStatus, setSelectedStatus] = useState(currentStatus);
+
+  useEffect(() => {
+    setSelectedStatus(currentStatus);
+  }, [currentStatus, isOpen]);
+
+  const handleSubmit = () => {
+    onSubmit(selectedStatus);
+  };
+
+  const statusOptions = [
+    { value: "Confirmed", label: "Confirmed" },
+    { value: "In Progress", label: "In Progress" },
+    { value: "Ready to Ship", label: "Ready to Ship" },
+    { value: "On Shipping", label: "On Shipping" }
+  ];
+
+  return (
+    <GeneralModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Update Order Status"
+      width="440px"
+      footer={
+        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+          <Button variant="outlined" size="large" style={{ flex: 1 }} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="filled" size="large" style={{ flex: 1 }} onClick={handleSubmit}>
+            Save Changes
+          </Button>
+        </div>
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <label style={{ fontSize: "14px", fontWeight: "var(--font-weight-regular)", color: "var(--neutral-on-surface-primary)" }}>
+            Select Status
+          </label>
+          <DropdownSelect
+            value={selectedStatus}
+            onChange={(val) => setSelectedStatus(val)}
+            options={statusOptions}
+            placeholder="Select Status"
+            fieldHeight="44px"
+            borderRadius="12px"
+          />
+        </div>
+      </div>
+    </GeneralModal>
+  );
+};
+
+const AskRevisionModal = ({ isOpen, onClose, onSubmit }) => {
+  const [comment, setComment] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setComment("");
+      setError("");
+    }
+  }, [isOpen]);
+
+  const handleSubmit = () => {
+    if (!comment.trim()) {
+      setError("Please fill in the revision reason");
+      return;
+    }
+    onSubmit(comment);
+  };
+
+  return (
+    <GeneralModal
+      isOpen={isOpen}
+      onClose={() => {
+        onClose();
+        setError("");
+      }}
+      title="Ask for Revision"
+      width="440px"
+      footer={
+        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+          <Button
+            variant="outlined"
+            size="large"
+            style={{ flex: 1 }}
+            onClick={() => {
+              onClose();
+              setError("");
+            }}
+          >
+            Back
+          </Button>
+          <Button
+            variant="filled"
+            size="large"
+            style={{ flex: 1 }}
+            onClick={handleSubmit}
+          >
+            Submit
+          </Button>
+        </div>
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <span style={{ color: "var(--status-red-primary)", fontSize: "var(--text-body)" }}>*</span>
+              <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                Revision Reason
+              </span>
+            </div>
+            <span style={{ fontSize: "var(--text-desc)", color: "var(--neutral-on-surface-tertiary)" }}>
+              {comment.length}/400
+            </span>
+          </div>
+          <textarea
+            value={comment}
+            maxLength={400}
+            onChange={(e) => {
+              setComment(e.target.value);
+              if (error) setError("");
+            }}
+            placeholder="Add a comment or note for the revision."
+            style={{
+              minHeight: "120px",
+              border: error
+                ? "1px solid var(--status-red-primary)"
+                : "1px solid var(--neutral-line-separator-2)",
+              borderRadius: "12px",
+              padding: "12px 16px",
+              background: "var(--neutral-surface-primary)",
+              fontSize: "var(--text-subtitle-1)",
+              color: "var(--neutral-on-surface-primary)",
+              width: "100%",
+              outline: "none",
+              fontFamily: "inherit",
+              resize: "vertical",
+              boxSizing: "border-box",
+            }}
+          />
+          {error && (
+            <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>
+              {error}
+            </span>
+          )}
+        </div>
+      </div>
+    </GeneralModal>
+  );
+};
+
+const ApproveConfirmationModal = ({ isOpen, onClose, onSubmit }) => {
+  return (
+    <GeneralModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Approve Order?"
+      width="400px"
+      description="Are you sure you want to approve this order? This will change the order status to Confirmed."
+      footer={
+        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+          <Button variant="outlined" size="large" style={{ flex: 1 }} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="filled" size="large" style={{ flex: 1 }} onClick={onSubmit}>
+            Yes, Approve
+          </Button>
+        </div>
+      }
+    />
+  );
+};
+
+const CompleteConfirmationModal = ({ isOpen, onClose, onSubmit }) => {
+  return (
+    <GeneralModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Mark Order as Completed?"
+      width="400px"
+      description="Once this order is marked as completed, its information can no longer be edited."
+      footer={
+        <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+          <Button variant="outlined" size="large" style={{ flex: 1 }} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="filled" size="large" style={{ flex: 1 }} onClick={onSubmit}>
+            Yes, Confirm
+          </Button>
+        </div>
+      }
+    />
+  );
+};
+
 const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
   const [materialsData, setMaterialsData] = useState(MOCK_ORDER_MATERIALS_DATA);
   const [searchQuery, setSearchQuery] = useState("");
@@ -2223,10 +2686,117 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
   );
 };
 
-export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar }) => {
+export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSidebarCollapsed }) => {
   const [activeTab, setActiveTab] = useState(initialData?.activeTab || "products");
 
-  const orderData = initialData;
+  const [orderData, setOrderData] = useState(initialData || {});
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+  const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
+  const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
+
+  const allWorkOrdersCompleted = React.useMemo(() => {
+    let rawData = MOCK_WO_TABLE_DATA.filter(wo => wo.ord === orderData.orderNo);
+    if (rawData.length === 0) {
+      rawData = MOCK_WO_TABLE_DATA.slice(0, 15).map(wo => ({
+        ...wo,
+        ord: orderData.orderNo
+      }));
+    }
+    return rawData.length > 0 && rawData.every(wo => wo.status === "Completed");
+  }, [orderData.orderNo]);
+
+  const getStatusBadgeVariant = (status) => {
+    switch (status) {
+      case "Completed":
+        return "green";
+      case "Confirmed":
+      case "In Progress":
+      case "Ready to Ship":
+      case "On Shipping":
+        return "blue";
+      case "Canceled":
+        return "red";
+      case "Waiting for Approval":
+        return "orange";
+      case "Need Revision":
+        return "yellow";
+      default:
+        return "grey";
+    }
+  };
+
+  const handleUpdateStatus = (nextStatus, additionalFields = {}) => {
+    const targetOrderIndex = MOCK_ORDER_TABLE_DATA.findIndex(o => o.orderNo === orderData.orderNo);
+    const sBadge = getStatusBadgeVariant(nextStatus);
+
+    if (targetOrderIndex !== -1) {
+      MOCK_ORDER_TABLE_DATA[targetOrderIndex] = {
+        ...MOCK_ORDER_TABLE_DATA[targetOrderIndex],
+        status: nextStatus,
+        sBadge,
+        ...additionalFields
+      };
+    }
+
+    setOrderData(prev => ({
+      ...prev,
+      status: nextStatus,
+      sBadge,
+      ...additionalFields
+    }));
+
+    if (showSnackbar) {
+      showSnackbar("Order status successfully updated", "success");
+    }
+  };
+
+  useEffect(() => {
+    if (initialData) {
+      setOrderData(initialData);
+    }
+  }, [initialData]);
+
+  const handleSaveOrderDetails = (updatedFields) => {
+    // 1. Update mock database array so changes persist globally across list / detail page navigation
+    const targetOrderIndex = MOCK_ORDER_TABLE_DATA.findIndex(o => o.orderNo === orderData.orderNo);
+    if (targetOrderIndex !== -1) {
+      const p = updatedFields.priority;
+      const pVariant = p === "High" ? "red-light" : (p === "Normal" || p === "Medium") ? "orange-light" : "grey-light";
+      
+      MOCK_ORDER_TABLE_DATA[targetOrderIndex] = {
+        ...MOCK_ORDER_TABLE_DATA[targetOrderIndex],
+        poNo: updatedFields.poNo,
+        priority: p,
+        pVariant,
+        plannedStart: updatedFields.plannedStart,
+        plannedEnd: updatedFields.plannedEnd,
+        remarks: updatedFields.remarks
+      };
+    }
+
+    // 2. Update local state to trigger a re-render immediately
+    setOrderData(prev => {
+      const p = updatedFields.priority;
+      const pVariant = p === "High" ? "red-light" : (p === "Normal" || p === "Medium") ? "orange-light" : "grey-light";
+      return {
+        ...prev,
+        poNo: updatedFields.poNo,
+        priority: p,
+        pVariant,
+        plannedStart: updatedFields.plannedStart,
+        plannedEnd: updatedFields.plannedEnd,
+        remarks: updatedFields.remarks
+      };
+    });
+
+    if (showSnackbar) {
+      showSnackbar("Order details successfully updated", "success");
+    }
+  };
+
   const shipmentCode = orderData.shipmentCode || `SHP-${orderData.orderNo?.split('-').slice(1).join('-') || "202604-001"}`;
 
   const tabs = [
@@ -2241,7 +2811,7 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar }) => {
   const handleBackNavigation = () => onNavigate("list");
 
   return (
-    <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+    <div style={{ padding: "24px 24px 100px 24px", display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Header & Breadcrumb */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -2281,10 +2851,66 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar }) => {
             <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>Order Detail</span>
           </div>
         </div>
-        <Button variant="outlined" leftIcon={EditIcon} onClick={() => {}}>
-          Edit Order
-        </Button>
+        {orderData.status !== "Completed" && orderData.status !== "Canceled" && (
+          <Button variant="outlined" leftIcon={EditIcon} onClick={() => setIsEditModalOpen(true)}>
+            Edit Order
+          </Button>
+        )}
       </div>
+
+      {/* Revision or Cancellation Comment Section */}
+      {(orderData.status === "Need Revision" || orderData.status === "Canceled") && (
+        <div
+          style={{
+            border: `1px solid ${
+              orderData.status === "Need Revision" ? "#F5B342" : "#E04B45"
+            }`,
+            background:
+              orderData.status === "Need Revision" ? "#F8EFDF" : "#F8E6E8",
+            borderRadius: "16px",
+            padding: "20px 24px",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "12px",
+            marginBottom: "24px",
+          }}
+        >
+          <Info
+            size={16}
+            strokeWidth={2.1}
+            color={
+              orderData.status === "Need Revision"
+                ? "var(--status-orange-primary)"
+                : "var(--status-red-primary)"
+            }
+            style={{ flexShrink: 0, marginTop: "2px" }}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <span
+              style={{
+                fontSize: "var(--text-title-2)",
+                fontWeight: "var(--font-weight-bold)",
+                color: "var(--neutral-on-surface-primary)",
+              }}
+            >
+              {orderData.status === "Need Revision"
+                ? "Revision Requested"
+                : "Order Canceled"}
+            </span>
+            <span
+              style={{
+                fontSize: "var(--text-title-3)",
+                color: "var(--neutral-on-surface-primary)",
+                lineHeight: "1.6",
+              }}
+            >
+              {orderData.status === "Need Revision"
+                ? orderData.revisionMessage || "Please revise the order information."
+                : orderData.canceledMessage || "This order has been canceled."}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Order Information Section */}
       <div style={{ 
@@ -2396,6 +3022,140 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar }) => {
           </div>
         )}
       </div>
+      <EditOrderModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        orderData={orderData}
+        onSave={handleSaveOrderDetails}
+      />
+      <CancelOrderModal
+        isOpen={isCancelModalOpen}
+        onClose={() => setIsCancelModalOpen(false)}
+        onSubmit={(reason) => {
+          handleUpdateStatus("Canceled", { canceledMessage: reason });
+          setIsCancelModalOpen(false);
+        }}
+      />
+      <AskRevisionModal
+        isOpen={isRevisionModalOpen}
+        onClose={() => setIsRevisionModalOpen(false)}
+        onSubmit={(reason) => {
+          handleUpdateStatus("Need Revision", { revisionMessage: reason });
+          setIsRevisionModalOpen(false);
+        }}
+      />
+      <ApproveConfirmationModal
+        isOpen={isApproveModalOpen}
+        onClose={() => setIsApproveModalOpen(false)}
+        onSubmit={() => {
+          handleUpdateStatus("Confirmed");
+          setIsApproveModalOpen(false);
+        }}
+      />
+      <UpdateStatusModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+        currentStatus={orderData.status}
+        onSubmit={(nextStatus) => {
+          handleUpdateStatus(nextStatus);
+          setIsUpdateModalOpen(false);
+        }}
+      />
+      <CompleteConfirmationModal
+        isOpen={isCompleteModalOpen}
+        onClose={() => setIsCompleteModalOpen(false)}
+        onSubmit={() => {
+          handleUpdateStatus("Completed");
+          setIsCompleteModalOpen(false);
+        }}
+      />
+
+      {/* Sticky Bottom Action Footer */}
+      {orderData.status !== "Completed" && orderData.status !== "Canceled" && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 0,
+            left: isSidebarCollapsed ? "82px" : "286px",
+            transition: "left 0.2s ease",
+            right: 0,
+            background: "var(--neutral-surface-primary)",
+            borderTop: "1px solid var(--neutral-line-separator-1)",
+            padding: "12px 24px",
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            gap: "16px",
+            zIndex: 100,
+          }}
+        >
+          {orderData.status === "Waiting for Approval" ? (
+            <>
+              {/* Reject (Secondary Red) */}
+              <Button
+                size="large"
+                variant="outlined"
+                onClick={() => setIsCancelModalOpen(true)}
+                style={{ color: "var(--status-red-primary)", borderColor: "var(--status-red-primary)" }}
+              >
+                Reject
+              </Button>
+
+              {/* Ask for Revision (Secondary Outlined) */}
+              <Button
+                size="large"
+                variant="outlined"
+                onClick={() => setIsRevisionModalOpen(true)}
+              >
+                Ask for Revision
+              </Button>
+
+              {/* Approve (Primary) */}
+              <Button
+                size="large"
+                variant="filled"
+                onClick={() => setIsApproveModalOpen(true)}
+              >
+                Approve
+              </Button>
+            </>
+          ) : (
+            <>
+              {/* Cancel Order (Secondary Red Button) */}
+              <Button
+                size="large"
+                variant="outlined"
+                onClick={() => setIsCancelModalOpen(true)}
+                style={{ color: "var(--status-red-primary)", borderColor: "var(--status-red-primary)" }}
+              >
+                Cancel Order
+              </Button>
+
+              {/* Update Status (Secondary Button) */}
+              {["Confirmed", "In Progress", "Ready to Ship", "On Shipping"].includes(orderData.status) && (
+                <Button
+                  size="large"
+                  variant="outlined"
+                  onClick={() => setIsUpdateModalOpen(true)}
+                >
+                  Update Status
+                </Button>
+              )}
+
+              {/* Mark as Complete (Primary Button) */}
+              {allWorkOrdersCompleted && (
+                <Button
+                  size="large"
+                  variant="filled"
+                  onClick={() => setIsCompleteModalOpen(true)}
+                >
+                  Mark as Complete
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 };

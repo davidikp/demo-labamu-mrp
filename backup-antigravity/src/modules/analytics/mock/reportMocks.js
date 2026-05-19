@@ -77,7 +77,7 @@ export const MOCK_REPORT_POS = [
     poNumber: "PO-202603-0006",
     vendorName: "PT Mitra Sejahtera",
     amount: 4500000,
-    status: "Revised",
+    status: "Need Revision",
     createdDate: "2026-03-26",
     invoices: [
       {

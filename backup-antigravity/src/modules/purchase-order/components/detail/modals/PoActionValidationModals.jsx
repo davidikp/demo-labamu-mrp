@@ -286,6 +286,16 @@ const PoActionValidationModals = ({
                 setDecisionComment(e.target.value);
                 if (decisionError) setDecisionError("");
               }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "var(--feature-brand-primary)";
+                e.currentTarget.style.boxShadow = "0 0 0 3px rgba(0, 104, 255, 0.08)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = decisionError
+                  ? "var(--status-red-primary)"
+                  : "var(--neutral-line-separator-2)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
               placeholder={getDecisionMeta().helper}
               style={{
                 minHeight: "120px",
@@ -302,6 +312,7 @@ const PoActionValidationModals = ({
                 fontFamily: "Lato, sans-serif",
                 resize: "vertical",
                 boxSizing: "border-box",
+                transition: "border-color 0.2s ease, box-shadow 0.2s ease",
               }}
             />
             {decisionError && (

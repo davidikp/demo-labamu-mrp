@@ -24,7 +24,7 @@ export const MOCK_ORDER_TABLE_DATA = [
     priority: "Medium",
     pVariant: "orange-light",
     status: "Confirmed",
-    sBadge: "green",
+    sBadge: "blue",
     orderType: "Internal",
   },
   {
@@ -54,6 +54,7 @@ export const MOCK_ORDER_TABLE_DATA = [
     status: "Canceled",
     sBadge: "red",
     orderType: "Rework",
+    canceledMessage: "Supplier unable to fulfill the raw material requirement due to supply chain issues.",
   },
   {
     orderNo: "ORD-202604-005",
@@ -96,6 +97,7 @@ export const MOCK_ORDER_TABLE_DATA = [
     status: "Need Revision",
     sBadge: "yellow",
     orderType: "Forecast",
+    revisionMessage: "Please verify planned start date as it conflicts with public holidays.",
   },
   {
     orderNo: "ORD-202604-008",

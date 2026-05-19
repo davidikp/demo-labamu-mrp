@@ -21,6 +21,7 @@ import { WorkOrderListPage } from "./modules/work-order/pages/WorkOrderListPage.
 import { WorkOrderDetailPage } from "./modules/work-order/pages/WorkOrderDetailPage.jsx";
 import { OrderListPage } from "./modules/orders/pages/OrderListPage.jsx";
 import { OrderDetailPage } from "./modules/orders/pages/OrderDetailPage.jsx";
+import { OrderSettingsPage } from "./modules/orders/pages/OrderSettingsPage.jsx";
 import { UserManagementPage } from "./modules/administration/pages/UserManagementPage.jsx";
 import { NotificationSettingsPage } from "./modules/administration/pages/NotificationSettingsPage.jsx";
 import { MaterialsListPage } from "./modules/materials/pages/MaterialsListPage.jsx";
@@ -357,6 +358,8 @@ const ModuleRenderer = ({
   isSidebarCollapsed, 
   poApprovalSettings, 
   setPoApprovalSettings,
+  orderApprovalSettings,
+  setOrderApprovalSettings,
   showPoSnackbar, 
   notificationSettings, 
   setNotificationSettings, 
@@ -717,10 +720,25 @@ const ModuleRenderer = ({
         />
       );
     }
+    if (viewState.view === "settings") {
+      return (
+        <OrderSettingsPage
+          onNavigate={onNavigate}
+          isSidebarCollapsed={isSidebarCollapsed}
+          orderApprovalSettings={orderApprovalSettings}
+          onSaveSettings={(settings) => {
+            setOrderApprovalSettings(settings);
+            showPoSnackbar("Order settings successfully saved", "success");
+            onNavigate("list");
+          }}
+        />
+      );
+    }
     if (viewState.view === "detail") {
       return (
         <OrderDetailPage
           onNavigate={onNavigate}
+          isSidebarCollapsed={isSidebarCollapsed}
           initialData={viewState.data}
           showSnackbar={showPoSnackbar}
         />
@@ -810,6 +828,11 @@ export default function App() {
     return storedLanguage === "id" ? "id" : "en";
   });
   const [poApprovalSettings, setPoApprovalSettings] = useState({
+    isApprovalActive: false,
+    requireComment: false,
+    approvers: [],
+  });
+  const [orderApprovalSettings, setOrderApprovalSettings] = useState({
     isApprovalActive: false,
     requireComment: false,
     approvers: [],
@@ -987,8 +1010,16 @@ export default function App() {
         <Sidebar
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          activeModule={currentActiveModule}
-          viewState={{ view: currentView }}
+          activeModule={
+            ["procurement_ap_report", "po_report", "vendor_liability_report", "ap_aging_report"].includes(currentActiveModule)
+              ? "analytics"
+              : currentActiveModule
+          }
+          viewState={{
+            view: ["procurement_ap_report", "po_report", "vendor_liability_report", "ap_aging_report"].includes(currentActiveModule)
+              ? "procurement_ap_report"
+              : currentView
+          }}
           onModuleChange={handleModuleChange}
           language={language}
           onLanguageChange={setLanguage}
@@ -1081,6 +1112,8 @@ export default function App() {
                 isSidebarCollapsed={isSidebarCollapsed}
                 poApprovalSettings={poApprovalSettings}
                 setPoApprovalSettings={setPoApprovalSettings}
+                orderApprovalSettings={orderApprovalSettings}
+                setOrderApprovalSettings={setOrderApprovalSettings}
                 showPoSnackbar={showPoSnackbar}
                 notificationSettings={notificationSettings}
                 setNotificationSettings={setNotificationSettings}
@@ -1097,6 +1130,8 @@ export default function App() {
                 isSidebarCollapsed={isSidebarCollapsed}
                 poApprovalSettings={poApprovalSettings}
                 setPoApprovalSettings={setPoApprovalSettings}
+                orderApprovalSettings={orderApprovalSettings}
+                setOrderApprovalSettings={setOrderApprovalSettings}
                 showPoSnackbar={showPoSnackbar}
                 notificationSettings={notificationSettings}
                 setNotificationSettings={setNotificationSettings}
@@ -1113,6 +1148,8 @@ export default function App() {
                 isSidebarCollapsed={isSidebarCollapsed}
                 poApprovalSettings={poApprovalSettings}
                 setPoApprovalSettings={setPoApprovalSettings}
+                orderApprovalSettings={orderApprovalSettings}
+                setOrderApprovalSettings={setOrderApprovalSettings}
                 showPoSnackbar={showPoSnackbar}
                 notificationSettings={notificationSettings}
                 setNotificationSettings={setNotificationSettings}

@@ -325,25 +325,34 @@ const ProcurementAPReportPage = ({ onNavigate }) => {
               size={180}
               items={[
                 { label: "Paid to Vendor", value: metrics.totalPaidToVendor, color: "var(--status-green-primary)" },
-                { label: "Matched to Invoice", value: metrics.totalMatchedToInvoice, color: "var(--feature-brand-primary)" },
+                { label: "Total Invoiced", value: metrics.totalMatchedToInvoice, color: "var(--feature-brand-primary)" },
               ]}
             />
             
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "10px" }}>
               <div style={{ 
                 display: "flex", 
                 justifyContent: "space-between", 
                 alignItems: "center", 
                 fontSize: "14px",
-                paddingBottom: "12px",
-                borderBottom: "1px solid var(--neutral-line-separator-1)",
-                marginBottom: "4px"
               }}>
                 <span style={{ color: "var(--neutral-on-surface-secondary)", fontWeight: "500" }}>Total PO Value</span>
                 <span style={{ color: "var(--neutral-on-surface-primary)", fontWeight: "700" }}>{formatCurrency(metrics.totalPoValue, currency)}</span>
               </div>
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "space-between", 
+                alignItems: "center", 
+                fontSize: "13px",
+                paddingBottom: "10px",
+                borderBottom: "1px solid var(--neutral-line-separator-2)",
+                marginBottom: "4px"
+              }}>
+                <span style={{ color: "var(--neutral-on-surface-secondary)", fontWeight: "500" }}>Uninvoiced Amount</span>
+                <span style={{ color: "var(--neutral-on-surface-primary)", fontWeight: "600" }}>{formatCurrency(metrics.totalPoValue - metrics.totalMatchedToInvoice, currency)}</span>
+              </div>
               {[
-                { label: "Matched to Invoice", color: "var(--feature-brand-primary)", value: metrics.totalMatchedToInvoice },
+                { label: "Total Invoiced", color: "var(--feature-brand-primary)", value: metrics.totalMatchedToInvoice },
                 { label: "Paid to Vendor", color: "var(--status-green-primary)", value: metrics.totalPaidToVendor },
               ].map((item, idx) => (
                 <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>

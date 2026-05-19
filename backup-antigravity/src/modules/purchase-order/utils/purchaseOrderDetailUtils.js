@@ -40,6 +40,7 @@ export const buildReceiptStateFromLines = (
     (lines || []).map((line) => [line.id, line])
   );
   const normalizedSeededLogs = (seededLogs || []).map((log, index) => ({
+    ...log,
     id: log.id || `receipt-log-seed-${index}`,
     receiptNumber: log.title
       ? log.receiptNumber
@@ -200,10 +201,15 @@ export const ensureCompletedLogIsLatest = (logs = [], currentStatus) => {
   const completedLog = { ...nextLogs[completedLogIndex] };
   nextLogs.splice(completedLogIndex, 1);
 
+  const nonInvoiceLogs = nextLogs.filter(
+    (log) =>
+      !["Invoice Added", "Invoice Updated", "Invoice Deleted", "Payment Added", "Payment Voided"].includes(log.title)
+  );
+
   const latestExistingTimestamp =
-    nextLogs.length > 0
+    nonInvoiceLogs.length > 0
       ? Math.max(
-          ...nextLogs.map((log) => parseActivityTimestamp(log.timestamp))
+          ...nonInvoiceLogs.map((log) => parseActivityTimestamp(log.timestamp))
         )
       : parseActivityTimestamp(completedLog.timestamp);
 
@@ -216,5 +222,5 @@ export const ensureCompletedLogIsLatest = (logs = [], currentStatus) => {
     new Date(safeBaseTimestamp + 60 * 1000)
   );
 
-  return [completedLog, ...nextLogs];
+  return sortLogsLatest([completedLog, ...nextLogs]);
 };

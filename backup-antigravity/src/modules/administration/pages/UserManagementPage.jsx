@@ -47,7 +47,6 @@ const Tooltip = ({ content, children }) => {
             left: "50%",
             transform: "translateX(-50%)",
             marginBottom: "8px",
-            width: "80vw",
             maxWidth: "1600px",
             width: "max-content",
             padding: "8px 12px",

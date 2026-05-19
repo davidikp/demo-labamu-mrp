@@ -64,6 +64,9 @@ const PoInvoicePaymentManagementModals = ({
   paymentToVoid,
   formatCurrency,
   handleVoidPayment,
+  showExceedConfirmModal,
+  setShowExceedConfirmModal,
+  saveInvoice,
 }) => {
   return (
     <>
@@ -215,6 +218,8 @@ const PoInvoicePaymentManagementModals = ({
                     maxFiles={1}
                     disabled={addInvoiceFormData.attachments.length > 0}
                     error={formErrors.attachments}
+                    accept=".doc,.docx,.xls,.xlsx,.pdf,.jpg,.jpeg,.png,.webp"
+                    allowedText="Allowed formats (Word, Excel, PDF, JPG, JPEG, PNG, WEBP)"
                     onFilesSelected={(files) => {
                       const file = files[0];
                       if (file) {
@@ -307,6 +312,7 @@ const PoInvoicePaymentManagementModals = ({
                 required
                 type="date"
                 value={addInvoiceFormData.date}
+                max={new Date().toISOString().split("T")[0]}
                 onChange={(e) =>
                   setAddInvoiceFormData({
                     ...addInvoiceFormData,
@@ -857,6 +863,8 @@ const PoInvoicePaymentManagementModals = ({
                     maxFiles={1}
                     disabled={paymentFormData.attachments.length > 0}
                     error={paymentFormErrors.attachments}
+                    accept=".doc,.docx,.xls,.xlsx,.pdf,.jpg,.jpeg,.png,.webp"
+                    allowedText="Allowed formats (Word, Excel, PDF, JPG, JPEG, PNG, WEBP)"
                     onFilesSelected={(files) => {
                       const file = files[0];
                       if (file) {
@@ -990,6 +998,7 @@ const PoInvoicePaymentManagementModals = ({
                     })
                   }
                   hasError={!!paymentFormErrors.date}
+                  maxDate={new Date().toISOString().split("T")[0]}
                 />
               </FormField>
 
@@ -1122,9 +1131,7 @@ const PoInvoicePaymentManagementModals = ({
         title="Void Payment?"
         width="400px"
         centeredHeader
-        description={`This will void the payment ${
-          paymentToVoid?.id
-        } and revert the settlement progress by ${
+        description={`This payment will be voided, and the settlement progress will decrease by ${
           paymentToVoid ? formatCurrency(paymentToVoid.amount, currency) : ""
         }. This action cannot be undone.`}
         footer={
@@ -1142,13 +1149,54 @@ const PoInvoicePaymentManagementModals = ({
               style={{ width: "100%" }}
               onClick={handleVoidPayment}
             >
-              Confirm Void
+              Yes, Confirm
             </Button>
             <Button
               variant="outlined"
               size="large"
               style={{ width: "100%" }}
               onClick={() => setShowVoidConfirmModal(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        }
+      />
+
+      {/* Exceed PO Value Confirmation Modal */}
+      <GeneralModal
+        isOpen={showExceedConfirmModal}
+        onClose={() => setShowExceedConfirmModal(false)}
+        title="Invoice Exceeds PO Value"
+        width="400px"
+        centeredHeader
+        zIndex={15000}
+        description="This invoice amount exceeds the purchase order value. Do you want to continue?"
+        footer={
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              width: "100%",
+            }}
+          >
+            <Button
+              variant="filled"
+              size="large"
+              style={{ width: "100%" }}
+              onClick={() => {
+                setShowExceedConfirmModal(false);
+                saveInvoice();
+              }}
+            >
+              Yes, Confirm
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              style={{ width: "100%" }}
+              onClick={() => setShowExceedConfirmModal(false)}
             >
               Cancel
             </Button>

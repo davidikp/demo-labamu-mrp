@@ -18,6 +18,7 @@ import { MOCK_REPORT_POS } from "../mock/reportMocks";
 import { formatCurrency } from "../../../utils/format/formatUtils";
 import { StatusBadge } from "../../../components/common/StatusBadge";
 import { DropdownSelect } from "../../../components/common/DropdownSelect";
+import { MultiSelectDropdown } from "../../../components/common/MultiSelectDropdown.jsx";
 import { Button } from "../../../components/common/Button";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter";
 import { TableSearchField } from "../../../components/table/TableSearchField";
@@ -325,9 +326,8 @@ const DateRangePicker = ({ startDate, endDate, onSelect, onClose }) => {
 const POReportPage = ({ onNavigate, t }) => {
   const currency = "IDR";
   const [dateFilter, setDateFilter] = useState("Last 30 Days");
-  const [vendorFilter, setVendorFilter] = useState("all");
-  const [poStatusFilter, setPoStatusFilter] = useState("all");
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState("all");
+  const [vendorFilter, setVendorFilter] = useState([]);
+  const [poStatusFilter, setPoStatusFilter] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
@@ -397,21 +397,16 @@ const POReportPage = ({ onNavigate, t }) => {
   // Main filter logic
   const filteredData = useMemo(() => {
     let result = filteredByDate.filter(po => {
-      const matchesVendor = vendorFilter === "all" || po.vendorName === vendorFilter;
-      const matchesPoStatus = poStatusFilter === "all" || po.status === poStatusFilter;
+      const matchesVendor = vendorFilter.length === 0 || vendorFilter.includes(po.vendorName);
+      const matchesPoStatus = poStatusFilter.length === 0 || poStatusFilter.includes(po.status);
       
       const invoicedAmount = po.invoices.reduce((s, i) => s + i.amount, 0);
       const paidAmount = po.invoices.reduce((s, i) => s + i.payments.reduce((sp, p) => sp + p.amount, 0), 0);
-      let paymentStatus = "Unpaid";
-      if (paidAmount > 0) {
-        paymentStatus = paidAmount >= invoicedAmount && invoicedAmount > 0 ? "Paid" : "Partially Paid";
-      }
-      const matchesPaymentStatus = paymentStatusFilter === "all" || paymentStatus === paymentStatusFilter;
       
       const matchesSearch = po.poNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            po.vendorName.toLowerCase().includes(searchQuery.toLowerCase());
 
-      return matchesVendor && matchesPoStatus && matchesPaymentStatus && matchesSearch;
+      return matchesVendor && matchesPoStatus && matchesSearch;
     });
 
     // Sorting logic
@@ -459,7 +454,7 @@ const POReportPage = ({ onNavigate, t }) => {
     });
 
     return result;
-  }, [filteredByDate, vendorFilter, poStatusFilter, paymentStatusFilter, searchQuery, sortConfig]);
+  }, [filteredByDate, vendorFilter, poStatusFilter, searchQuery, sortConfig]);
 
   // Summary Metrics
   const metrics = useMemo(() => {
@@ -489,8 +484,7 @@ const POReportPage = ({ onNavigate, t }) => {
 
   // Filter options
   const vendors = ["all", ...new Set(MOCK_REPORT_POS.map(po => po.vendorName))];
-  const poStatuses = ["all", "Issued", "Revised", "Completed"];
-  const paymentStatuses = ["all", "Unpaid", "Partially Paid", "Paid"];
+  const poStatuses = ["all", "Draft", "Waiting for Approval", "Need Revision", "Issued", "Completed", "Canceled"];
 
   const tableColumns = [
     { label: "PO No", flex: "1.4", key: "poNumber" },
@@ -500,7 +494,7 @@ const POReportPage = ({ onNavigate, t }) => {
     { label: "Vendor Invoice", flex: "1.2", key: "vendorInvoice", sortable: true },
     { label: "Paid", flex: "1.2", key: "paid", sortable: true },
     { label: "Outstanding", flex: "1.4", key: "outstanding", sortable: true, tooltip: "Amount that has not been paid from the vendor invoice" },
-    { label: "PO Gap", flex: "1.4", key: "poGap", sortable: true, tooltip: "Difference between the purchase order value and vendor invoice value" },
+    { label: "Uninvoiced Amount", flex: "1.4", key: "poGap", sortable: true, tooltip: "Difference between the purchase order value and vendor invoice value" },
     { label: "PO Status", flex: "1.2", key: "status" },
   ];
 
@@ -667,31 +661,18 @@ const POReportPage = ({ onNavigate, t }) => {
         {/* Filters Header */}
         <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <DropdownSelect 
-              variant="filter"
+            <MultiSelectDropdown 
               searchable={true}
-              maxOptionsVisible={4}
-              fontSize="var(--text-title-3)"
               placeholder="Vendor"
               value={vendorFilter}
               options={vendors.map(v => ({ value: v, label: v === "all" ? "Vendor" : v }))}
               onChange={(val) => { setVendorFilter(val); setCurrentPage(1); }}
             />
-            <DropdownSelect 
-              variant="filter"
-              fontSize="var(--text-title-3)"
+            <MultiSelectDropdown 
               placeholder="PO Status"
               value={poStatusFilter}
               options={poStatuses.map(s => ({ value: s, label: s === "all" ? "PO Status" : s }))}
               onChange={(val) => { setPoStatusFilter(val); setCurrentPage(1); }}
-            />
-            <DropdownSelect 
-              variant="filter"
-              fontSize="var(--text-title-3)"
-              placeholder="Payment Status"
-              value={paymentStatusFilter}
-              options={paymentStatuses.map(s => ({ value: s, label: s === "all" ? "Payment Status" : s }))}
-              onChange={(val) => { setPaymentStatusFilter(val); setCurrentPage(1); }}
             />
           </div>
 
@@ -758,9 +739,12 @@ const POReportPage = ({ onNavigate, t }) => {
               const paid = po.invoices.reduce((s, i) => s + i.payments.reduce((sp, p) => sp + p.amount, 0), 0);
               const outstanding = invoiced - paid;
               
-              let poVariant = "blue";
-              if (po.status === "Completed") poVariant = "green";
-              if (po.status === "Revised") poVariant = "orange";
+              let poVariant = "grey";
+              if (po.status === "Waiting for Approval") poVariant = "orange";
+              else if (po.status === "Need Revision") poVariant = "yellow";
+              else if (po.status === "Issued") poVariant = "blue";
+              else if (po.status === "Completed") poVariant = "green";
+              else if (po.status === "Canceled") poVariant = "red";
 
               return (
                 <div 
