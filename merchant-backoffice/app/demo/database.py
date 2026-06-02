@@ -5,7 +5,15 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.models.product import Base
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./demo.db")
+# Vercel's filesystem is read-only except for /tmp.
+# Locally the default stays ./demo.db for convenience.
+_default_db = (
+    "sqlite+aiosqlite:////tmp/demo.db"
+    if os.getenv("VERCEL")
+    else "sqlite+aiosqlite:///./demo.db"
+)
+
+DATABASE_URL = os.getenv("DATABASE_URL", _default_db)
 
 engine = create_async_engine(DATABASE_URL, echo=False)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)

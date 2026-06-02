@@ -30,21 +30,41 @@ if APP_ENV == "demo":
 # TODO engineer: add BearerAuth middleware for /api/v1 router
 # TODO engineer: mount real router at /api/v1 once RealProductProvider is implemented
 
+# ── Lazy seed flag (in-process memory, resets per cold start) ──────────────
+_seeded = False
 
-@app.on_event("startup")
-async def startup() -> None:
+
+async def _ensure_seeded() -> None:
+    """Run seed logic once per process lifetime (handles Vercel cold starts)."""
+    global _seeded
+    if _seeded:
+        return
+
     from app.demo.category_seed import seed_categories_if_empty
     from app.demo.company_seed import seed_company_if_empty
     from app.demo.database import AsyncSessionLocal, init_db
     from app.demo.product_seed import seed_if_empty
-    from app.services.category_service import CategoryService
-    from app.services.company_service import CompanyService
-    from app.services.product_service import ProductService
 
     await init_db()
     await seed_if_empty(AsyncSessionLocal)
     await seed_categories_if_empty(AsyncSessionLocal)
     await seed_company_if_empty(AsyncSessionLocal)
+    _seeded = True
+
+
+@app.on_event("startup")
+async def startup() -> None:
+    """
+    FastAPI startup event — runs on traditional servers (uvicorn).
+    On Vercel (serverless), each cold start is a fresh process so this
+    fires automatically on the first request's worker initialisation.
+    """
+    from app.demo.database import AsyncSessionLocal
+    from app.services.category_service import CategoryService
+    from app.services.company_service import CompanyService
+    from app.services.product_service import ProductService
+
+    await _ensure_seeded()
 
     if APP_ENV == "demo":
         from app.services.providers.demo_category_provider import DemoCategoryProvider
