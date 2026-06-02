@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_CATALOG_API_URL || 'http://localhost:8001/demo/v1';
+const BASE_URL = import.meta.env.VITE_CATALOG_API_URL || (import.meta.env.PROD ? '/demo/v1' : 'http://localhost:8001/demo/v1');
 
 async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
   const { signal: externalSignal, ...restOptions } = options;

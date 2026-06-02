@@ -1,30 +1,31 @@
 {
   "version": 2,
+  "buildCommand": "npm run build && python scripts/seed_demo.py",
+  "installCommand": "npm install && pip install -r app/requirements.txt",
   "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    },
     {
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "dist"
       }
-    },
-    {
-      "src": "app/main.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "15mb",
-        "runtime": "python3.12"
-      }
     }
   ],
   "routes": [
     {
       "src": "/demo/(.*)",
-      "dest": "app/main.py"
+      "dest": "api/index.py"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "/$1"
+      "dest": "/index.html"
     }
   ]
 }

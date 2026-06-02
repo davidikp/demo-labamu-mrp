@@ -1,6 +1,6 @@
 import { INDUSTRY_IDS, INDUSTRY_LABELS } from '../constants/industries.js';
 
-const COMPANY_API_URL = import.meta.env.VITE_CATALOG_API_URL || 'http://localhost:8001/demo/v1';
+const COMPANY_API_URL = import.meta.env.VITE_CATALOG_API_URL || (import.meta.env.PROD ? '/demo/v1' : 'http://localhost:8001/demo/v1');
 
 const mapApiResponse = (data) => {
   if (!data) return null;
