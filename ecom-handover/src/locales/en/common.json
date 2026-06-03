@@ -1,0 +1,26 @@
+{
+  "placeholder": {
+    "input": "Enter {{field}}",
+    "dropdown": "Select {{field}}"
+  },
+  "dropdown": {
+    "search": "Search...",
+    "noResult": "No result found",
+    "select": "Select option"
+  },
+  "phone": {
+    "searchCountry": "Search country...",
+    "noCountry": "No country found",
+    "placeholder": "Phone Number"
+  },
+  "validation": {
+    "invalidPhone": "Invalid phone number format",
+    "invalidEmail": "Invalid email format",
+    "invalidNpwp": "Invalid NPWP format (XX.XXX.XXX.X-XXX.XXX)",
+    "required": "This field is required",
+    "maxLength": "Maximum {{max}} characters"
+  },
+  "action": {
+    "oke": "Okay"
+  }
+}
