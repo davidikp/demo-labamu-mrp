@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import LabamuLogoPng from '../assets/labamu-logo.png';
 import LoginHeroImg from '../assets/login-page-image.png';
+import { useSnackbar } from '../contexts/SnackbarContext';
 
 const MOCK_EMAIL = 'merchant@labamu.id';
 const MOCK_PASSWORD = 'password123';
@@ -53,24 +54,6 @@ function BgRects() {
   );
 }
 
-function Snackbar({ type, message, onDismiss }) {
-  useEffect(() => {
-    const timer = setTimeout(onDismiss, 4000);
-    return () => clearTimeout(timer);
-  }, [onDismiss]);
-
-  return (
-    <div className={`lb-snackbar lb-snackbar-${type}`}>
-      <svg className="lb-snack-icon" viewBox="0 0 20 20" fill="none">
-        {type === 'error'
-          ? <><circle cx="10" cy="10" r="8.25" stroke="currentColor" strokeWidth="1.5"/><path d="M10 6v5M10 13.5h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></>
-          : <><circle cx="10" cy="10" r="8.25" stroke="currentColor" strokeWidth="1.5"/><path d="M6.5 10l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></>
-        }
-      </svg>
-      <span className="lb-snack-msg">{message}</span>
-    </div>
-  );
-}
 
 export default function LoginRevamp() {
   const navigate = useNavigate();
@@ -81,7 +64,7 @@ export default function LoginRevamp() {
   const [showPw, setShowPw] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [snack, setSnack] = useState(null);
+  const { showSnackbar } = useSnackbar();
   const [emailErr, setEmailErr] = useState('');
   const [pwErr, setPwErr] = useState('');
   const [langMenuOpen, setLangMenuOpen] = useState(false);
@@ -121,11 +104,11 @@ export default function LoginRevamp() {
 
     if (email === MOCK_EMAIL && password === MOCK_PASSWORD) {
       sessionStorage.setItem('lb_mock_auth', 'true');
-      setSnack({ type: 'success', message: t('auth:errors.loginSuccess') });
+      showSnackbar(t('auth:errors.loginSuccess'), 'green');
       setTimeout(() => navigate('/dashboard'), 1000);
     } else {
       setLoading(false);
-      setSnack({ type: 'error', message: t('auth:errors.loginFailed') });
+      showSnackbar(t('auth:errors.loginFailed'), 'red');
     }
   }
 
@@ -443,7 +426,7 @@ export default function LoginRevamp() {
 
               <button
                 type="button"
-                onClick={() => setSnack({ type: 'info', message: t('auth:forgotPassword.snackComingSoon') })}
+                onClick={() => showSnackbar(t('auth:forgotPassword.snackComingSoon'), 'grey')}
                 style={{
                   alignSelf: 'flex-start',
                   background: 'none',
@@ -579,7 +562,7 @@ export default function LoginRevamp() {
                 letterSpacing: '0.11px',
                 color: '#006BFF',
               }}
-              onClick={() => setSnack({ type: 'info', message: t('auth:forgotPassword.snackComingSoon') })}
+              onClick={() => showSnackbar(t('auth:forgotPassword.snackComingSoon'), 'grey')}
             >
               <IconPhone />
               <span>{t('auth:form.phoneLogin')}</span>
@@ -743,9 +726,6 @@ export default function LoginRevamp() {
         </div>
       </div>
 
-      {snack && (
-        <Snackbar type={snack.type} message={snack.message} onDismiss={() => setSnack(null)} />
-      )}
     </div>
   );
 }
