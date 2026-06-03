@@ -22,7 +22,12 @@ class BuilderErrorBoundary extends React.Component {
 }
 
 // Lazy load pages to code-split the application
-const LoginPage = React.lazy(() => import('./pages/Login'));
+const LoginPage = React.lazy(() => import('./pages/LoginRevamp'));
+const FirstTimeLabamuPage = React.lazy(() => import('./pages/FirstTimeLabamu'));
+const FirstTimeMRPPage = React.lazy(() => import('./pages/FirstTimeMRP'));
+const FirstTimeBothPage = React.lazy(() => import('./pages/FirstTimeBoth'));
+const LabamuOnboardingPage = React.lazy(() => import('./pages/LabamuOnboarding'));
+const SSOErrorPage = React.lazy(() => import('./pages/SSOError'));
 const DashboardPage = React.lazy(() => import('./pages/Dashboard'));
 const LandingPage = React.lazy(() => import('./pages/LandingPage'));
 const WebsiteTemplates = React.lazy(() => import('./pages/WebsiteTemplates'));
@@ -39,7 +44,9 @@ function isAuthenticated() {
 }
 
 function ProtectedRoute({ children }) {
-  return isAuthenticated() ? children : <Navigate to="/login" replace />;
+  if (isAuthenticated()) return children;
+  if (sessionStorage.getItem('lb_sso_error')) return <Navigate to="/sso-error" replace />;
+  return <Navigate to="/login" replace />;
 }
 
 // Simple absolute centered loader for page transitions
@@ -56,6 +63,13 @@ export default function App() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/sso-error" element={<SSOErrorPage />} />
+          <Route path="/first-time-from-labamu" element={<FirstTimeLabamuPage />} />
+          <Route path="/first-time-from-labamu/onboarding" element={<LabamuOnboardingPage />} />
+          <Route path="/first-time-from-mrp" element={<FirstTimeMRPPage />} />
+          <Route path="/first-time-from-mrp/onboarding" element={<LabamuOnboardingPage />} />
+          <Route path="/first-time-both" element={<FirstTimeBothPage />} />
+          <Route path="/first-time-both/onboarding" element={<LabamuOnboardingPage />} />
           
           {/* Merchant Backoffice Protected Routes with Shared Layout */}
           <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>

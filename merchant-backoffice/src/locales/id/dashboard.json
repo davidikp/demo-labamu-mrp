@@ -117,5 +117,9 @@
     "messagePrefix": "Anda berhasil masuk ke ",
     "messageStrong": "Labamu Ecommerce",
     "messageSuffix": ". Dashboard lengkap akan segera hadir."
+  },
+  "ecommerceMismatchBanner": {
+    "message": "Ecommerce Anda terhubung ke modul yang berbeda. Sinkronisasi data mungkin tidak mencerminkan titik akses Anda saat ini.",
+    "dismiss": "Tutup"
   }
 }

@@ -9,7 +9,7 @@ import React from 'react';
  */
 export default function Stepper({ steps, currentStep }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', width: '100%', maxWidth: '800px', margin: '0 auto', gap: '8px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', width: '100%', maxWidth: '800px', gap: '8px' }}>
       {steps.map((step, index) => {
         const isActive = index === currentStep;
         const isPast = index < currentStep;

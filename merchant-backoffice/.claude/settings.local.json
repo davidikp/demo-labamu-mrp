@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npm run *)",
       "Bash(python3 -c ' *)",
-      "Bash(node --input-type=module --eval ' *)"
+      "Bash(node --input-type=module --eval ' *)",
+      "mcp__claude_ai_Figma__get_design_context"
     ]
   }
 }

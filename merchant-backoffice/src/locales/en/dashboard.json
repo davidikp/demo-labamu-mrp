@@ -116,5 +116,9 @@
     "messagePrefix": "You have successfully logged in to ",
     "messageStrong": "Labamu Ecommerce",
     "messageSuffix": ". The full dashboard will be coming soon."
+  },
+  "ecommerceMismatchBanner": {
+    "message": "Your Ecommerce is connected to a different module. Data syncing may not reflect your current access point.",
+    "dismiss": "Dismiss"
   }
 }

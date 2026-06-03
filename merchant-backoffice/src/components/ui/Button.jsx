@@ -24,8 +24,6 @@ export default function Button({
 }) {
   const labamuBlue = '#006BFF';
   const labamuBlueHover = '#0055D4';
-  const grayLight = '#F3F4F6';
-  const grayDark = '#4B5563';
 
   // Size Mapping (Desktop Specifications)
   const sizeConfigs = {
@@ -64,8 +62,8 @@ export default function Button({
       border: `1px solid ${labamuBlue}`
     },
     tertiary: {
-      background: grayLight,
-      color: grayDark,
+      background: 'transparent',
+      color: labamuBlue,
       border: '1px solid transparent'
     },
     danger: {
@@ -90,7 +88,7 @@ export default function Button({
       borderColor: labamuBlueHover
     },
     tertiary: {
-      background: '#E5E7EB'
+      background: 'rgba(0, 107, 255, 0.06)'
     },
     danger: {
       background: '#DC2626'

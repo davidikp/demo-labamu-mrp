@@ -2,8 +2,10 @@ import React from 'react';
 
 const StylingStep = React.memo(({ primaryColor, fontFamily, updateConfig, t }) => (
   <div style={{ animation: 'fadeIn 0.3s ease' }}>
-    <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0', color: '#111827' }}>{t('studio.styling.title')}</h2>
-    <p style={{ fontSize: '14px', color: '#6B7280', margin: '0 0 24px 0' }}>{t('studio.styling.subtitle')}</p>
+    <div style={{ position: 'sticky', top: '-24px', zIndex: 5, background: '#FFFFFF', margin: '-24px -24px 24px', padding: '24px 24px 20px', boxShadow: '0 1px 0 #E5E7EB' }}>
+      <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0', color: '#111827' }}>{t('studio.styling.title')}</h2>
+      <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>{t('studio.styling.subtitle')}</p>
+    </div>
 
     <div style={{ marginBottom: '32px' }}>
       <div style={{ fontSize: '14px', fontWeight: 700, color: '#374151', marginBottom: '4px' }}>{t('studio.basic.appearance.colors.title')}</div>

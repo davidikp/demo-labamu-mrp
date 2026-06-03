@@ -11,7 +11,7 @@ const ConfigureStep = React.memo(({
 }) => (
   <div style={{ animation: 'fadeIn 0.3s ease' }}>
     {/* ── Language Section ── */}
-    <div style={{ paddingBottom: '24px', marginBottom: '24px', borderBottom: '1.5px solid #F3F4F6' }}>
+    <div style={{ position: 'sticky', top: '-24px', zIndex: 5, background: '#FFFFFF', margin: '-24px -24px 24px', padding: '24px 24px 20px', borderBottom: '1.5px solid #F3F4F6', boxShadow: '0 1px 0 #E5E7EB' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: '#111827' }}>{t('studio.basic.languages.title')}</h2>
         <span style={{ fontSize: '12px', color: '#6B7280', fontWeight: 500 }}>{languages.length}/5</span>

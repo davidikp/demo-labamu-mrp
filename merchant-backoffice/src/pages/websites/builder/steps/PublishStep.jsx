@@ -8,8 +8,10 @@ const PublishStep = React.memo(({
   t,
 }) => (
   <div style={{ animation: 'fadeIn 0.3s ease' }}>
-    <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0', color: '#111827' }}>{t('studio.publish.title')}</h2>
-    <p style={{ fontSize: '14px', color: '#6B7280', margin: '0 0 24px 0' }}>{t('studio.publish.subtitle')}</p>
+    <div style={{ position: 'sticky', top: '-24px', zIndex: 5, background: '#FFFFFF', margin: '-24px -24px 24px', padding: '24px 24px 20px', boxShadow: '0 1px 0 #E5E7EB' }}>
+      <h2 style={{ fontSize: '18px', fontWeight: 700, margin: '0 0 8px 0', color: '#111827' }}>{t('studio.publish.title')}</h2>
+      <p style={{ fontSize: '14px', color: '#6B7280', margin: 0 }}>{t('studio.publish.subtitle')}</p>
+    </div>
 
     <div style={{ padding: '20px', background: '#F9FAFB', borderRadius: '12px', marginBottom: '24px', border: '1px solid #E5E7EB' }}>
       <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827', marginBottom: '4px' }}>{t('studio.publish.subdomain.title')}</div>

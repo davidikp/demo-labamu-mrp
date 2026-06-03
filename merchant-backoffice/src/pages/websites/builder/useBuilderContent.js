@@ -284,7 +284,7 @@ export function useBuilderContent() {
     }
     const reader = new FileReader();
     reader.onload = (ev) => {
-      openCropModal(ev.target.result, 125 / 45, (croppedUrl) => {
+      openCropModal(ev.target.result, 1, (croppedUrl) => {
         setSharedConfig(prev => ({ ...prev, headerLogo: croppedUrl }));
         closeCropModal();
       });
