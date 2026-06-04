@@ -112,6 +112,7 @@ export default function Dropdown({
   // Border color logic: active > error > default
   const borderColor = (() => {
     if (isSeamless) return 'transparent';
+    if (variant === 'filter') return isOpen || selectedOption ? '#006BFF' : '#A9A9A9';
     if (isOpen) return 'var(--focus-color, #006BFF)';
     if (error) return '#EF4444';
     if (variant === 'dashed') return style?.borderColor || '#9CA3AF';
@@ -159,15 +160,15 @@ export default function Dropdown({
           border: isSeamless ? 'none' : `${borderType} ${resolvedBorderColor}`,
           borderRadius: isSeamless ? '0' : (style?.borderRadius || '8px'),
           padding: isSeamless ? '0 4px' : '0 12px',
-          height: isSeamless ? 'auto' : (style?.height || '40px'),
+          height: isSeamless ? 'auto' : (style?.height || (variant === 'filter' ? '34px' : '40px')),
           width: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: isSeamless ? 'flex-start' : (hideChevron && !selectedOption ? 'center' : 'space-between'),
           cursor: 'pointer',
           transition: 'all 0.2s',
-          fontSize: isSeamless ? 'inherit' : '15px',
-          fontWeight: isSeamless ? 700 : 500,
+          fontSize: isSeamless ? 'inherit' : (variant === 'filter' ? '14px' : '15px'),
+          fontWeight: isSeamless ? 700 : (variant === 'filter' ? 400 : 500),
           boxShadow: 'none',
           verticalAlign: isSeamless ? 'baseline' : 'middle',
           boxSizing: 'border-box'
@@ -177,7 +178,7 @@ export default function Dropdown({
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
-          color: isSeamless ? '#006BFF' : (selectedOption ? '#1B1B1B' : (primary && variant === 'dashed' ? '#006BFF' : '#9CA3AF')),
+          color: isSeamless ? '#006BFF' : (variant === 'filter' ? (selectedOption ? '#282828' : '#A9A9A9') : (selectedOption ? '#1B1B1B' : (primary && variant === 'dashed' ? '#006BFF' : '#9CA3AF'))),
           fontSize: isSeamless ? 'inherit' : '15px'
         }}>
           {selectedOption ? selectedOption.label : resolvedPlaceholder}

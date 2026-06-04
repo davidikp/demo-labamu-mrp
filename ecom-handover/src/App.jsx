@@ -77,7 +77,7 @@ export default function App() {
             <Route path="/websites" element={<WebsiteTemplates />} />
             <Route path="/catalog" element={<CatalogProducts />} />
             <Route path="/catalog/:id" element={<ProductDetail />} />
-            <Route path="/categories" element={<CatalogCategories />} />
+            <Route path="/catalog/manage-category" element={<CatalogCategories />} />
             <Route path="/profile" element={<CompanyProfile />} />
           </Route>
 
