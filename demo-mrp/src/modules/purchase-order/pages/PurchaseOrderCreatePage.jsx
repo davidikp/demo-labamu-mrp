@@ -1285,7 +1285,7 @@ export const PurchaseOrderCreatePage = ({
           (stage) => Number(stage.step) === step
         );
         const operationName = matchedStage?.op || matchedStage?.operation;
-        return operationName ? operationName : `routing step ${step}`;
+        return operationName ? `Step ${step}: ${operationName}` : `Step ${step}`;
       });
       const stackedLabels = stageLabels.map((label) => `- ${label}`).join("\n");
       return `${baseDescription}\n${stackedLabels}`;
@@ -4703,7 +4703,7 @@ export const PurchaseOrderCreatePage = ({
               style={{ width: "100%" }}
               onClick={() => {
                 if (isReviseMode && !revisionReason.trim()) {
-                  setRevisionReasonError("Reason is mandatory");
+                  setRevisionReasonError("Field cannot be empty");
                   return;
                 }
                 handleConfirmSubmit();

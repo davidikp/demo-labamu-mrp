@@ -1,5 +1,9 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { formatIsoDateString } from "../../../utils/date/dateUtils";
+import { MOCK_PO_TABLE_DATA } from "../mock/purchaseOrderMocks";
+
+// Module-level cache: persists invoice/payment state across navigation
+const invoiceCache = new Map();
 
 export const usePoInvoices = ({
   initialInvoices = [],
@@ -11,18 +15,40 @@ export const usePoInvoices = ({
   poNumber = "",
   vendorName = "",
   showToast,
+  onAddDocument,
 } = {}) => {
-  // --- Core Data State ---
-  const [invoices, setInvoices] = useState(initialInvoices);
-  const [payments, setPayments] = useState(initialPayments);
-  const [invoicePaymentLogs, setInvoicePaymentLogs] = useState(initialLogs);
+  // --- Core Data State (hydrate from cache if available) ---
+  const cached = poNumber ? invoiceCache.get(poNumber) : null;
+  const [invoices, setInvoices] = useState(cached?.invoices ?? initialInvoices);
+  const [payments, setPayments] = useState(cached?.payments ?? initialPayments);
+  const [invoicePaymentLogs, setInvoicePaymentLogs] = useState(cached?.logs ?? initialLogs);
+  const isFirstMount = useRef(true);
 
-  // Sync with initial props
+  // Sync with initial props only on first mount (skip if we have cached data)
   useEffect(() => {
-    setInvoices(initialInvoices);
-    setPayments(initialPayments);
-    setInvoicePaymentLogs(initialLogs);
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+    const hasCached = poNumber && invoiceCache.has(poNumber);
+    if (!hasCached) {
+      setInvoices(initialInvoices);
+      setPayments(initialPayments);
+      setInvoicePaymentLogs(initialLogs);
+    }
   }, [initialInvoices, initialPayments, initialLogs]);
+
+  // Write to cache and sync back to MOCK_PO_TABLE_DATA whenever state changes
+  useEffect(() => {
+    if (poNumber) {
+      invoiceCache.set(poNumber, { invoices, payments, logs: invoicePaymentLogs });
+      const idx = MOCK_PO_TABLE_DATA.findIndex(p => p.poNumber === poNumber);
+      if (idx !== -1) {
+        MOCK_PO_TABLE_DATA[idx].invoices = invoices;
+        MOCK_PO_TABLE_DATA[idx].payments = payments;
+      }
+    }
+  }, [poNumber, invoices, payments, invoicePaymentLogs]);
 
   // --- UI State ---
   const [invoiceSearch, setInvoiceSearch] = useState("");
@@ -46,6 +72,10 @@ export const usePoInvoices = ({
   const [showItemQtyExceedConfirmModal, setShowItemQtyExceedConfirmModal] = useState(false);
   const [exceededItems, setExceededItems] = useState([]);
   const [paymentToVoid, setPaymentToVoid] = useState(null);
+  const [deleteInvoiceReason, setDeleteInvoiceReason] = useState("");
+  const [deleteInvoiceReasonError, setDeleteInvoiceReasonError] = useState("");
+  const [voidPaymentReason, setVoidPaymentReason] = useState("");
+  const [voidPaymentReasonError, setVoidPaymentReasonError] = useState("");
 
   // Form States
   const [addInvoiceFormData, setAddInvoiceFormData] = useState({
@@ -301,6 +331,20 @@ export const usePoInvoices = ({
         },
       };
       setInvoices((prev) => [newInvoice, ...prev]);
+      if (onAddDocument && addInvoiceFormData.attachments?.length > 0) {
+        addInvoiceFormData.attachments.forEach((att) => {
+          onAddDocument({
+            id: `doc-inv-${Date.now()}-${Math.random()}`,
+            name: att.name || att.file?.name || "invoice-attachment",
+            description: `${addInvoiceFormData.number} document`,
+            meta: `Uploaded by Natasha Smith on ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
+            documentType: "invoice",
+            type: "pdf",
+            size: att.file?.size ? `${Math.round(att.file.size / 1024)} KB` : "-",
+            modifiedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+          });
+        });
+      }
       addInvoicePaymentLog("Invoice Added", `New invoice #${addInvoiceFormData.number} for ${currency} ${parseFloat(addInvoiceFormData.amount).toLocaleString()} was added.`);
       if (showToast) {
         showToast("Invoice successfully added");
@@ -311,6 +355,21 @@ export const usePoInvoices = ({
     setIsEditingInvoice(false);
     setFormErrors({});
   }, [addInvoiceFormData, isEditingInvoice, calculatedDueDate, currency, addInvoicePaymentLog, showToast, setSelectedInvoiceForDetail]);
+
+  const checkPoValueAndSave = useCallback(() => {
+    const otherInvoicesTotal = invoices.reduce(
+      (sum, inv) => (isEditingInvoice && inv.id === addInvoiceFormData.id ? sum : sum + (inv.amount || 0)),
+      0
+    );
+    const newAmount = parseFloat(addInvoiceFormData.amount) || 0;
+    const potentialTotalInvoiced = otherInvoicesTotal + newAmount;
+
+    if (potentialTotalInvoiced > poTotal) {
+      setShowExceedConfirmModal(true);
+      return;
+    }
+    saveInvoice();
+  }, [invoices, isEditingInvoice, addInvoiceFormData, poTotal, saveInvoice]);
 
   const handleAddInvoice = useCallback(() => {
     let hasError = false;
@@ -333,6 +392,16 @@ export const usePoInvoices = ({
     if (!addInvoiceFormData.amount) {
       nextErrors.amount = "Field cannot be empty";
       hasError = true;
+    } else if (isEditingInvoice) {
+      const newAmount = parseFloat(addInvoiceFormData.amount) || 0;
+      const alreadyPaid = payments
+        .filter((p) => !p.isVoid && p.invoiceId === addInvoiceFormData.id)
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
+      if (alreadyPaid > 0 && newAmount < alreadyPaid) {
+        const formattedPaid = `${currency} ${alreadyPaid.toLocaleString()}`;
+        nextErrors.amount = `Invoice amount cannot be lower than the paid amount (${formattedPaid}).`;
+        hasError = true;
+      }
     }
     
     const foundExceededItems = [];
@@ -373,21 +442,8 @@ export const usePoInvoices = ({
       return;
     }
 
-    // Check if potential total invoiced exceeds PO value
-    const otherInvoicesTotal = invoices.reduce(
-      (sum, inv) => (isEditingInvoice && inv.id === addInvoiceFormData.id ? sum : sum + (inv.amount || 0)),
-      0
-    );
-    const newAmount = parseFloat(addInvoiceFormData.amount) || 0;
-    const potentialTotalInvoiced = otherInvoicesTotal + newAmount;
-
-    if (potentialTotalInvoiced > poTotal) {
-      setShowExceedConfirmModal(true);
-      return;
-    }
-
-    saveInvoice();
-  }, [addInvoiceFormData, isEditingInvoice, invoices, poTotal, saveInvoice, getRemainingPoQty]);
+    checkPoValueAndSave();
+  }, [addInvoiceFormData, isEditingInvoice, invoices, payments, currency, checkPoValueAndSave, getRemainingPoQty]);
 
   const handleDeleteInvoice = useCallback(() => {
     if (!selectedInvoiceForDetail) return;
@@ -399,6 +455,7 @@ export const usePoInvoices = ({
       showToast("Invoice successfully deleted");
     }
     setShowDeleteInvoiceConfirm(false);
+    setDeleteInvoiceReason("");
     setShowInvoiceDetailDrawer(false);
   }, [selectedInvoiceForDetail, addInvoicePaymentLog, showToast]);
 
@@ -435,6 +492,20 @@ export const usePoInvoices = ({
     };
 
     setPayments((prev) => [newPayment, ...prev]);
+    if (onAddDocument && paymentFormData.attachments?.length > 0) {
+      paymentFormData.attachments.forEach((att) => {
+        onAddDocument({
+          id: `doc-pay-${Date.now()}-${Math.random()}`,
+          name: att.name || att.file?.name || "payment-proof",
+          description: `${newPayment.id} document`,
+          meta: `Uploaded by Natasha Smith on ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`,
+          documentType: "invoice_payment",
+          type: "pdf",
+          size: att.file?.size ? `${Math.round(att.file.size / 1024)} KB` : "-",
+          modifiedDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        });
+      });
+    }
     addInvoicePaymentLog("Payment Added", `Payment of ${currency} ${parseFloat(paymentFormData.amount).toLocaleString()} added to Invoice ${selectedInvoiceForPayment?.number}.`);
     if (showToast) {
       showToast("Payment successfully added");
@@ -455,6 +526,7 @@ export const usePoInvoices = ({
       showToast("Payment successfully voided");
     }
     setShowVoidConfirmModal(false);
+    setVoidPaymentReason("");
     setPaymentToVoid(null);
   }, [paymentToVoid, invoices, currency, addInvoicePaymentLog, showToast]);
 
@@ -541,6 +613,15 @@ export const usePoInvoices = ({
     setShowItemQtyExceedConfirmModal,
     exceededItems,
     saveInvoice,
+    checkPoValueAndSave,
+    deleteInvoiceReason,
+    setDeleteInvoiceReason,
+    deleteInvoiceReasonError,
+    setDeleteInvoiceReasonError,
+    voidPaymentReason,
+    setVoidPaymentReason,
+    voidPaymentReasonError,
+    setVoidPaymentReasonError,
 
     // Handlers
     simulateInvoiceOcr,

@@ -7,15 +7,11 @@ import {
   EditIcon,
   DeleteIcon,
   MoreVerticalIcon,
-  Info,
   FileIcon,
   FileImage,
   FileText,
   ImageAssetIcon,
 } from "../../../../components/icons/Icons.jsx";
-import {
-  MAX_PURCHASE_ORDER_DOCUMENTS,
-} from "../../../../constants/appConstants.js";
 import {
   getDocumentPrimaryLabel,
   getDocumentSecondaryLabel,
@@ -543,12 +539,7 @@ const PoDocumentsTab = ({
             <Button
               variant="filled"
               leftIcon={UploadIcon}
-              disabled={
-                !(
-                  currentStatus === "Draft" ||
-                  currentStatus === "Need Revision"
-                ) || documents.length >= MAX_PURCHASE_ORDER_DOCUMENTS
-              }
+              disabled={currentStatus === "Canceled"}
               onClick={() => {
                 resetDocumentUploadState();
                 setShowUploadDocumentModal(true);
@@ -560,36 +551,6 @@ const PoDocumentsTab = ({
         </div>
 
         <div style={{ padding: "0 24px 24px 24px" }}>
-          {documents.length >= MAX_PURCHASE_ORDER_DOCUMENTS && (
-            <div
-              style={{
-                marginBottom: "16px",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "12px",
-                padding: "12px 16px",
-                borderRadius: "12px",
-                background: "var(--feature-brand-container-lighter)",
-                border: "1px solid var(--feature-brand-container-darker)",
-              }}
-            >
-              <Info
-                size={16}
-                strokeWidth={2.1}
-                color="var(--feature-brand-primary)"
-                style={{ flexShrink: 0, marginTop: "2px" }}
-              />
-              <span
-                style={{
-                  fontSize: "var(--text-title-3)",
-                  color: "var(--feature-brand-primary)",
-                  lineHeight: "1.5",
-                }}
-              >
-                This purchase order already has {MAX_PURCHASE_ORDER_DOCUMENTS} documents attached. Remove a document before uploading a new one.
-              </span>
-            </div>
-          )}
 
           {documentView === "list" ? (
             <div style={poReferenceTableFrameStyle}>

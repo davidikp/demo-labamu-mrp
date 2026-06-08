@@ -854,6 +854,7 @@ export { UploadDropzone } from "../../../../../components/index.js";
 // UploadDescriptionCard Component
 export const UploadDescriptionCard = ({
   file,
+  description,
   onRemove,
   onDescriptionChange,
   descriptionRequired = false,
@@ -916,11 +917,11 @@ export const UploadDescriptionCard = ({
       <InputField
         label="File Description"
         required={descriptionRequired}
-        value={file?.description || ""}
+        value={description !== undefined ? description : (file?.description || "")}
         onChange={(e) => onDescriptionChange?.(e.target.value)}
         placeholder="Enter File Description"
         maxLength={FILE_DESCRIPTION_MAX_LENGTH}
-        headerRight={`${(file?.description || "").length}/${FILE_DESCRIPTION_MAX_LENGTH}`}
+        headerRight={`${(description !== undefined ? description : (file?.description || "")).length}/${FILE_DESCRIPTION_MAX_LENGTH}`}
         error={descriptionError}
       />
     ) : null}

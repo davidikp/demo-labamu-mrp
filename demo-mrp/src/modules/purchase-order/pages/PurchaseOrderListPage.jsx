@@ -11,11 +11,32 @@ import { MOCK_PO_TABLE_DATA } from "../mock/purchaseOrderMocks.js";
 import { DateRangeInputControl } from "../components/DateRangeInputControl.jsx";
 import { cellStyle } from "../utils/purchaseOrderTableUtils.js";
 
+const computePaymentStatus = (invoices, payments) => {
+  if (!invoices || invoices.length === 0) return "Unpaid";
+  const today = new Date();
+  let allPaid = true;
+  let anyOverdue = false;
+  let anyPartial = false;
+  for (const inv of invoices) {
+    const paid = (payments || []).filter(p => !p.isVoid && p.invoiceId === inv.id).reduce((s, p) => s + (p.amount || 0), 0);
+    const outstanding = Math.max((inv.amount || 0) - paid, 0);
+    const isOverdue = new Date(inv.dueDate) < today && outstanding > 0;
+    if (outstanding > 0) allPaid = false;
+    if (isOverdue) anyOverdue = true;
+    if (paid > 0 && outstanding > 0) anyPartial = true;
+  }
+  if (allPaid) return "Paid";
+  if (anyOverdue) return "Overdue";
+  if (anyPartial) return "Partially Paid";
+  return "Unpaid";
+};
+
 export const PurchaseOrderListPage = ({ onNavigate, t }) => {
   const [sortBy, setSortBy] = useState("createdDate");
   const [sortDirection, setSortDirection] = useState("desc");
   const [openFilterKey, setOpenFilterKey] = useState(null);
   const [filterStatuses, setFilterStatuses] = useState([]);
+  const [filterPaymentStatuses, setFilterPaymentStatuses] = useState([]);
   const [dateFilterType, setDateFilterType] = useState("all");
   const [customDateRange, setCustomDateRange] = useState({
     start: "",
@@ -30,37 +51,41 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
   );
 
   const tableColumns = [
-    { label: "PO Number", key: "poNumber", flex: "1.5", sortable: true },
-    { label: "Vendor Name", key: "vendorName", flex: "2", sortable: true },
-    { label: "Total Amount", key: "amount", flex: "1.5", sortable: false },
-    { label: "PO Date", key: "poDate", flex: "1.2", sortable: true },
-    { label: "Created Date", key: "createdDate", flex: "1.2", sortable: true },
-    { label: "Status", key: "status", flex: "1.2", sortable: false },
+    { label: "PO Number", key: "poNumber", flex: "1.4", sortable: true },
+    { label: "Vendor Name", key: "vendorName", flex: "1.6", sortable: true },
+    { label: "Total Amount", key: "amount", flex: "1.3", sortable: false },
+    { label: "PO Date", key: "poDate", flex: "1", sortable: true },
+    { label: "Created Date", key: "createdDate", flex: "1", sortable: true },
+    { label: "Payment Status", key: "paymentStatus", flex: "1.1", sortable: false },
+    { label: "PO Status", key: "status", flex: "1", sortable: false },
   ];
 
   const statusCards = [
     { key: "Draft", label: "Draft", activeColor: "grey-light" },
-    {
-      key: "Waiting for Approval",
-      label: "Waiting for Approval",
-      activeColor: "orange-light",
-    },
+    { key: "Waiting for Approval", label: "Waiting for Approval", activeColor: "orange-light" },
     { key: "Issued", label: "Issued", activeColor: "blue-light" },
     { key: "Completed", label: "Completed", activeColor: "green-light" },
-    {
-      key: "Need Revision",
-      label: "Need Revision",
-      activeColor: "yellow-light",
-    },
+    { key: "Need Revision", label: "Need Revision", activeColor: "yellow-light" },
     { key: "Canceled", label: "Canceled", activeColor: "red-light" },
   ];
 
+  const paymentStatusCards = [
+    { key: "Unpaid", label: "Unpaid", activeColor: "grey-light" },
+    { key: "Partially Paid", label: "Partially Paid", activeColor: "blue-light" },
+    { key: "Overdue", label: "Overdue", activeColor: "red-light" },
+    { key: "Paid", label: "Paid", activeColor: "green-light" },
+  ];
+
   const statusCounts = statusCards.reduce((acc, card) => {
-    acc[card.key] = MOCK_PO_TABLE_DATA.filter(
-      (row) => row.status === card.key
-    ).length;
+    acc[card.key] = MOCK_PO_TABLE_DATA.filter((row) => row.status === card.key).length;
     return acc;
   }, {});
+
+  const toggleFilterPaymentStatus = (key) => {
+    setFilterPaymentStatuses((prev) =>
+      prev.includes(key) ? prev.filter((s) => s !== key) : [...prev, key]
+    );
+  };
 
   const toggleSort = (key) => {
     if (sortBy === key) {
@@ -88,6 +113,9 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
   const filteredRows = MOCK_PO_TABLE_DATA.filter((row) => {
     const matchesStatusFilter =
       filterStatuses.length === 0 || filterStatuses.includes(row.status);
+    const rowPaymentStatus = computePaymentStatus(row.invoices, row.payments);
+    const matchesPaymentStatusFilter =
+      filterPaymentStatuses.length === 0 || filterPaymentStatuses.includes(rowPaymentStatus);
     const matchesSearch =
       !searchQuery ||
       `${row.poNumber} ${row.vendorName}`
@@ -116,7 +144,7 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
       if (start && end) matchesDate = rowDate >= start && rowDate <= end;
     }
 
-    return matchesStatusFilter && matchesSearch && matchesDate;
+    return matchesStatusFilter && matchesPaymentStatusFilter && matchesSearch && matchesDate;
   }).sort((a, b) => {
     const direction = sortDirection === "asc" ? 1 : -1;
     if (sortBy === "createdDate") {
@@ -141,6 +169,7 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
     setCurrentPage(1);
   }, [
     filterStatuses.join("|"),
+    filterPaymentStatuses.join("|"),
     dateFilterType,
     customDateRange.start,
     customDateRange.end,
@@ -260,6 +289,23 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
               />
             </div>
 
+            <div
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setPopoverTriggerRect(rect);
+                setOpenFilterKey((prev) =>
+                  prev === "paymentStatus" ? null : "paymentStatus"
+                );
+              }}
+            >
+              <FilterPill
+                label="Payment Status"
+                active={filterPaymentStatuses.length > 0}
+                isOpen={openFilterKey === "paymentStatus"}
+                count={filterPaymentStatuses.length}
+              />
+            </div>
+
             {openFilterKey ? (
               <>
                 <div
@@ -298,12 +344,16 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
                         fontWeight: "var(--font-weight-bold)",
                       }}
                     >
-                      Created Date
+                      {openFilterKey === "paymentStatus" ? "Payment Status" : "Created Date"}
                     </span>
                     <button
                       onClick={() => {
-                        setDateFilterType("all");
-                        setCustomDateRange({ start: "", end: "" });
+                        if (openFilterKey === "paymentStatus") {
+                          setFilterPaymentStatuses([]);
+                        } else {
+                          setDateFilterType("all");
+                          setCustomDateRange({ start: "", end: "" });
+                        }
                         setOpenFilterKey(null);
                       }}
                       style={{
@@ -319,14 +369,9 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
                       Remove Filter
                     </button>
                   </div>
+
                   {openFilterKey === "createdDate" ? (
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "12px",
-                      }}
-                    >
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                       {[
                         { key: "all", label: "All" },
                         { key: "last7", label: "Last 7 days" },
@@ -351,13 +396,38 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
                           <span>{opt.label}</span>
                         </label>
                       ))}
- 
                       {dateFilterType === "custom" ? (
                         <DateRangeInputControl
                           value={customDateRange}
                           onChange={(e) => setCustomDateRange(e.target.value)}
                         />
                       ) : null}
+                    </div>
+                  ) : null}
+
+                  {openFilterKey === "paymentStatus" ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                      {paymentStatusCards.map((card) => (
+                        <label
+                          key={card.key}
+                          onClick={() => toggleFilterPaymentStatus(card.key)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                            cursor: "pointer",
+                            fontSize: "var(--text-title-3)",
+                            color: "var(--neutral-on-surface-primary)",
+                            textAlign: "left",
+                          }}
+                        >
+                          <Checkbox
+                            checked={filterPaymentStatuses.includes(card.key)}
+                            onChange={() => toggleFilterPaymentStatus(card.key)}
+                          />
+                          <span>{card.label}</span>
+                        </label>
+                      ))}
                     </div>
                   ) : null}
                 </div>
@@ -386,7 +456,7 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
         >
           <div
             style={{
-              minWidth: "1000px",
+              minWidth: "100%",
               width: "100%",
               display: "flex",
               flexDirection: "column",
@@ -546,6 +616,13 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
                     </span>
                   </div>
                   <div style={cellStyle({ flex: tableColumns[5].flex })}>
+                    {(() => {
+                      const ps = computePaymentStatus(row.invoices, row.payments);
+                      const variant = ps === "Paid" ? "green-light" : ps === "Overdue" ? "red-light" : ps === "Partially Paid" ? "blue-light" : "grey-light";
+                      return <StatusBadge variant={variant}>{ps}</StatusBadge>;
+                    })()}
+                  </div>
+                  <div style={cellStyle({ flex: tableColumns[6].flex })}>
                     <StatusBadge variant={row.sBadge}>{row.status}</StatusBadge>
                   </div>
                 </div>

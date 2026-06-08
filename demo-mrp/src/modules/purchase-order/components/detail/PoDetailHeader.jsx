@@ -28,8 +28,10 @@ const PoDetailHeader = ({
   isExportingPdf,
   initialData,
   createdDate,
+  actualCreatedDate,
   expectedDeliveryDate,
   currencyLabel,
+  paymentStatus,
   revisionMessage,
   canceledMessage,
   showHeaderEdit,
@@ -305,18 +307,31 @@ const PoDetailHeader = ({
         <div
           style={{
             padding: "16px 24px",
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "24px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px",
           }}
         >
-          <LabelValue label="PO Date" value={createdDate} />
-          <LabelValue
-            label="Expected Delivery Date"
-            value={expectedDeliveryDate ?? null}
-          />
-          <LabelValue label="Currency" value={currencyLabel} />
-          <LabelValue label="Created By" value="Joko" />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+            <LabelValue label="PO Date" value={createdDate} />
+            <LabelValue label="Expected Delivery Date" value={expectedDeliveryDate ?? null} />
+            <LabelValue label="Currency" value={currencyLabel} />
+            <LabelValue
+              label="Payment Status"
+              badge={paymentStatus ? {
+                text: paymentStatus,
+                variant: paymentStatus === "Paid" ? "green-light"
+                  : paymentStatus === "Overdue" ? "red-light"
+                  : paymentStatus === "Partially Paid" ? "blue-light"
+                  : "grey-light",
+              } : null}
+              value={paymentStatus ? undefined : "-"}
+            />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+            <LabelValue label="Created By" value="Joko" />
+            <LabelValue label="Created Date" value={actualCreatedDate ?? createdDate} />
+          </div>
         </div>
       </div>
 

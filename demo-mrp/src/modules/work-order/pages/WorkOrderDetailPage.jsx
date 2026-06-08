@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Send } from "lucide-react";
 import { AddIcon, Box, Building2, CheckIcon, ChevronDownIcon, ChevronLeftIcon, ChevronUpIcon, CloseIcon, DeleteIcon, DocumentIcon, EditIcon, Info, Minus, Plus } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
@@ -8,7 +9,7 @@ import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
-import { Card, DateInputControl, DateRangeInputControl, DocumentTypeBadge, FormField, ImageUploadField, InputField, InputGroup, LabelValue, PhoneInputField, ProgressRing, ProofDocumentList, SectionCard, Tooltip, UploadDescriptionCard, UploadDropzone } from "../components/WorkOrderDetailWidgets.jsx";
+import { Card, DateInputControl, DateRangeInputControl, DocumentTypeBadge, FormField, ImageUploadField, InputField, InputGroup, LabelValue, PhoneInputField, ProgressRing, ProofDocumentList, SectionCard, Tooltip, UploadDescriptionCard, UploadDropzone, UnifiedInputShell, focusInputFrame, blurInputFrame } from "../components/WorkOrderDetailWidgets.jsx";
 import { MOCK_COMPANY } from "../../../data/company.js";
 import { MOCK_VENDORS } from "../../../data/vendors.js";
 import { MOCK_PO_TABLE_DATA } from "../../purchase-order/mock/purchaseOrderMocks.js";
@@ -538,6 +539,17 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, initialDat
   const [isViewAttachmentModalOpen, setIsViewAttachmentModalOpen] =
     useState(false);
   const [attachmentToView, setAttachmentToView] = useState(null);
+  const [assignmentLogTab, setAssignmentLogTab] = useState("send");
+  
+  const [isSendToVendorModalOpen, setIsSendToVendorModalOpen] = useState(false);
+  const [selectedSendVendor, setSelectedSendVendor] = useState(null);
+  const [sendAmount, setSendAmount] = useState("");
+  const [sendNotes, setSendNotes] = useState("");
+  const [sendBy, setSendBy] = useState("Natasha Smith");
+  const [sendProofDocuments, setSendProofDocuments] = useState([]);
+  const [sendProofUploadError, setSendProofUploadError] = useState("");
+  const [sendProofDescriptionErrors, setSendProofDescriptionErrors] = useState({});
+  const [sendErrors, setSendErrors] = useState({});
 
   const [stageStart, setStageStart] = useState(0);
   const [stageProg, setStageProg] = useState(0);
@@ -745,6 +757,27 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
           "",
         id: receipt.id || `vendor-receipt-${v.id}-${index}`,
       })),
+      sendHistory: (
+        v.sendHistory ||
+        (v.receipts || v.attachment
+          ? [
+            {
+              amount: v.output, // sending the full output amount initially
+              date: v.startDate || v.receivedDate || v.date || "2026-03-25",
+              note: "Materials successfully sent to vendor.",
+              sentBy: "Natasha Smith",
+              attachments: [
+                {
+                  id: "send-doc-01",
+                  name: "delivery_note.pdf",
+                  size: 512000,
+                  type: "application/pdf"
+                }
+              ],
+            },
+          ]
+          : [])
+      ),
     }));
   });
 
@@ -783,6 +816,14 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
     initialData?.routingUpdates || []
   );
   const [isRoutingUpdatesExpanded, setIsRoutingUpdatesExpanded] = useState(false);
+
+  const handlePlannedDateChange = (step, value) => {
+    setRoutingStages((prev) =>
+      prev.map((stage) =>
+        stage.step === step ? { ...stage, plannedDate: value } : stage
+      )
+    );
+  };
 
   // Session caching: persist vendor/WO changes back to mock data so
   // navigating back from PO Create/Detail restores the latest state.
@@ -1208,9 +1249,10 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
 
     if (normalizedSteps.length === 0) return "";
     const stageLabels = normalizedSteps.map((step) => {
-      return formatRoutingStageOperationName(step);
+      const operationName = formatRoutingStageOperationName(step);
+      return operationName.startsWith('routing step') ? `Step ${step}` : `Step ${step}: ${operationName}`;
     });
-    return ` including ${stageLabels.join(", ")}`;
+    return `. It covers these routing stages:\n${stageLabels.map(l => `- ${l}`).join("\n")}`;
   };
 
   const buildDummyPoDetailData = (poNumber, vendor) => {
@@ -1260,8 +1302,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         : vendor?.isPoApproved
           ? "issued"
           : basePo.statusKey);
-    const lineDescription = `Generated from ${initialData?.wo || "work order"
-      }${buildOutsourceStageDescription(outsourceSteps)}`;
+    const assignmentText = vendor?.assignmentId ? ` with assignment ${vendor.assignmentId}` : "";
+    const lineDescription = `Generated from ${initialData?.wo || "work order"}${assignmentText}${buildOutsourceStageDescription(outsourceSteps)}`;
     const receiptLogs = (vendor?.receipts || []).map((receipt, index) => ({
       id: `receipt-log-${poNumber}-${index}`,
       receiptNumber:
@@ -1310,20 +1352,22 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
     const resolvedLines =
       baseFormData.lines && baseFormData.lines.length > 0
         ? baseFormData.lines
-        : [
-            {
-              id: `line-${poNumber}`,
-              type: "wo",
-              item: initialData?.product || "Cabinet Premium",
-              code: initialData?.sku || "CAB-PR-9921",
-              desc: lineDescription,
-              woRef: initialData?.wo || "-",
-              qty: vendorOutput || 1,
-              receivedQty: vendorReceivedOutput,
-              price: 250000,
-              sourceWorkOrderLineId: `generated-work-order-line-${poNumber}`,
-            },
-          ];
+        : (livePo?.lines && livePo.lines.length > 0
+            ? livePo.lines
+            : [
+                {
+                  id: `line-${poNumber}`,
+                  type: "wo",
+                  item: initialData?.product || "Cabinet Premium",
+                  code: initialData?.sku || "CAB-PR-9921",
+                  desc: lineDescription,
+                  woRef: initialData?.wo || "-",
+                  qty: vendorOutput || 1,
+                  receivedQty: vendorReceivedOutput,
+                  price: 250000,
+                  sourceWorkOrderLineId: `generated-work-order-line-${poNumber}`,
+                },
+              ]);
     const resolvedFeeLines =
       baseFormData.feeLines && baseFormData.feeLines.length > 0
         ? baseFormData.feeLines
@@ -1888,6 +1932,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
       )
     : null;
 
+
   const handleAttachExistingPo = () => {
     if (!selectedVendorForPoAction || !selectedExistingPoNumber) return;
 
@@ -1916,7 +1961,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
               (stage) => Number(stage.step) === step
             );
             const operationName = matchedStage?.op || matchedStage?.operation;
-            return operationName ? operationName : `routing step ${step}`;
+            return operationName ? `Step ${step}: ${operationName}` : `Step ${step}`;
           });
           const stackedLabels = stageLabels.map((label) => `- ${label}`).join("\n");
           generatedDescription = `${generatedDescription} It covers these routing stages:\n${stackedLabels}`;
@@ -2099,6 +2144,107 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
       return next;
     });
     setProofUploadError("");
+  };
+
+  const handleSendProofFilesSelected = (files) => {
+    const incomingFiles = Array.from(files || []);
+    if (incomingFiles.length === 0) return;
+
+    let nextError = "";
+    setSendProofDocuments((prev) => {
+      const nextDocuments = [...prev];
+      incomingFiles.forEach((file) => {
+        if (nextDocuments.length >= MAX_PROOF_UPLOAD_FILES) {
+          nextError = "Max 3 files, 25MB each";
+          return;
+        }
+        const validationMessage = validateUploadFile(file);
+        if (validationMessage) {
+          nextError = validationMessage;
+          return;
+        }
+        nextDocuments.push(
+          createUploadDocumentRecord(file, { description: "" })
+        );
+      });
+      return nextDocuments;
+    });
+    setSendProofDescriptionErrors({});
+    setSendProofUploadError(nextError);
+  };
+
+  const updateSendProofDescription = (docId, value) => {
+    setSendProofDocuments((prev) =>
+      prev.map((doc) =>
+        doc.id === docId ? { ...doc, description: value } : doc
+      )
+    );
+    setSendProofUploadError("");
+    setSendProofDescriptionErrors((prev) => ({ ...prev, [docId]: "" }));
+  };
+
+  const removeSendProofDocument = (docId) => {
+    setSendProofDocuments((prev) => prev.filter((doc) => doc.id !== docId));
+    setSendProofDescriptionErrors((prev) => {
+      const next = { ...prev };
+      delete next[docId];
+      return next;
+    });
+    setSendProofUploadError("");
+  };
+
+  const handleSendToVendor = () => {
+    const errors = {};
+    if (!sendBy) errors.sendBy = "Field cannot be empty";
+    if (!sendAmount) errors.sendAmount = "Field cannot be empty";
+    if (sendProofDocuments.length === 0) {
+      setSendProofUploadError("Field cannot be empty");
+    }
+
+    if (Object.keys(errors).length > 0 || sendProofDocuments.length === 0) {
+      setSendErrors(errors);
+      return;
+    }
+
+    const normalizedProofDocuments = sendProofDocuments.map((doc) => ({
+      ...doc,
+      description: (doc.description || "").trim(),
+    }));
+
+    setVendors(
+      vendors.map((v) => {
+        if (v.id === selectedSendVendor?.id) {
+          const addedAmount = parseInt(sendAmount, 10) || 0;
+          const currentSent = parseInt(v.sentOutput || 0, 10);
+          
+          const newSendHistoryRecord = {
+            date: new Date().toISOString().split("T")[0],
+            amount: addedAmount,
+            note: sendNotes,
+            sendBy: sendBy,
+            attachments: normalizedProofDocuments,
+          };
+
+          return {
+            ...v,
+            sentOutput: currentSent + addedAmount,
+            sendHistory: [...(v.sendHistory || []), newSendHistoryRecord],
+          };
+        }
+        return v;
+      })
+    );
+
+    addActivityLog("Documentation Sent", `Sent ${sendAmount} items documentation to ${selectedSendVendor?.name}`);
+    setIsSendToVendorModalOpen(false);
+    setSelectedSendVendor(null);
+    setSendAmount("");
+    setSendNotes("");
+    setSendProofDocuments([]);
+    setSendErrors({});
+    setSendProofUploadError("");
+    setToastMessage("Documentation sent to vendor successfully");
+    setShowSuccessToast(true);
   };
 
   const handleReceiveVendor = () => {
@@ -2577,6 +2723,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
               value={
                 woStatus === "not_started"
                   ? "-"
+                  : woStatus === "completed"
+                  ? `${displayStartDate || "-"} - ${displayEndDate || "-"}`
                   : `${displayStartDate || "-"} - Not Defined`
               }
             />
@@ -2994,7 +3142,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "140px 60px 1.5fr 1.5fr 1fr 1fr 1fr",
+                    gridTemplateColumns: "140px 60px 1.5fr 1.5fr 160px 80px 80px 80px",
                     columnGap: "16px",
                     paddingBottom: "12px",
                     borderBottom: "1px solid var(--neutral-line-separator-1)",
@@ -3006,6 +3154,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   <div style={{ paddingLeft: "8px" }}>Step</div>
                   <div>Routing</div>
                   <div>Operation</div>
+                  <div>Planned Date</div>
                   <div>Yet to Start</div>
                   <div>In Progress</div>
                   <div>Completed</div>
@@ -3024,7 +3173,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       key={i}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "140px 60px 1.5fr 1.5fr 1fr 1fr 1fr",
+                        gridTemplateColumns: "140px 60px 1.5fr 1.5fr 160px 80px 80px 80px",
                         columnGap: "16px",
                         alignItems: "start",
                         padding: "16px 0",
@@ -3048,37 +3197,38 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       </div>
                       <div style={{ height: "32px", display: "flex", alignItems: "center" }}>{row.step}</div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ height: "32px", display: "flex", alignItems: "center" }}>
-                          <Tooltip content={row.route} style={{ width: "100%", display: "flex", minWidth: 0 }} showOnlyIfTruncated={true}>
-                            <span
-                              style={{
-                                display: "block",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                width: "100%",
-                              }}
-                            >
-                              {row.route}
-                            </span>
-                          </Tooltip>
+                        <div style={{ minHeight: "32px", display: "flex", alignItems: "center" }}>
+                          <span
+                            style={{
+                              display: "block",
+                              wordBreak: "break-word",
+                              width: "100%",
+                            }}
+                          >
+                            {row.route}
+                          </span>
                         </div>
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ height: "32px", display: "flex", alignItems: "center" }}>
-                          <Tooltip content={row.op} style={{ width: "100%", display: "flex", minWidth: 0 }} showOnlyIfTruncated={true}>
-                            <span
-                              style={{
-                                display: "block",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                width: "100%",
-                              }}
-                            >
-                              {row.op}
-                            </span>
-                          </Tooltip>
+                        <div style={{ minHeight: "32px", display: "flex", alignItems: "center" }}>
+                          <span
+                            style={{
+                              display: "block",
+                              wordBreak: "break-word",
+                              width: "100%",
+                            }}
+                          >
+                            {row.op}
+                          </span>
+                        </div>
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ minHeight: "32px", display: "flex", alignItems: "center" }}>
+                          <DateRangeInputControl
+                            value={row.plannedDate || { start: "", end: "" }}
+                            onChange={(e) => handlePlannedDateChange(row.step, e.target.value)}
+                            disabled={isDisabled}
+                          />
                         </div>
                       </div>
                       <div style={{ height: "32px", display: "flex", alignItems: "center" }}>{start}</div>
@@ -3086,8 +3236,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                         <div style={{ height: "32px", display: "flex", alignItems: "center" }}>{row.effectiveTotalComp || 0}</div>
                         {row.pendingQty > 0 && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--neutral-on-surface-tertiary)' }}>
-                            <span style={{ whiteSpace: "nowrap" }}>Awaiting Update: {row.pendingQty}</span>
+                          <div style={{ fontSize: '11px', color: 'var(--neutral-on-surface-tertiary)', lineHeight: 1.2 }}>
+                            <span>Awaiting Update: {row.pendingQty}</span>
                             <Tooltip 
                               content={
                                 <div style={{ display: "flex", flexDirection: "column", gap: "4px", textAlign: "left", whiteSpace: "normal", maxWidth: "260px" }}>
@@ -3096,9 +3246,9 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                                 </div>
                               }
                             >
-                              <div style={{ display: 'flex', cursor: 'help', color: 'var(--feature-brand-primary)' }}>
+                              <span style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: '4px', cursor: 'help', color: 'var(--feature-brand-primary)' }}>
                                 <Info size={12} />
-                              </div>
+                              </span>
                             </Tooltip>
                           </div>
                         )}
@@ -3112,7 +3262,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "60px 1.5fr 1.5fr 1fr 1fr 1fr 2fr",
+                    gridTemplateColumns: "60px 1.5fr 1.5fr 160px 80px 80px 80px 80px 120px",
                     columnGap: "16px",
                     paddingBottom: "12px",
                     borderBottom: "1px solid var(--neutral-line-separator-1)",
@@ -3123,10 +3273,12 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   <div>Step</div>
                   <div>Routing</div>
                   <div>Operation</div>
+                  <div>Planned Date</div>
                   <div>Yet to Start</div>
                   <div>In Progress</div>
                   <div>Completed</div>
                   <div>Progress</div>
+                  <div></div>
                 </div>
                 {stagesWithTotals.map((row, i) => {
                   const stepTotalPool =
@@ -3147,13 +3299,20 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   );
                   const internalStart = Math.min(internalRemaining, start);
 
+                  const displayStart = woStatus === "completed" ? 0 : start;
+                  const displayProg = woStatus === "completed" ? 0 : (row.prog || 0);
+                  const displayComp = woStatus === "completed" ? TOTAL_QTY : (row.effectiveTotalComp || 0);
+
                   const progress =
-                    Math.min(
-                      100,
-                      Math.round(((row.effectiveTotalComp || 0) / TOTAL_QTY) * 100)
-                    ) || 0;
+                    woStatus === "completed"
+                      ? 100
+                      : Math.min(
+                          100,
+                          Math.round(((row.effectiveTotalComp || 0) / TOTAL_QTY) * 100)
+                        ) || 0;
 
                   const isUnlocked =
+                    woStatus === "completed" ||
                     row.step === 1 ||
                     (i > 0 && (stagesWithTotals[i - 1]?.totalComp || 0) > 0);
 
@@ -3164,7 +3323,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       key={i}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "60px 1.5fr 1.5fr 1fr 1fr 1fr 2fr",
+                        gridTemplateColumns: "60px 1.5fr 1.5fr 160px 80px 80px 80px 80px 120px",
                         columnGap: "16px",
                         alignItems: "start",
                         padding: "16px 0",
@@ -3184,21 +3343,17 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                           gap: "4px",
                         }}
                       >
-                        <div style={{ height: "32px", display: "flex", alignItems: "center" }}>
-                          <Tooltip content={row.route} style={{ width: "100%", display: "flex", minWidth: 0 }} showOnlyIfTruncated={true}>
-                            <span
-                              style={{
-                                display: "block",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                lineHeight: "1.2",
-                                width: "100%",
-                              }}
-                            >
-                              {row.route}
-                            </span>
-                          </Tooltip>
+                        <div style={{ minHeight: "32px", display: "flex", alignItems: "center" }}>
+                          <span
+                            style={{
+                              display: "block",
+                              wordBreak: "break-word",
+                              lineHeight: "1.4",
+                              width: "100%",
+                            }}
+                          >
+                            {row.route}
+                          </span>
                         </div>
                         {isHybrid && externalOut > 0 ? (
                           <div>
@@ -3213,29 +3368,42 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                         ) : null}
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ height: "32px", display: "flex", alignItems: "center" }}>
-                          <Tooltip content={row.op} style={{ width: "100%", display: "flex", minWidth: 0 }} showOnlyIfTruncated={true}>
-                            <span
-                              style={{
-                                display: "block",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                width: "100%",
-                              }}
-                            >
-                              {row.op}
-                            </span>
-                          </Tooltip>
+                        <div style={{ minHeight: "32px", display: "flex", alignItems: "center" }}>
+                          <span
+                            style={{
+                              display: "block",
+                              wordBreak: "break-word",
+                              width: "100%",
+                            }}
+                          >
+                            {row.op}
+                          </span>
                         </div>
                       </div>
-                      <div style={{ height: "32px", display: "flex", alignItems: "center" }}>{start}</div>
-                      <div style={{ height: "32px", display: "flex", alignItems: "center" }}>{row.prog || 0}</div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ minHeight: "32px", display: "flex", alignItems: "center" }}>
+                          {woStatus === "completed" ? (
+                            <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>
+                              {row.plannedDate && row.plannedDate.start && row.plannedDate.end
+                                ? `${row.plannedDate.start} - ${row.plannedDate.end}`
+                                : "-"}
+                            </span>
+                          ) : (
+                            <DateRangeInputControl
+                              value={row.plannedDate || { start: "", end: "" }}
+                              onChange={(e) => handlePlannedDateChange(row.step, e.target.value)}
+                              disabled={woStatus === "canceled" || (start === 0 && row.prog === 0 && (row.totalComp || 0) === stepTotalPool && stepTotalPool > 0)}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ height: "32px", display: "flex", alignItems: "center" }}>{displayStart}</div>
+                      <div style={{ height: "32px", display: "flex", alignItems: "center" }}>{displayProg}</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <div style={{ height: "32px", display: "flex", alignItems: "center" }}>{row.effectiveTotalComp || 0}</div>
+                        <div style={{ height: "32px", display: "flex", alignItems: "center" }}>{displayComp}</div>
                         {row.pendingQty > 0 && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--neutral-on-surface-tertiary)' }}>
-                            <span style={{ whiteSpace: "nowrap" }}>Awaiting Update: {row.pendingQty}</span>
+                          <div style={{ fontSize: '11px', color: 'var(--neutral-on-surface-tertiary)', lineHeight: 1.2 }}>
+                            <span>Awaiting Update: {row.pendingQty}</span>
                             <Tooltip 
                               content={
                                 <div style={{ display: "flex", flexDirection: "column", gap: "4px", textAlign: "left", whiteSpace: "normal", maxWidth: "260px" }}>
@@ -3244,22 +3412,21 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                                 </div>
                               }
                             >
-                              <div style={{ display: 'flex', cursor: 'help', color: 'var(--feature-brand-primary)' }}>
+                              <span style={{ display: 'inline-flex', verticalAlign: 'middle', marginLeft: '4px', cursor: 'help', color: 'var(--feature-brand-primary)' }}>
                                 <Info size={12} />
-                              </div>
+                              </span>
                             </Tooltip>
                           </div>
                         )}
                       </div>
                       <div
                         style={{
-                          flex: "2",
                           display: "flex",
-                          flexDirection: "column",
+                          alignItems: "center",
+                          height: "32px",
                         }}
                       >
-                        <div style={{ height: "32px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
-                          <ProgressRing
+                        <ProgressRing
                           percentage={progress}
                           color={
                             !isUnlocked
@@ -3267,6 +3434,15 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                               : "inherit"
                           }
                         />
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "flex-end",
+                          height: "32px",
+                        }}
+                      >
                         {!isUnlocked ? (
                           <span
                             style={{
@@ -3278,7 +3454,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                           >
                             Waiting Prev Process
                           </span>
-                        ) : canManage && !isCanceled ? (
+                        ) : canManage && !isCanceled && woStatus !== "completed" ? (
                           <Button
                             variant="outlined"
                             size="small"
@@ -3324,12 +3500,11 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                           >
                             {isCanceled
                               ? "Canceled"
-                              : (row.totalComp || 0) >= TOTAL_QTY
+                              : woStatus === "completed" || (row.totalComp || 0) >= TOTAL_QTY
                               ? "Completed"
                               : "Waiting Prev Process"}
                           </span>
                         )}
-                        </div>
                       </div>
                     </div>
                   );
@@ -3785,12 +3960,43 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                     (isVendorInProgress && !isInternal);
 
                   let dependencyText = null;
+                  let readyToSend = 0;
                   if (vendor.assignedSteps && vendor.assignedSteps.length > 0) {
                     const minStep = Math.min(...vendor.assignedSteps);
-                    
                     const vendorPendingQty = parseInt(vendor.receivedOutput, 10) || 0;
-                    if (vendorPendingQty > 0 && !isCompleted) {
+                    const vendorSentOutput = parseInt(vendor.sentOutput, 10) || 0;
+                    
+                    if (vendorSentOutput > vendorPendingQty && !isCompleted) {
+                      dependencyText = `Waiting Receipt: ${vendorSentOutput - vendorPendingQty}`;
+                    } else if (vendorPendingQty > 0 && !isCompleted) {
                       dependencyText = `Pending Qty to Complete: ${vendorPendingQty}`;
+                    } else if (isPoApproved) {
+                      const rowIndex = stagesWithTotals.findIndex((r) => r.step === minStep);
+                      if (rowIndex !== -1) {
+                        const row = stagesWithTotals[rowIndex];
+                        const stepTotalPool = row.step === 1 ? TOTAL_QTY : stagesWithTotals[rowIndex - 1]?.effectiveTotalComp || 0;
+                        const start = Math.max(0, stepTotalPool - (row.prog || 0) - (row.totalComp || 0));
+                        
+                        const alreadySentByOthers = vendors
+                          .filter(v => v.id !== vendor.id && v.assignedSteps?.includes(minStep))
+                          .reduce((sum, v) => sum + (parseInt(v.sentOutput, 10) || 0), 0);
+                        
+                        const adjustedStart = Math.max(0, start - alreadySentByOthers);
+                        readyToSend = Math.min(adjustedStart, parseInt(vendor.output || 0, 10) - vendorSentOutput);
+                        
+                        if (readyToSend > 0) {
+                          dependencyText = `Ready to send: ${readyToSend}`;
+                        } else if (minStep > 1) {
+                          const prevStepStage = stagesWithTotals[rowIndex - 1];
+                          if (prevStepStage) {
+                            if ((prevStepStage.totalComp || 0) === 0) {
+                              dependencyText = "Waiting Previous Process";
+                            } else {
+                              dependencyText = `Avail Qty to Process: ${prevStepStage.totalComp}`;
+                            }
+                          }
+                        }
+                      }
                     } else if (minStep > 1) {
                       const prevStepStage = routingStages.find(s => s.step === minStep - 1);
                       if (prevStepStage) {
@@ -4086,7 +4292,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                             {resolvedVendorStatus}
                           </StatusBadge>
                         )}
-                        {dependencyText && (
+                        {dependencyText && (isInternal ? internalStatusInfo.text !== "Completed" : resolvedVendorStatus !== "Completed") && (
                           <span style={{ fontSize: "11px", color: "var(--neutral-on-surface-secondary)", width: "100%", whiteSpace: "nowrap" }}>
                             {dependencyText}
                           </span>
@@ -4101,6 +4307,25 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                           gap: "8px",
                         }}
                       >
+                        {isVendorInProgress && !isInternal && vendor.isPoApproved ? (
+                          <Tooltip content="Send to Vendor">
+                            <IconButton
+                              icon={Send}
+                              size="small"
+                              title="Send to Vendor"
+                              color="var(--feature-brand-primary)"
+                              disabled={readyToSend <= 0}
+                              hoverBackground="var(--feature-brand-container-lighter)"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedSendVendor(vendor);
+                                setSendAmount(String(readyToSend));
+                                setIsSendToVendorModalOpen(true);
+                              }}
+                            />
+                          </Tooltip>
+                        ) : null}
+
                         {showEditVendorAction ? (
                           <Tooltip content="Edit Details">
                             <IconButton
@@ -4132,17 +4357,18 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                         ) : null}
 
                         {showReceiptHistoryAction ? (
-                          <Tooltip content="Receipt History">
+                          <Tooltip content="Assignment Log">
                             <IconButton
                               icon={DocumentIcon}
                               size="small"
-                              title="Receipt History"
+                              title="Assignment Log"
                               color="var(--feature-brand-primary)"
                               hoverBackground="var(--feature-brand-container-lighter)"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setReceiptHistoryVendor(vendor);
                                 setIsViewReceiptHistoryModalOpen(true);
+                                setAssignmentLogTab("send");
                               }}
                             />
                           </Tooltip>
@@ -6645,6 +6871,126 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         </div>
       ) : null}
 
+      {isSendToVendorModalOpen && selectedSendVendor ? (
+        <GeneralModal
+          isOpen={true}
+          width="520px"
+          title="Send to Vendor"
+          onClose={() => {
+            setIsSendToVendorModalOpen(false);
+            setSelectedSendVendor(null);
+            setSendAmount("");
+            setSendNotes("");
+            setSendProofDocuments([]);
+            setSendErrors({});
+            setSendProofUploadError("");
+          }}
+          footer={
+            <div style={{ display: "flex", gap: "12px", width: "100%", justifyContent: "flex-end" }}>
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => {
+                  setIsSendToVendorModalOpen(false);
+                  setSelectedSendVendor(null);
+                  setSendAmount("");
+                  setSendNotes("");
+                  setSendProofDocuments([]);
+                  setSendErrors({});
+                  setSendProofUploadError("");
+                }}
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="filled"
+                size="large"
+                onClick={handleSendToVendor}
+                style={{ flex: 1 }}
+              >
+                Submit
+              </Button>
+            </div>
+          }
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "16px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              <FormField label="Send By" required error={sendErrors.sendBy}>
+                <InputField
+                  value={sendBy}
+                  onChange={(e) => {
+                    setSendBy(e.target.value);
+                    if (sendErrors.sendBy) setSendErrors(prev => ({ ...prev, sendBy: "" }));
+                  }}
+                  placeholder="Enter name"
+                  error={sendErrors.sendBy}
+                />
+              </FormField>
+
+              <InputField
+                label="Amount to Send"
+                required
+                type="number"
+                value={sendAmount}
+                onChange={(e) => {
+                  setSendAmount(e.target.value);
+                  if (sendErrors.sendAmount) setSendErrors(prev => ({ ...prev, sendAmount: "" }));
+                }}
+                placeholder="Enter amount"
+                error={sendErrors.sendAmount}
+                suffix="pcs"
+                headerRight={
+                  <StatusBadge variant="blue-light">
+                    Available: {selectedSendVendor ? (Math.min(
+                      Math.max(0, (selectedSendVendor.output || 0) - (selectedSendVendor.sentOutput || 0)),
+                      parseInt(sendAmount || 0, 10) // this logic is simplified, true available is passed from table but we can just use sendAmount as default
+                    )) : 0} pcs
+                  </StatusBadge>
+                }
+              />
+            </div>
+
+            <InputField
+              label="Notes"
+              value={sendNotes}
+              onChange={(e) => setSendNotes(e.target.value)}
+              placeholder="Add any notes here... (optional)"
+              maxLength={1000}
+              multiline={true}
+              headerRight={
+                <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>
+                  {sendNotes.length} / 1000
+                </span>
+              }
+            />
+
+            <FormField label="Upload Proof Document" required error={sendProofUploadError}>
+              <UploadDropzone
+                maxFiles={MAX_PROOF_UPLOAD_FILES}
+                multiple
+                error={sendProofUploadError}
+                onFilesSelected={handleSendProofFilesSelected}
+              />
+              {sendProofDocuments.length > 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginTop: "16px" }}>
+                  {sendProofDocuments.map((doc) => (
+                    <UploadDescriptionCard
+                      key={doc.id}
+                      file={doc}
+                      descriptionRequired={true}
+                      descriptionError={sendProofDescriptionErrors[doc.id]}
+                      onDescriptionChange={(value) => updateSendProofDescription(doc.id, value)}
+                      onRemove={() => removeSendProofDocument(doc.id)}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </FormField>
+          </div>
+        </GeneralModal>
+      ) : null}
+
       {isViewReceiptHistoryModalOpen && receiptHistoryVendor ? (
         <div
           style={{
@@ -6690,6 +7036,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "4px",
+                marginBottom: "24px",
               }}
             >
               <h2
@@ -6701,18 +7048,77 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   textAlign: "center",
                 }}
               >
-                Receipt History
+                Assignment Log
               </h2>
-              <span
-                style={{
-                  fontSize: "var(--text-body)",
-                  color: "var(--neutral-on-surface-secondary)",
-                  textAlign: "center",
-                }}
-              >
-                {receiptHistoryVendor.name}
-              </span>
             </div>
+
+            {receiptHistoryVendor.name !== "Internal" && (
+              <Card style={{ padding: "16px", boxShadow: "none", border: "1px solid var(--neutral-line-separator-1)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", rowGap: "16px" }}>
+                  <LabelValue label="Vendor Name" value={receiptHistoryVendor.name} />
+                  <LabelValue label="Assignment ID" value={receiptHistoryVendor.assignmentId || "-"} />
+                  <LabelValue 
+                    label="Included Steps" 
+                    value={receiptHistoryVendor.assignedSteps?.length > 0 ? [...receiptHistoryVendor.assignedSteps].sort((a, b) => a - b).join(", ") : "-"} 
+                  />
+                  <LabelValue 
+                    label="Purchase Order" 
+                    value={receiptHistoryVendor.poNumber ? (
+                      <span 
+                        style={{ color: "var(--feature-brand-primary)", textDecoration: "underline", cursor: "pointer" }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(`/purchase-order/${receiptHistoryVendor.poNumber}`, "_blank");
+                        }}
+                      >
+                        {receiptHistoryVendor.poNumber}
+                      </span>
+                    ) : "-"} 
+                  />
+                  <LabelValue 
+                    label="Receipt Progress" 
+                    value={`${receiptHistoryVendor.receivedOutput || 0} / ${receiptHistoryVendor.output || 0} pcs`} 
+                  />
+                </div>
+              </Card>
+            )}
+
+            {receiptHistoryVendor.name !== "Internal" && (
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                {[
+                  { id: "send", label: "Sent to Vendor" },
+                  { id: "receipt", label: "Receipt" }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setAssignmentLogTab(tab.id)}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "100px",
+                      border: "1px solid",
+                      borderColor:
+                        assignmentLogTab === tab.id
+                          ? "var(--feature-brand-primary)"
+                          : "var(--neutral-line-separator-1)",
+                      background:
+                        assignmentLogTab === tab.id
+                          ? "var(--feature-brand-container-lighter)"
+                          : "var(--neutral-surface-primary)",
+                      color:
+                        assignmentLogTab === tab.id
+                          ? "var(--feature-brand-primary)"
+                          : "var(--neutral-on-surface-secondary)",
+                      fontSize: "14px",
+                      fontWeight: assignmentLogTab === tab.id ? "600" : "400",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <div style={poReferenceTableFrameStyle}>
               <div
@@ -6734,7 +7140,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                     style={poReferenceTableHeaderRowStyle(
                       receiptHistoryVendor.name &&
                         receiptHistoryVendor.name !== "Internal"
-                        ? "1fr 1fr 1.3fr 1.5fr"
+                        ? "1fr 1fr 1.3fr 1fr 1.5fr"
                         : "1fr 1fr"
                     )}
                   >
@@ -6744,7 +7150,11 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                     </div>
                     {!receiptHistoryVendor.name ||
                       receiptHistoryVendor.name !== "Internal" ? (
-                      <div style={poReferenceTableHeaderCellStyle()}>Note</div>
+                      <div style={poReferenceTableHeaderCellStyle()}>{assignmentLogTab === "send" ? "Notes" : "Note"}</div>
+                    ) : null}
+                    {!receiptHistoryVendor.name ||
+                      receiptHistoryVendor.name !== "Internal" ? (
+                      <div style={poReferenceTableHeaderCellStyle()}>{assignmentLogTab === "send" ? "Sent by" : "Received by"}</div>
                     ) : null}
                     {!receiptHistoryVendor.name ||
                       receiptHistoryVendor.name !== "Internal" ? (
@@ -6753,15 +7163,16 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       </div>
                     ) : null}
                   </div>
-                  {receiptHistoryVendor.receipts?.map((r, i) => (
+                  
+                  {(assignmentLogTab === "send" ? receiptHistoryVendor.sendHistory : receiptHistoryVendor.receipts)?.map((r, i, arr) => (
                     <div
                       key={i}
                       style={poReferenceTableRowStyle(
                         receiptHistoryVendor.name &&
                           receiptHistoryVendor.name !== "Internal"
-                          ? "1fr 1fr 1.3fr 1.5fr"
+                          ? "1fr 1fr 1.3fr 1fr 1.5fr"
                           : "1fr 1fr",
-                        i === receiptHistoryVendor.receipts.length - 1
+                        i === arr.length - 1
                       )}
                     >
                       <div style={poReferenceTableCellStyle()}>{r.date}</div>
@@ -6776,6 +7187,12 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                         receiptHistoryVendor.name !== "Internal" ? (
                         <div style={poReferenceTableCellStyle()}>
                           {r.note || "-"}
+                        </div>
+                      ) : null}
+                      {!receiptHistoryVendor.name ||
+                        receiptHistoryVendor.name !== "Internal" ? (
+                        <div style={poReferenceTableCellStyle()}>
+                          {assignmentLogTab === "send" ? (r.sentBy || "Natasha Smith") : (r.receivedBy || "Natasha Smith")}
                         </div>
                       ) : null}
                       {!receiptHistoryVendor.name ||
@@ -6803,32 +7220,15 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       ) : null}
                     </div>
                   ))}
-                  {!receiptHistoryVendor.receipts ||
-                    receiptHistoryVendor.receipts.length === 0 ? (
+                  {!(assignmentLogTab === "send" ? receiptHistoryVendor.sendHistory : receiptHistoryVendor.receipts)?.length ? (
                     <div style={poReferenceTableEmptyStateStyle}>
-                      No receipts found.
+                      No {assignmentLogTab === "send" ? "send documentation" : "receipts"} found.
                     </div>
                   ) : null}
                 </div>
               </div>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                marginTop: "8px",
-              }}
-            >
-              <Button
-                variant="filled"
-                size="medium"
-                onClick={() => setIsViewReceiptHistoryModalOpen(false)}
-                style={{ width: "100%" }}
-              >
-                Close
-              </Button>
-            </div>
           </div>
         </div>
       ) : null}

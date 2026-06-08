@@ -118,7 +118,7 @@ const Tooltip = ({ content, children, style = {}, showOnlyIfTruncated = false })
 
 const LabelValue = ({ label, value, badge }) => {
   const displayValue =
-    typeof value === "object" && value !== null ? JSON.stringify(value) : value;
+    React.isValidElement(value) ? value : (typeof value === "object" && value !== null ? JSON.stringify(value) : value);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
@@ -951,7 +951,7 @@ const UploadDescriptionCard = ({
               display: "flex",
               alignItems: "center",
               gap: "2px",
-              fontSize: "var(--text-title-2)",
+              fontSize: "var(--text-body)",
             }}
           >
             {descriptionRequired ? (
@@ -963,7 +963,7 @@ const UploadDescriptionCard = ({
           </div>
           <span
             style={{
-              fontSize: "var(--text-title-2)",
+              fontSize: "var(--text-body)",
               color: "var(--neutral-on-surface-tertiary)",
             }}
           >

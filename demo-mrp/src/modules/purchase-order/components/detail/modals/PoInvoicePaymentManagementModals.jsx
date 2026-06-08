@@ -70,6 +70,15 @@ const PoInvoicePaymentManagementModals = ({
   setShowItemQtyExceedConfirmModal,
   exceededItems,
   saveInvoice,
+  checkPoValueAndSave,
+  deleteInvoiceReason,
+  setDeleteInvoiceReason,
+  deleteInvoiceReasonError,
+  setDeleteInvoiceReasonError,
+  voidPaymentReason,
+  setVoidPaymentReason,
+  voidPaymentReasonError,
+  setVoidPaymentReasonError,
 }) => {
   return (
     <>
@@ -1093,9 +1102,13 @@ const PoInvoicePaymentManagementModals = ({
       {/* Delete Invoice Confirmation Modal */}
       <GeneralModal
         isOpen={showDeleteInvoiceConfirm}
-        onClose={() => setShowDeleteInvoiceConfirm(false)}
+        onClose={() => {
+          setShowDeleteInvoiceConfirm(false);
+          setDeleteInvoiceReason("");
+          setDeleteInvoiceReasonError("");
+        }}
         title="Delete Invoice?"
-        width="376px"
+        width="400px"
         centeredHeader
         description="This invoice and all its payment history will be permanently removed."
         footer={
@@ -1107,11 +1120,49 @@ const PoInvoicePaymentManagementModals = ({
               width: "100%",
             }}
           >
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", textAlign: "left" }}>
+              <label style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", display: "flex", gap: "2px" }}>
+                <span style={{ color: "var(--status-red-primary)" }}>*</span>Reason
+              </label>
+              <textarea
+                value={deleteInvoiceReason}
+                onChange={(e) => {
+                  setDeleteInvoiceReason(e.target.value);
+                  if (deleteInvoiceReasonError) setDeleteInvoiceReasonError("");
+                }}
+                placeholder="Enter reason for deletion..."
+                rows={3}
+                maxLength={500}
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: "12px",
+                  borderRadius: "12px",
+                  border: `1px solid ${deleteInvoiceReasonError ? "var(--status-red-primary)" : "var(--neutral-line-separator-1)"}`,
+                  fontSize: "var(--text-title-3)",
+                  color: "var(--neutral-on-surface-primary)",
+                  resize: "vertical",
+                  fontFamily: "inherit",
+                  outline: "none",
+                }}
+              />
+              {deleteInvoiceReasonError && (
+                <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>
+                  {deleteInvoiceReasonError}
+                </span>
+              )}
+            </div>
             <Button
               variant="danger-filled"
               size="large"
               style={{ width: "100%" }}
-              onClick={handleDeleteInvoice}
+              onClick={() => {
+                if (!deleteInvoiceReason.trim()) {
+                  setDeleteInvoiceReasonError("Field cannot be empty");
+                  return;
+                }
+                handleDeleteInvoice();
+              }}
             >
               Yes, Delete
             </Button>
@@ -1119,7 +1170,11 @@ const PoInvoicePaymentManagementModals = ({
               variant="outlined"
               size="large"
               style={{ width: "100%" }}
-              onClick={() => setShowDeleteInvoiceConfirm(false)}
+              onClick={() => {
+                setShowDeleteInvoiceConfirm(false);
+                setDeleteInvoiceReason("");
+                setDeleteInvoiceReasonError("");
+              }}
             >
               Cancel
             </Button>
@@ -1130,7 +1185,11 @@ const PoInvoicePaymentManagementModals = ({
       {/* Void Payment Confirmation Modal */}
       <GeneralModal
         isOpen={showVoidConfirmModal}
-        onClose={() => setShowVoidConfirmModal(false)}
+        onClose={() => {
+          setShowVoidConfirmModal(false);
+          setVoidPaymentReason("");
+          setVoidPaymentReasonError("");
+        }}
         title="Void Payment?"
         width="400px"
         centeredHeader
@@ -1146,11 +1205,49 @@ const PoInvoicePaymentManagementModals = ({
               width: "100%",
             }}
           >
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", textAlign: "left" }}>
+              <label style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", display: "flex", gap: "2px" }}>
+                <span style={{ color: "var(--status-red-primary)" }}>*</span>Reason
+              </label>
+              <textarea
+                value={voidPaymentReason}
+                onChange={(e) => {
+                  setVoidPaymentReason(e.target.value);
+                  if (voidPaymentReasonError) setVoidPaymentReasonError("");
+                }}
+                placeholder="Enter reason for voiding payment..."
+                rows={3}
+                maxLength={500}
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: "12px",
+                  borderRadius: "12px",
+                  border: `1px solid ${voidPaymentReasonError ? "var(--status-red-primary)" : "var(--neutral-line-separator-1)"}`,
+                  fontSize: "var(--text-title-3)",
+                  color: "var(--neutral-on-surface-primary)",
+                  resize: "vertical",
+                  fontFamily: "inherit",
+                  outline: "none",
+                }}
+              />
+              {voidPaymentReasonError && (
+                <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>
+                  {voidPaymentReasonError}
+                </span>
+              )}
+            </div>
             <Button
               variant="danger-filled"
               size="large"
               style={{ width: "100%" }}
-              onClick={handleVoidPayment}
+              onClick={() => {
+                if (!voidPaymentReason.trim()) {
+                  setVoidPaymentReasonError("Field cannot be empty");
+                  return;
+                }
+                handleVoidPayment();
+              }}
             >
               Yes, Confirm
             </Button>
@@ -1158,7 +1255,11 @@ const PoInvoicePaymentManagementModals = ({
               variant="outlined"
               size="large"
               style={{ width: "100%" }}
-              onClick={() => setShowVoidConfirmModal(false)}
+              onClick={() => {
+                setShowVoidConfirmModal(false);
+                setVoidPaymentReason("");
+                setVoidPaymentReasonError("");
+              }}
             >
               Cancel
             </Button>
@@ -1247,7 +1348,7 @@ const PoInvoicePaymentManagementModals = ({
               style={{ width: "100%" }}
               onClick={() => {
                 setShowItemQtyExceedConfirmModal(false);
-                saveInvoice();
+                checkPoValueAndSave();
               }}
             >
               Yes, Confirm

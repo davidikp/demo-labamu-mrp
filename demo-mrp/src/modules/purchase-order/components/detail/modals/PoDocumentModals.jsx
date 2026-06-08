@@ -21,6 +21,7 @@ const PoDocumentModals = ({
   documentUploadFileObject,
   documentUploadError,
   documentUploadCardFile,
+  documentUploadDescription,
   setDocumentUploadDescription,
   documentUploadDescriptionError,
 
@@ -101,13 +102,11 @@ const PoDocumentModals = ({
               onChange={(nextValue) => setDocumentUploadDocumentType(nextValue)}
               options={[
                 { value: "invoice", label: "Invoice" },
+                { value: "invoice_payment", label: "Invoice Payment" },
                 { value: "delivery_note", label: "Delivery Note" },
                 { value: "packing_list", label: "Packing List" },
                 { value: "quotation_vendor", label: "Quotation (Vendor)" },
-                {
-                  value: "contract_agreement",
-                  label: "Contract / Agreement",
-                },
+                { value: "contract_agreement", label: "Contract / Agreement" },
                 { value: "other", label: "Other" },
               ]}
               borderRadius="12px"
@@ -165,6 +164,7 @@ const PoDocumentModals = ({
           {documentUploadFileObject ? (
             <UploadDescriptionCard
               file={documentUploadCardFile}
+              description={documentUploadDescription || ""}
               onRemove={resetDocumentUploadState}
               onDescriptionChange={setDocumentUploadDescription}
               descriptionRequired={true}
@@ -257,13 +257,11 @@ const PoDocumentModals = ({
               onChange={(nextValue) => setEditDocumentTypeValue(nextValue)}
               options={[
                 { value: "invoice", label: "Invoice" },
+                { value: "invoice_payment", label: "Invoice Payment" },
                 { value: "delivery_note", label: "Delivery Note" },
                 { value: "packing_list", label: "Packing List" },
                 { value: "quotation_vendor", label: "Quotation (Vendor)" },
-                {
-                  value: "contract_agreement",
-                  label: "Contract / Agreement",
-                },
+                { value: "contract_agreement", label: "Contract / Agreement" },
                 { value: "other", label: "Other" },
               ]}
               borderRadius="12px"

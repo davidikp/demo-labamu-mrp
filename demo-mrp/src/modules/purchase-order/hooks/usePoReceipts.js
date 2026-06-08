@@ -4,6 +4,7 @@ import {
   buildReceiptActivityLogs,
 } from "../utils/purchaseOrderDetailUtils";
 import { normalizeProofDocuments } from "../../../utils/upload/uploadUtils";
+import { MOCK_WO_TABLE_DATA } from "../../../modules/work-order/mock/workOrderMocks";
 
 export const usePoReceipts = ({
   initialLines = [],
@@ -149,11 +150,27 @@ export const usePoReceipts = ({
         const received = Number(line.receivedQty) || 0;
         if (received + receiveNow > ordered) {
           nextErrors[line.id] = "Quantity exceeds remaining";
+        } else if (line.assignmentId && line.assignmentId !== "-" && line.woRef && line.woRef !== "-") {
+          const woData = MOCK_WO_TABLE_DATA.find((w) => w.wo === line.woRef);
+          if (woData && woData.vendors) {
+            const vendor = woData.vendors.find(v => v.assignmentId === line.assignmentId);
+            if (vendor) {
+              const vendorSentOutput = (vendor.sendHistory || []).reduce(
+                (sum, sh) => sum + (Number(sh.amount) || 0),
+                0
+              );
+              const vendorReceivedOutput = Number(vendor.receivedOutput) || 0;
+              const availToReceive = Math.max(0, vendorSentOutput - vendorReceivedOutput);
+              if (receiveNow > availToReceive) {
+                nextErrors[line.id] = "Quantity exceeds avail to receive";
+              }
+            }
+          }
         }
 
         // Work Order Adjustment Check
         if (line.type === "wo" || (line.woRef && line.woRef !== "-")) {
-          const woData = initialLines.find(l => l.id === line.id)?.woData;
+          const woData = MOCK_WO_TABLE_DATA.find((w) => w.wo === line.woRef);
           if (woData && woData.routingStages) {
             const routingStages = woData.routingStages;
             const currentTotalReceived = (woData.vendors || []).reduce(

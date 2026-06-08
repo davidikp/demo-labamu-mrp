@@ -505,6 +505,15 @@ export const PurchaseOrderDetailPage = ({
     setShowItemQtyExceedConfirmModal,
     exceededItems,
     saveInvoice,
+    checkPoValueAndSave,
+    deleteInvoiceReason,
+    setDeleteInvoiceReason,
+    deleteInvoiceReasonError,
+    setDeleteInvoiceReasonError,
+    voidPaymentReason,
+    setVoidPaymentReason,
+    voidPaymentReasonError,
+    setVoidPaymentReasonError,
   } = usePoInvoices({
     initialInvoices,
     initialPayments,
@@ -515,6 +524,7 @@ export const PurchaseOrderDetailPage = ({
     poNumber,
     vendorName: initialData?.vendorName,
     showToast,
+    onAddDocument: (doc) => setDocuments((prev) => [doc, ...prev]),
   });
 
   const [threeWaysMatchCurrentPage, setThreeWaysMatchCurrentPage] = useState(1);
@@ -607,6 +617,26 @@ export const PurchaseOrderDetailPage = ({
 
 
 
+
+  const computePaymentStatus = (invList, payList) => {
+    if (!invList || invList.length === 0) return "Unpaid";
+    const today = new Date();
+    let allPaid = true;
+    let anyOverdue = false;
+    let anyPartial = false;
+    for (const inv of invList) {
+      const paid = payList.filter(p => !p.isVoid && p.invoiceId === inv.id).reduce((s, p) => s + (p.amount || 0), 0);
+      const outstanding = Math.max((inv.amount || 0) - paid, 0);
+      const isOverdue = new Date(inv.dueDate) < today && outstanding > 0;
+      if (outstanding > 0) allPaid = false;
+      if (isOverdue) anyOverdue = true;
+      if (paid > 0 && outstanding > 0) anyPartial = true;
+    }
+    if (allPaid) return "Paid";
+    if (anyOverdue) return "Overdue";
+    if (anyPartial) return "Partially Paid";
+    return "Unpaid";
+  };
 
   const showHeaderEdit =
     currentStatus === "Draft" || currentStatus === "Need Revision";
@@ -1163,7 +1193,7 @@ export const PurchaseOrderDetailPage = ({
     const meta = getDecisionMeta();
     const trimmedComment = decisionComment.trim();
     if (meta.mandatory && !trimmedComment) {
-      setDecisionError("Comment is required.");
+      setDecisionError("Field cannot be empty");
       return;
     }
 
@@ -1970,8 +2000,10 @@ export const PurchaseOrderDetailPage = ({
         isExportingPdf={isExportingPdf}
         initialData={initialData}
         createdDate={createdDate}
+        actualCreatedDate={displayData?.createdDate || createdDate}
         expectedDeliveryDate={expectedDeliveryDate}
         currencyLabel={currencyLabel}
+        paymentStatus={computePaymentStatus(invoices, payments)}
         revisionMessage={revisionMessage}
         canceledMessage={canceledMessage}
         showHeaderEdit={showHeaderEdit}
@@ -2294,7 +2326,7 @@ export const PurchaseOrderDetailPage = ({
                                   </span>
                                 </div>
                               </div>
-                              <div style={{ minWidth: 0, padding: "12px 0", paddingRight: "24px" }}>
+                              <div style={{ minWidth: 0, padding: "16px 0", paddingRight: "24px" }}>
                                 <span
                                   style={{
                                     display: "block",
@@ -3079,6 +3111,7 @@ export const PurchaseOrderDetailPage = ({
         documentUploadFileObject={documentUploadFileObject}
         documentUploadError={documentUploadError}
         documentUploadCardFile={documentUploadCardFile}
+        documentUploadDescription={documentUploadDescription}
         setDocumentUploadDescription={setDocumentUploadDescription}
         documentUploadDescriptionError={documentUploadDescriptionError}
         showRenameDocumentModal={showRenameDocumentModal}
@@ -3201,6 +3234,15 @@ export const PurchaseOrderDetailPage = ({
         setShowItemQtyExceedConfirmModal={setShowItemQtyExceedConfirmModal}
         exceededItems={exceededItems}
         saveInvoice={saveInvoice}
+        checkPoValueAndSave={checkPoValueAndSave}
+        deleteInvoiceReason={deleteInvoiceReason}
+        setDeleteInvoiceReason={setDeleteInvoiceReason}
+        deleteInvoiceReasonError={deleteInvoiceReasonError}
+        setDeleteInvoiceReasonError={setDeleteInvoiceReasonError}
+        voidPaymentReason={voidPaymentReason}
+        setVoidPaymentReason={setVoidPaymentReason}
+        voidPaymentReasonError={voidPaymentReasonError}
+        setVoidPaymentReasonError={setVoidPaymentReasonError}
       />
 
       {/* Add Payment Drawer */}

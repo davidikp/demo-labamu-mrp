@@ -163,6 +163,22 @@ const PoReceiptsTab = ({
                   </div>
                 )}
                 {receiptLines.map((line, idx) => {
+                  let availToReceive = null;
+                  if (line.assignmentId && line.assignmentId !== "-" && line.woRef && line.woRef !== "-") {
+                    const woData = MOCK_WO_TABLE_DATA.find((w) => w.wo === line.woRef);
+                    if (woData && woData.vendors) {
+                      const vendor = woData.vendors.find(v => v.assignmentId === line.assignmentId);
+                      if (vendor) {
+                        const vendorSentOutput = (vendor.sendHistory || []).reduce(
+                          (sum, sh) => sum + (Number(sh.amount) || 0),
+                          0
+                        );
+                        const vendorReceivedOutput = Number(vendor.receivedOutput) || 0;
+                        availToReceive = Math.max(0, vendorSentOutput - vendorReceivedOutput);
+                      }
+                    }
+                  }
+
                   const remainingQty = Math.max(
                     line.orderedQty - line.receivedQty,
                     0
@@ -300,6 +316,8 @@ const PoReceiptsTab = ({
                       <div
                         style={poReferenceTableCellStyle({
                           minWidth: 0,
+                          padding: "16px 0",
+                          paddingRight: "16px",
                           color: "var(--neutral-on-surface-secondary)",
                         })}
                       >
@@ -434,8 +452,10 @@ const PoReceiptsTab = ({
                             gap: "6px",
                             width: "100%",
                             padding: "9px 0",
+                            position: "relative",
                           }}
                         >
+
                           <input
                             type="number"
                             min="0"
@@ -479,9 +499,20 @@ const PoReceiptsTab = ({
                               style={{
                                 fontSize: "var(--text-body)",
                                 color: "var(--status-red-primary)",
+                                marginTop: "4px",
                               }}
                             >
                               {receiptErrors[line.id]}
+                            </span>
+                          ) : availToReceive !== null ? (
+                            <span
+                              style={{
+                                fontSize: "var(--text-body)",
+                                color: "var(--neutral-on-surface-tertiary)",
+                                marginTop: "4px",
+                              }}
+                            >
+                              Avail to receive: {availToReceive} pcs
                             </span>
                           ) : null}
                         </div>
