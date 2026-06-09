@@ -576,7 +576,43 @@ export const PurchaseOrderDetailPage = ({
 
 
   const threeWaysMatchData = useMemo(() => {
-    return mockLines.map((line) => {
+    const linesToProcess = [...mockLines];
+    const allKnownLines = new Map();
+
+    if (versions && versions.length > 0) {
+      versions.forEach(v => {
+        (v.data?.lines || []).forEach(l => {
+          if (!allKnownLines.has(l.id)) allKnownLines.set(l.id, l);
+        });
+      });
+    }
+    if (initialData?.lines) {
+      initialData.lines.forEach(l => {
+        if (!allKnownLines.has(l.id)) allKnownLines.set(l.id, l);
+      });
+    }
+    if (localPoData?.lines) {
+      localPoData.lines.forEach(l => {
+        if (!allKnownLines.has(l.id)) allKnownLines.set(l.id, l);
+      });
+    }
+
+    allKnownLines.forEach((origLine) => {
+      if (!mockLines.find(l => l.id === origLine.id)) {
+        const hasInvoice = invoices.some(inv => (inv.itemLines || []).some(il => String(il.id) === String(origLine.id) || String(il.id) === `l${origLine.id}`));
+        if (hasInvoice) {
+          if (!linesToProcess.find(l => l.id === origLine.id)) {
+            linesToProcess.push({
+              ...origLine,
+              qty: 0,
+              isDeleted: true
+            });
+          }
+        }
+      }
+    });
+
+    return linesToProcess.map((line) => {
       const receiptLine = receiptLines.find((rl) => rl.id === line.id);
       const receivedQty = receiptLine ? receiptLine.receivedQty : 0;
 
@@ -596,7 +632,7 @@ export const PurchaseOrderDetailPage = ({
         invoicedQty,
       };
     });
-  }, [mockLines, receiptLines, invoices]);
+  }, [mockLines, receiptLines, invoices, initialData, versions, localPoData]);
   const detailNotes = hasDraftData
     ? displayValue(formData?.notes)
     : "Please ensure all items are packaged securely to prevent damage during transit. Deliveries are only accepted between 08:00 AM and 04:00 PM on weekdays.";

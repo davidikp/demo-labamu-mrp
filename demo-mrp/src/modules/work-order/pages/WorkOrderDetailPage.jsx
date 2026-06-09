@@ -447,6 +447,10 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, initialDat
     whiteSpace: "nowrap",
   });
 
+  const [isPlannedDateModalOpen, setIsPlannedDateModalOpen] = useState(false);
+  const [editingPlannedDateStep, setEditingPlannedDateStep] = useState(null);
+  const [plannedDateForm, setPlannedDateForm] = useState({ start: "", end: "" });
+
   const [displayStartDate, setDisplayStartDate] = useState(
     initialData?.statusKey === "not_started" ? "" : initialData?.start || ""
   );
@@ -473,7 +477,11 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, initialDat
       rawStatus === "In Progress"
     )
       return rawStatus;
+    const livePo = vendor?.poNumber ? MOCK_PO_TABLE_DATA.find((po) => po.poNumber === vendor.poNumber) : null;
+    const isLivePoApproved = livePo ? (livePo.statusKey === "issued" || livePo.statusKey === "completed") : false;
+
     if (
+      isLivePoApproved ||
       vendor?.isPoApproved ||
       vendor?.poStatus === "Issued" ||
       vendor?.poStatus === "Completed"
@@ -759,9 +767,11 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
       })),
       sendHistory: (
         v.sendHistory ||
-        (v.receipts || v.attachment
+        (v.receipts?.length > 0 || v.attachment
           ? [
             {
+              releaseId: `RLS-${Math.floor(1000 + Math.random() * 9000)}`,
+              time: "10:00",
               amount: v.output, // sending the full output amount initially
               date: v.startDate || v.receivedDate || v.date || "2026-03-25",
               note: "Materials successfully sent to vendor.",
@@ -823,6 +833,20 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         stage.step === step ? { ...stage, plannedDate: value } : stage
       )
     );
+  };
+
+  const openPlannedDateModal = (step, existingDate) => {
+    setEditingPlannedDateStep(step);
+    setPlannedDateForm(existingDate || { start: "", end: "" });
+    setIsPlannedDateModalOpen(true);
+  };
+
+  const handleSavePlannedDateModal = () => {
+    if (editingPlannedDateStep) {
+      handlePlannedDateChange(editingPlannedDateStep, plannedDateForm);
+    }
+    setIsPlannedDateModalOpen(false);
+    setEditingPlannedDateStep(null);
   };
 
   // Session caching: persist vendor/WO changes back to mock data so
@@ -1145,8 +1169,76 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
     const normalizedForm = { ...singleVendorForm, date: fallbackVendorDate };
 
     let finalVendors;
-    let logTitle = "";
-    let logDesc = "";
+    let logTitle;
+    let logDesc;
+
+    const appendLineToExistingPo = (poNumber, vendorAssignment) => {
+      const poIndex = MOCK_PO_TABLE_DATA.findIndex(
+        (po) => po.poNumber === poNumber
+      );
+      if (poIndex !== -1) {
+        const existingPo = MOCK_PO_TABLE_DATA[poIndex];
+        const existingLines = existingPo.formData?.lines || existingPo.lines || [];
+        
+        const alreadyLinked = existingLines.some(
+          (l) => l.assignmentId === vendorAssignment.assignmentId
+        );
+        if (!alreadyLinked) {
+          const normalizedSteps = Array.from(
+            new Set((vendorAssignment.assignedSteps || []).filter((s) => Number.isFinite(s)))
+          ).sort((a, b) => a - b);
+          
+          let generatedDescription = `Generated from ${initialData?.wo || "work order"} with assignment ${vendorAssignment.assignmentId}.`;
+          if (normalizedSteps.length > 0) {
+            const stageLabels = normalizedSteps.map((step) => {
+              const matchedStage = (routingStages || []).find(
+                (stage) => Number(stage.step) === step
+              );
+              const operationName = matchedStage?.op || matchedStage?.operation;
+              return operationName ? `Step ${step}: ${operationName}` : `Step ${step}`;
+            });
+            const stackedLabels = stageLabels.map((label) => `- ${label}`).join("\n");
+            generatedDescription = `${generatedDescription} It covers these routing stages:\n${stackedLabels}`;
+          }
+
+          const newLine = {
+            id: `line-${poNumber}-${vendorAssignment.assignmentId}`,
+            type: "wo",
+            item: `Outsourced - ${initialData?.product || "Cabinet Premium"}`,
+            code: initialData?.sku || "-",
+            desc: generatedDescription,
+            woRef: initialData?.wo || "-",
+            assignmentId: vendorAssignment.assignmentId,
+            outsourceSteps: normalizedSteps,
+            qty: parseInt(vendorAssignment.output || 0, 10) || 1,
+            receivedQty: 0,
+            price: 0,
+            sourceWorkOrderLineId: `generated-work-order-line-${poNumber}-${vendorAssignment.assignmentId}`,
+          };
+          const nextLines = [...existingLines, newLine];
+          
+          MOCK_PO_TABLE_DATA[poIndex] = {
+            ...existingPo,
+            formData: {
+              ...(existingPo.formData || {}),
+              lines: nextLines,
+            },
+          };
+          
+          if (existingPo.versions && existingPo.versions.length > 0) {
+            const latestIdx = existingPo.versions.length - 1;
+            const latestVersion = existingPo.versions[latestIdx];
+            existingPo.versions[latestIdx] = {
+              ...latestVersion,
+              formData: {
+                ...latestVersion.formData,
+                lines: nextLines,
+              }
+            };
+          }
+        }
+      }
+    };
 
     if (normalizedForm.id) {
       logTitle = "Assignment Updated";
@@ -1187,6 +1279,9 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
               updatedVendor.poDetailData = updatedPo;
             }
           }
+          if (updatedVendor.poNumber) {
+            appendLineToExistingPo(updatedVendor.poNumber, updatedVendor);
+          }
           return updatedVendor;
         }
         return v;
@@ -1213,6 +1308,11 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
           ? vendor
           : { ...vendor, status: resolveVendorProgressStatus(vendor) }
       );
+      
+      const createdVendor = finalVendors[finalVendors.length - 1];
+      if (createdVendor.poNumber) {
+        appendLineToExistingPo(createdVendor.poNumber, createdVendor);
+      }
     }
 
     addActivityLog(logTitle, logDesc);
@@ -1281,27 +1381,19 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
     );
     const isVendorReceiptCompleted =
       vendorOutput > 0 && vendorReceivedOutput >= vendorOutput;
+    const resolvedLivePo = vendor?.poNumber ? MOCK_PO_TABLE_DATA.find((po) => po.poNumber === vendor.poNumber) : null;
     const resolvedStatus =
-      vendor?.poStatus ||
-      (isVendorReceiptCompleted
+      isVendorReceiptCompleted
         ? "Completed"
-        : vendor?.isPoApproved
-          ? "Issued"
-          : basePo.status);
+        : resolvedLivePo?.status || vendor?.poStatus || (vendor?.isPoApproved ? "Issued" : basePo.status);
     const resolvedBadge =
-      vendor?.poBadge ||
-      (isVendorReceiptCompleted
+      isVendorReceiptCompleted
         ? "green"
-        : vendor?.isPoApproved
-          ? "blue"
-          : basePo.sBadge);
+        : resolvedLivePo?.sBadge || vendor?.poBadge || (vendor?.isPoApproved ? "blue" : basePo.sBadge);
     const resolvedStatusKey =
-      vendor?.poStatusKey ||
-      (isVendorReceiptCompleted
+      isVendorReceiptCompleted
         ? "completed"
-        : vendor?.isPoApproved
-          ? "issued"
-          : basePo.statusKey);
+        : resolvedLivePo?.statusKey || vendor?.poStatusKey || (vendor?.isPoApproved ? "issued" : basePo.statusKey);
     const assignmentText = vendor?.assignmentId ? ` with assignment ${vendor.assignmentId}` : "";
     const lineDescription = `Generated from ${initialData?.wo || "work order"}${assignmentText}${buildOutsourceStageDescription(outsourceSteps)}`;
     const receiptLogs = (vendor?.receipts || []).map((receipt, index) => ({
@@ -1985,12 +2077,10 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         
         MOCK_PO_TABLE_DATA[poIndex] = {
           ...existingPo,
-          // Update root lines if this PO doesn't have formData (e.g. issued legacy PO)
-          ...(!existingPo.formData ? { lines: nextLines } : {}),
-          formData: existingPo.formData ? {
-            ...existingPo.formData,
+          formData: {
+            ...(existingPo.formData || {}),
             lines: nextLines,
-          } : undefined,
+          },
         };
         
         // If versions exist, we must also update the latest version so usePoVersions returns the new line
@@ -2041,6 +2131,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         };
       })
     );
+    
+
     addActivityLog("Purchase Order Linked", `${selectedExistingPoNumber} linked to assignment ${selectedVendorForPoAction.assignmentId}`);
     setIsSelectExistingPoModalOpen(false);
     setSelectedVendorForPoAction(null);
@@ -2061,6 +2153,50 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
       isPoApproved: false,
       receipts: [],
     };
+
+    const newPoData = {
+      poNumber: generatedPo,
+      vendorName: singleVendorForm.name || "Vendor",
+      amount: formatCurrency((parseInt(singleVendorForm.output || 0, 10) || 0) * (createPoForm.unitPrice || 0)),
+      createdDate: createPoForm.poDate || new Date().toISOString().split("T")[0],
+      status: "Draft",
+      statusKey: "draft",
+      sBadge: "grey-light",
+      formData: {
+        vendorName: singleVendorForm.name || "Vendor",
+        poDate: createPoForm.poDate,
+        deliveryDate: createPoForm.deliveryDate,
+        currency: createPoForm.currency,
+        createdBy: "Joko",
+        lines: [
+          {
+            id: `line-${generatedPo}-${newVendorAssignment.assignmentId}`,
+            type: "wo",
+            item: `Outsourced - ${initialData?.product || "Cabinet Premium"}`,
+            code: initialData?.sku || "-",
+            desc: `Generated from ${initialData?.wo || "work order"} with assignment ${newVendorAssignment.assignmentId}.`,
+            woRef: initialData?.wo || "-",
+            assignmentId: newVendorAssignment.assignmentId,
+            outsourceSteps: Array.from(new Set((newVendorAssignment.assignedSteps || []).filter(s => Number.isFinite(s)))).sort((a,b)=>a-b),
+            qty: parseInt(newVendorAssignment.output || 0, 10) || 1,
+            receivedQty: 0,
+            price: createPoForm.unitPrice || 0,
+            sourceWorkOrderLineId: `generated-work-order-line-${generatedPo}-${newVendorAssignment.assignmentId}`,
+          }
+        ],
+        receiptLogs: [],
+        tax: 11,
+        feeLines: [],
+        notes: "Dummy PO detail generated from outsource detail table click.",
+        terms: "Payment within 30 days from invoice date.",
+        shipTo: {
+          name: "Central Warehouse",
+          address: "Jl. Industri No. 10, Jakarta",
+          phone: "+62 21 555-0199",
+        }
+      }
+    };
+    MOCK_PO_TABLE_DATA.push(newPoData);
 
     let updatedVendors = vendors.filter((v) => v.id !== singleVendorForm.id);
     updatedVendors.push(newVendorAssignment);
@@ -2217,8 +2353,11 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
           const addedAmount = parseInt(sendAmount, 10) || 0;
           const currentSent = parseInt(v.sentOutput || 0, 10);
           
+          const now = new Date();
           const newSendHistoryRecord = {
-            date: new Date().toISOString().split("T")[0],
+            date: now.toISOString().split("T")[0],
+            time: now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
+            releaseId: `RLS-${Math.floor(1000 + Math.random() * 9000)}`,
             amount: addedAmount,
             note: sendNotes,
             sendBy: sendBy,
@@ -2235,7 +2374,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
       })
     );
 
-    addActivityLog("Documentation Sent", `Sent ${sendAmount} items documentation to ${selectedSendVendor?.name}`);
+    addActivityLog("Item Released to Vendor", `Sent ${sendAmount} items to ${selectedSendVendor?.name} for assignment ${selectedSendVendor?.assignmentId}`);
     setIsSendToVendorModalOpen(false);
     setSelectedSendVendor(null);
     setSendAmount("");
@@ -2243,7 +2382,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
     setSendProofDocuments([]);
     setSendErrors({});
     setSendProofUploadError("");
-    setToastMessage("Documentation sent to vendor successfully");
+    setToastMessage("Items released to vendor successfully");
     setShowSuccessToast(true);
   };
 
@@ -3142,7 +3281,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "140px 60px 1.5fr 1.5fr 160px 80px 80px 80px",
+                    gridTemplateColumns: "140px 60px 1.5fr 1.5fr 120px 80px 80px 80px",
                     columnGap: "16px",
                     paddingBottom: "12px",
                     borderBottom: "1px solid var(--neutral-line-separator-1)",
@@ -3173,7 +3312,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       key={i}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "140px 60px 1.5fr 1.5fr 160px 80px 80px 80px",
+                        gridTemplateColumns: "140px 60px 1.5fr 1.5fr 120px 80px 80px 80px",
                         columnGap: "16px",
                         alignItems: "start",
                         padding: "16px 0",
@@ -3224,11 +3363,29 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       </div>
                       <div style={{ minWidth: 0 }}>
                         <div style={{ minHeight: "32px", display: "flex", alignItems: "center" }}>
-                          <DateRangeInputControl
-                            value={row.plannedDate || { start: "", end: "" }}
-                            onChange={(e) => handlePlannedDateChange(row.step, e.target.value)}
-                            disabled={isDisabled}
-                          />
+                          {row.plannedDate?.start && row.plannedDate?.end ? (
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "var(--text-title-3)" }}>
+                              <span>{row.plannedDate.start} - {row.plannedDate.end}</span>
+                              {!isDisabled && (
+                                <IconButton
+                                  icon={EditIcon}
+                                  size="small"
+                                  title="Edit Planned Date"
+                                  onClick={() => openPlannedDateModal(row.step, row.plannedDate)}
+                                />
+                              )}
+                            </div>
+                          ) : (
+                            <Button
+                              variant="tertiary"
+                              size="small"
+                              disabled={isDisabled}
+                              onClick={() => openPlannedDateModal(row.step)}
+                              style={{ padding: "0 8px", height: "24px", minHeight: "unset" }}
+                            >
+                              Add Date
+                            </Button>
+                          )}
                         </div>
                       </div>
                       <div style={{ height: "32px", display: "flex", alignItems: "center" }}>{start}</div>
@@ -3262,7 +3419,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "60px 1.5fr 1.5fr 160px 80px 80px 80px 80px 120px",
+                    gridTemplateColumns: "60px 1.5fr 1.5fr 120px 80px 80px 80px 80px 120px",
                     columnGap: "16px",
                     paddingBottom: "12px",
                     borderBottom: "1px solid var(--neutral-line-separator-1)",
@@ -3323,7 +3480,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       key={i}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "60px 1.5fr 1.5fr 160px 80px 80px 80px 80px 120px",
+                        gridTemplateColumns: "60px 1.5fr 1.5fr 120px 80px 80px 80px 80px 120px",
                         columnGap: "16px",
                         alignItems: "start",
                         padding: "16px 0",
@@ -3389,11 +3546,29 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                                 : "-"}
                             </span>
                           ) : (
-                            <DateRangeInputControl
-                              value={row.plannedDate || { start: "", end: "" }}
-                              onChange={(e) => handlePlannedDateChange(row.step, e.target.value)}
-                              disabled={woStatus === "canceled" || (start === 0 && row.prog === 0 && (row.totalComp || 0) === stepTotalPool && stepTotalPool > 0)}
-                            />
+                            row.plannedDate?.start && row.plannedDate?.end ? (
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "var(--text-title-3)" }}>
+                                <span>{row.plannedDate.start} - {row.plannedDate.end}</span>
+                                {woStatus !== "canceled" && (
+                                  <IconButton
+                                    icon={EditIcon}
+                                    size="small"
+                                    title="Edit Planned Date"
+                                    onClick={() => openPlannedDateModal(row.step, row.plannedDate)}
+                                  />
+                                )}
+                              </div>
+                            ) : (
+                              <Button
+                                variant="tertiary"
+                                size="small"
+                                disabled={woStatus === "canceled"}
+                                onClick={() => openPlannedDateModal(row.step)}
+                                style={{ padding: "0 8px", height: "24px", minHeight: "unset" }}
+                              >
+                                Add Date
+                              </Button>
+                            )
                           )}
                         </div>
                       </div>
@@ -3940,7 +4115,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       ? internalStatusInfo.text
                       : resolveVendorProgressStatus(vendor);
                   const isCompleted = resolvedVendorStatus === "Completed";
-                  const isPoApproved = vendor.isPoApproved;
+                  const livePo = vendor.poNumber ? MOCK_PO_TABLE_DATA.find((po) => po.poNumber === vendor.poNumber) : null;
+                  const isPoApproved = (livePo ? (livePo.statusKey === "issued" || livePo.statusKey === "completed") : false) || vendor.isPoApproved;
                   const isVendorInProgress =
                     resolvedVendorStatus === "In Progress";
                   const showEditVendorAction =
@@ -3963,48 +4139,41 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   let readyToSend = 0;
                   if (vendor.assignedSteps && vendor.assignedSteps.length > 0) {
                     const minStep = Math.min(...vendor.assignedSteps);
-                    const vendorPendingQty = parseInt(vendor.receivedOutput, 10) || 0;
-                    const vendorSentOutput = parseInt(vendor.sentOutput, 10) || 0;
+                    const receivedAmt = parseInt(vendor.receivedOutput, 10) || 0;
+                    const sentAmt = parseInt(vendor.sentOutput, 10) || 0;
+                    const assignedAmt = parseInt(vendor.output, 10) || 0;
                     
-                    if (vendorSentOutput > vendorPendingQty && !isCompleted) {
-                      dependencyText = `Waiting Receipt: ${vendorSentOutput - vendorPendingQty}`;
-                    } else if (vendorPendingQty > 0 && !isCompleted) {
-                      dependencyText = `Pending Qty to Complete: ${vendorPendingQty}`;
-                    } else if (isPoApproved) {
-                      const rowIndex = stagesWithTotals.findIndex((r) => r.step === minStep);
-                      if (rowIndex !== -1) {
-                        const row = stagesWithTotals[rowIndex];
-                        const stepTotalPool = row.step === 1 ? TOTAL_QTY : stagesWithTotals[rowIndex - 1]?.effectiveTotalComp || 0;
-                        const start = Math.max(0, stepTotalPool - (row.prog || 0) - (row.totalComp || 0));
+                    const rowIndex = stagesWithTotals.findIndex((r) => r.step === minStep);
+                    let availableToProcess = 0;
+                    if (rowIndex !== -1) {
+                      const prevCompleted = minStep === 1 ? TOTAL_QTY : (stagesWithTotals[rowIndex - 1]?.effectiveTotalComp || 0);
+                      const currStage = stagesWithTotals[rowIndex];
+                      const internalProg = currStage?.prog || 0;
+                      const internalCompleted = currStage?.comp || 0;
+                      
+                      const vendorsConsumed = vendors
+                        .filter(v => v.name !== "Internal" && v.id !== vendor.id && v.assignedSteps?.includes(minStep))
+                        .reduce((sum, v) => sum + Math.max(parseInt(v.sentOutput, 10) || 0, parseInt(v.receivedOutput, 10) || 0), 0);
                         
-                        const alreadySentByOthers = vendors
-                          .filter(v => v.id !== vendor.id && v.assignedSteps?.includes(minStep))
-                          .reduce((sum, v) => sum + (parseInt(v.sentOutput, 10) || 0), 0);
-                        
-                        const adjustedStart = Math.max(0, start - alreadySentByOthers);
-                        readyToSend = Math.min(adjustedStart, parseInt(vendor.output || 0, 10) - vendorSentOutput);
-                        
-                        if (readyToSend > 0) {
-                          dependencyText = `Ready to send: ${readyToSend}`;
-                        } else if (minStep > 1) {
-                          const prevStepStage = stagesWithTotals[rowIndex - 1];
-                          if (prevStepStage) {
-                            if ((prevStepStage.totalComp || 0) === 0) {
-                              dependencyText = "Waiting Previous Process";
-                            } else {
-                              dependencyText = `Avail Qty to Process: ${prevStepStage.totalComp}`;
-                            }
-                          }
-                        }
-                      }
-                    } else if (minStep > 1) {
-                      const prevStepStage = routingStages.find(s => s.step === minStep - 1);
-                      if (prevStepStage) {
-                        if (prevStepStage.comp === 0) {
-                          dependencyText = "Waiting Previous Process";
-                        } else {
-                          dependencyText = `Avail Qty to Process: ${prevStepStage.comp}`;
-                        }
+                      const totalConsumedByOthers = internalProg + internalCompleted + vendorsConsumed;
+                      availableToProcess = Math.max(0, prevCompleted - totalConsumedByOthers);
+                    }
+                    
+                    if (isPoApproved && !isInternal) {
+                      readyToSend = Math.max(0, Math.min(availableToProcess, assignedAmt - sentAmt));
+                    }
+
+                    if (readyToSend > 0 && !isInternal) {
+                      dependencyText = `Ready to Release: ${readyToSend}`;
+                    } else if (sentAmt > receivedAmt && !isCompleted && !isInternal) {
+                      dependencyText = `Waiting Receipt: ${sentAmt - receivedAmt}`;
+                    } else if (receivedAmt > 0 && !isCompleted && !isInternal) {
+                      dependencyText = `Pending Qty to Complete: ${assignedAmt - receivedAmt}`;
+                    } else if (!isCompleted && minStep > 1) {
+                      if (availableToProcess === 0) {
+                        dependencyText = "Waiting Previous Process";
+                      } else {
+                        dependencyText = `Avail Qty to Process: ${availableToProcess}`;
                       }
                     }
                   }
@@ -4307,12 +4476,12 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                           gap: "8px",
                         }}
                       >
-                        {isVendorInProgress && !isInternal && vendor.isPoApproved ? (
-                          <Tooltip content="Send to Vendor">
+                        {(resolvedVendorStatus === "In Progress" || resolvedVendorStatus === "Partially Received") && !isInternal && isPoApproved && parseInt(vendor.sentOutput || 0, 10) < parseInt(vendor.output || 0, 10) ? (
+                          <Tooltip content="Release to Vendor">
                             <IconButton
                               icon={Send}
                               size="small"
-                              title="Send to Vendor"
+                              title="Release to Vendor"
                               color="var(--feature-brand-primary)"
                               disabled={readyToSend <= 0}
                               hoverBackground="var(--feature-brand-container-lighter)"
@@ -6871,11 +7040,11 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         </div>
       ) : null}
 
-      {isSendToVendorModalOpen && selectedSendVendor ? (
+{isSendToVendorModalOpen && selectedSendVendor ? (
         <GeneralModal
-          isOpen={true}
-          width="520px"
-          title="Send to Vendor"
+          isOpen={isSendToVendorModalOpen}
+          width="600px"
+          title="Release to Vendor"
           onClose={() => {
             setIsSendToVendorModalOpen(false);
             setSelectedSendVendor(null);
@@ -6916,7 +7085,38 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "16px" }}>
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <FormField label="Send By" required error={sendErrors.sendBy}>
+              {selectedSendVendor ? (
+                <Card style={{ padding: "16px", boxShadow: "none", border: "1px solid var(--neutral-line-separator-1)" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", rowGap: "16px" }}>
+                    <LabelValue label="Vendor Name" value={selectedSendVendor.name} />
+                    <LabelValue label="Assignment ID" value={selectedSendVendor.assignmentId || "-"} />
+                    <LabelValue 
+                      label="Included Steps" 
+                      value={selectedSendVendor.assignedSteps?.length > 0 ? [...selectedSendVendor.assignedSteps].sort((a, b) => a - b).join(", ") : "-"} 
+                    />
+                    <LabelValue 
+                      label="Purchase Order" 
+                      value={selectedSendVendor.poNumber ? (
+                        <span 
+                          style={{ color: "var(--feature-brand-primary)", textDecoration: "underline", cursor: "pointer" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(`/purchase-order/${selectedSendVendor.poNumber}`, "_blank");
+                          }}
+                        >
+                          {selectedSendVendor.poNumber}
+                        </span>
+                      ) : "-"} 
+                    />
+                    <LabelValue 
+                      label="Released Qty" 
+                      value={`${selectedSendVendor.sentOutput || 0} / ${selectedSendVendor.output || 0} pcs`} 
+                    />
+                  </div>
+                </Card>
+              ) : null}
+
+              <FormField label="Released by" required error={sendErrors.sendBy}>
                 <InputField
                   value={sendBy}
                   onChange={(e) => {
@@ -6929,7 +7129,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
               </FormField>
 
               <InputField
-                label="Amount to Send"
+                label="Release Qty"
                 required
                 type="number"
                 value={sendAmount}
@@ -6942,10 +7142,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 suffix="pcs"
                 headerRight={
                   <StatusBadge variant="blue-light">
-                    Available: {selectedSendVendor ? (Math.min(
-                      Math.max(0, (selectedSendVendor.output || 0) - (selectedSendVendor.sentOutput || 0)),
-                      parseInt(sendAmount || 0, 10) // this logic is simplified, true available is passed from table but we can just use sendAmount as default
-                    )) : 0} pcs
+                    Available: {selectedSendVendor ? Math.max(0, (selectedSendVendor.output || 0) - (selectedSendVendor.sentOutput || 0)) : 0} pcs
                   </StatusBadge>
                 }
               />
@@ -7086,7 +7283,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
             {receiptHistoryVendor.name !== "Internal" && (
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                 {[
-                  { id: "send", label: "Sent to Vendor" },
+                  { id: "send", label: "Released to Vendor" },
                   { id: "receipt", label: "Receipt" }
                 ].map(tab => (
                   <button
@@ -7154,7 +7351,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                     ) : null}
                     {!receiptHistoryVendor.name ||
                       receiptHistoryVendor.name !== "Internal" ? (
-                      <div style={poReferenceTableHeaderCellStyle()}>{assignmentLogTab === "send" ? "Sent by" : "Received by"}</div>
+                      <div style={poReferenceTableHeaderCellStyle()}>{assignmentLogTab === "send" ? "Released by" : "Received by"}</div>
                     ) : null}
                     {!receiptHistoryVendor.name ||
                       receiptHistoryVendor.name !== "Internal" ? (
@@ -7232,6 +7429,43 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
           </div>
         </div>
       ) : null}
+      {isPlannedDateModalOpen && editingPlannedDateStep ? (() => {
+        const stage = routingStages.find(s => s.step === editingPlannedDateStep);
+        return (
+          <GeneralModal
+            isOpen={isPlannedDateModalOpen}
+            width="480px"
+            title="Add Planned Date"
+            onClose={() => setIsPlannedDateModalOpen(false)}
+            footer={
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                <Button variant="filled" size="large" style={{ width: "100%" }} onClick={handleSavePlannedDateModal}>
+                  Save
+                </Button>
+                <Button variant="outlined" size="large" style={{ width: "100%" }} onClick={() => setIsPlannedDateModalOpen(false)}>
+                  Cancel
+                </Button>
+              </div>
+            }
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: "24px", padding: "16px 0" }}>
+              {stage && (
+                <div style={{ fontSize: "var(--text-body-strong)", color: "var(--neutral-on-surface-secondary)" }}>
+                  Step {stage.step}: {stage.route} - {stage.op}
+                </div>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <label style={{ fontSize: "var(--text-body)", fontWeight: "var(--font-weight-medium)", color: "var(--neutral-on-surface-primary)" }}>Date Range</label>
+                <DateRangeInputControl
+                  value={plannedDateForm}
+                  onChange={(e) => setPlannedDateForm(e.target.value)}
+                  disabled={false}
+                />
+              </div>
+            </div>
+          </GeneralModal>
+        );
+      })() : null}
     </div>
   );
 };

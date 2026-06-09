@@ -296,7 +296,9 @@ const PoDetailHeader = ({
               </div>
             )}
           </div>
-          <StatusBadge variant={currentBadge}>{currentStatus}</StatusBadge>
+          {!isHistoricalVersion && (
+            <StatusBadge variant={currentBadge}>{currentStatus}</StatusBadge>
+          )}
         </div>
         <div
           style={{

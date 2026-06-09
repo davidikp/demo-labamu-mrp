@@ -224,6 +224,9 @@ const PoThreeWayMatchTab = ({
                             title={line.item}
                           >
                             {line.item}
+                            {line.isDeleted && (
+                              <StatusBadge variant="red-light" style={{ marginLeft: "8px" }}>Deleted</StatusBadge>
+                            )}
                           </span>
                           <span
                             style={{

@@ -161,7 +161,9 @@ export const usePoReceipts = ({
               );
               const vendorReceivedOutput = Number(vendor.receivedOutput) || 0;
               const availToReceive = Math.max(0, vendorSentOutput - vendorReceivedOutput);
-              if (receiveNow > availToReceive) {
+              if (vendorSentOutput === 0) {
+                nextErrors[line.id] = "Items must be released to vendor before receipt";
+              } else if (receiveNow > availToReceive) {
                 nextErrors[line.id] = "Quantity exceeds avail to receive";
               }
             }

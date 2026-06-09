@@ -1391,6 +1391,9 @@ export const PurchaseOrderCreatePage = ({
   const [productModalFieldErrors, setProductModalFieldErrors] = useState({});
   const [productModalError, setProductModalError] = useState("");
   const [editingLineId, setEditingLineId] = useState(null);
+  const [lineToDelete, setLineToDelete] = useState(null);
+  const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] = useState(false);
+  const [deleteConfirmationInvoiceIds, setDeleteConfirmationInvoiceIds] = useState("");
 
   const [lines, setLines] = useState(() => {
     if (editFormData?.lines?.length) return editFormData.lines;
@@ -2048,10 +2051,45 @@ export const PurchaseOrderCreatePage = ({
     setProductModalFieldErrors({});
   };
 
-  const handleRemoveLine = (lineId) =>
+  const handleRemoveLine = (line) => {
+    if (isReviseMode) {
+      let allInvoices = initialData?.formData?.invoices || initialData?.invoices || [];
+      if (!allInvoices.length && initialData?.poNumber) {
+        const mockPo = MOCK_PO_TABLE_DATA.find(p => p.poNumber === initialData.poNumber);
+        if (mockPo) allInvoices = mockPo.invoices || [];
+      }
+      const linkedInvoices = allInvoices.filter(inv => inv.itemLines?.some(il => String(il.id) === String(line.id) || String(il.id) === `l${line.id}`));
+      if (linkedInvoices && linkedInvoices.length > 0) {
+        setLineToDelete(line);
+        setDeleteConfirmationInvoiceIds(linkedInvoices.map(inv => inv.number).join(", "));
+        setShowDeleteConfirmationModal(true);
+        return;
+      }
+    }
     setLines((prev) =>
-      prev.filter((line) => line.id !== lineId || line.lockedFromWorkOrder)
+      prev.filter((l) => l.id !== line.id || l.lockedFromWorkOrder)
     );
+  };
+
+  const updateMockWoTableData = (targetPoNumber, payload, targetAssignmentId, poLinkSnapshot) => {
+    if (initialData?.workOrder?.wo && targetAssignmentId) {
+      const woData = MOCK_WO_TABLE_DATA.find((w) => w.wo === initialData.workOrder.wo);
+      if (woData && woData.vendors) {
+        const vendorIndex = woData.vendors.findIndex(v => v.assignmentId === targetAssignmentId);
+        if (vendorIndex !== -1) {
+          woData.vendors[vendorIndex] = {
+            ...woData.vendors[vendorIndex],
+            poNumber: targetPoNumber,
+            isPoApproved: payload.status === "Issued" || payload.status === "Approved",
+            poStatus: payload.status,
+            poBadge: payload.sBadge,
+            poStatusKey: payload.statusKey,
+            poDetailData: poLinkSnapshot,
+          };
+        }
+      }
+    }
+  };
 
   const handleSaveDraft = () => {
     if (!vendorSearch.trim()) {
@@ -2110,7 +2148,7 @@ export const PurchaseOrderCreatePage = ({
           return {
             ...vendor,
             poNumber: targetPoNumber,
-            isPoApproved: false,
+            isPoApproved: payload.status === "Issued" || payload.status === "Approved",
             poStatus: payload.status,
             poBadge: payload.sBadge,
             poStatusKey: payload.statusKey,
@@ -2118,6 +2156,8 @@ export const PurchaseOrderCreatePage = ({
           };
         }),
       };
+
+      updateMockWoTableData(targetPoNumber, payload, targetAssignmentId, poLinkSnapshot);
 
       if (initialData?.workOrder?.wo && targetAssignmentId) {
         addWoActivityLog(
@@ -2404,6 +2444,8 @@ export const PurchaseOrderCreatePage = ({
           };
         }),
       };
+
+      updateMockWoTableData(targetPoNumber, payload, targetAssignmentId, poLinkSnapshot);
 
       if (initialData?.workOrder?.wo && targetAssignmentId) {
         addWoActivityLog(
@@ -3304,10 +3346,10 @@ export const PurchaseOrderCreatePage = ({
                               <Button
                                 variant="tertiary"
                                 size="small"
-                                onClick={() => handleRemoveLine(line.id)}
-                                disabled={isLockedWorkOrderLine || isReviseMode}
+                                onClick={() => handleRemoveLine(line)}
+                                disabled={isLockedWorkOrderLine || (isReviseMode && line.type === "wo")}
                                 style={{ 
-                                  color: (isLockedWorkOrderLine || isReviseMode) 
+                                  color: (isLockedWorkOrderLine || (isReviseMode && line.type === "wo")) 
                                     ? "var(--neutral-on-surface-tertiary)" 
                                     : "var(--status-red-primary)",
                                   padding: "0 4px"
@@ -3598,6 +3640,52 @@ export const PurchaseOrderCreatePage = ({
           </Button>
         </div>
       </div>
+
+      {showDeleteConfirmationModal ? (
+        <GeneralModal
+          isOpen={showDeleteConfirmationModal}
+          onClose={() => {
+            setShowDeleteConfirmationModal(false);
+            setLineToDelete(null);
+            setDeleteConfirmationInvoiceIds("");
+          }}
+          title="Delete Item?"
+          description={`This item is linked to invoice ${deleteConfirmationInvoiceIds}. Are you sure you want to delete it?`}
+          size="small"
+          centeredHeader={true}
+          footer={
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+              <Button
+                variant="danger-filled"
+                size="large"
+                style={{ width: "100%" }}
+                onClick={() => {
+                  setLines((prev) =>
+                    prev.filter((l) => l.id !== lineToDelete.id || l.lockedFromWorkOrder)
+                  );
+                  setShowDeleteConfirmationModal(false);
+                  setLineToDelete(null);
+                  setDeleteConfirmationInvoiceIds("");
+                }}
+              >
+                Delete Item
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                style={{ width: "100%" }}
+                onClick={() => {
+                  setShowDeleteConfirmationModal(false);
+                  setLineToDelete(null);
+                  setDeleteConfirmationInvoiceIds("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          }
+        />
+      ) : null}
 
       {showAddProductModal ? (
         <div
@@ -4545,31 +4633,36 @@ export const PurchaseOrderCreatePage = ({
                 padding: "16px 24px",
                 borderTop: "1px solid var(--neutral-line-separator-1)",
                 display: "flex",
-                justifyContent: "flex-end",
-                gap: "12px",
+                flexDirection: "column",
+                gap: "16px",
                 background: "var(--neutral-surface-primary)",
                 flexShrink: 0,
               }}
             >
-              <Button
-                variant="outlined"
-                size="medium"
-                style={{ flex: 1 }}
-                onClick={() => {
-                  setShowAddProductModal(false);
-                  setEditingLineId(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="filled"
-                size="medium"
-                style={{ flex: 1 }}
-                onClick={handleSaveProductLine}
-              >
-                {editingLineId ? "Save Changes" : "Add PO Line"}
-              </Button>
+              <div style={{ textAlign: "center", fontSize: "14px", fontWeight: "bold" }}>
+                Subtotal: {formatCurrency(Number(productModalForm.manualQty || 0) * Number(productModalForm.manualPrice || 0), currency)}
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+                <Button
+                  variant="outlined"
+                  size="medium"
+                  style={{ flex: 1 }}
+                  onClick={() => {
+                    setShowAddProductModal(false);
+                    setEditingLineId(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="filled"
+                  size="medium"
+                  style={{ flex: 1 }}
+                  onClick={handleSaveProductLine}
+                >
+                  {editingLineId ? "Save Changes" : "Add PO Line"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

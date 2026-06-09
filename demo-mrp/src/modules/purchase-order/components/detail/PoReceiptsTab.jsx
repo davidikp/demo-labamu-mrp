@@ -49,6 +49,39 @@ const PoReceiptsTab = ({
   // Helpers
   displayValue,
 }) => {
+  const [logTab, setLogTab] = React.useState("receipt");
+
+  const groupedReleaseLogs = React.useMemo(() => {
+    const logs = [];
+    receiptLines.forEach((line) => {
+      if (line.type === "wo" || (line.woRef && line.woRef !== "-")) {
+        const woData = MOCK_WO_TABLE_DATA.find((w) => w.wo === line.woRef);
+        if (woData && woData.vendors) {
+          const vendor = woData.vendors.find(v => v.assignmentId === line.assignmentId);
+          if (vendor && vendor.sendHistory) {
+            vendor.sendHistory.forEach((sh) => {
+              logs.push({
+                ...sh,
+                assignmentId: vendor.assignmentId,
+                outsourceSteps: vendor.assignedSteps,
+                woRef: line.woRef,
+                item: line.item || "Outsourced Item",
+                sendBy: sh.sendBy || sh.sentBy || "Natasha Smith",
+                date: sh.date || "-",
+                time: sh.time || "10:00",
+                releaseId: sh.releaseId || `RLS-${Math.floor(1000 + Math.random() * 9000)}`,
+                amount: sh.amount || 0,
+                note: sh.note || "-",
+                proofDocuments: sh.attachments || sh.proofDocuments || []
+              });
+            });
+          }
+        }
+      }
+    });
+    return logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [receiptLines]);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
       <div
@@ -557,7 +590,9 @@ const PoReceiptsTab = ({
           style={{
             padding: "24px 24px 0 24px",
             display: "flex",
-            alignItems: "center",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: "16px",
           }}
         >
           <span
@@ -566,8 +601,42 @@ const PoReceiptsTab = ({
               fontWeight: "var(--font-weight-bold)",
             }}
           >
-            Receipt Logs
+            Receipt and Release Log
           </span>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            {[
+              { id: "receipt", label: "Receipt Log" },
+              { id: "release", label: "Release Log" }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setLogTab(tab.id)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "100px",
+                  border: "1px solid",
+                  borderColor:
+                    logTab === tab.id
+                      ? "var(--feature-brand-primary)"
+                      : "var(--neutral-line-separator-1)",
+                  background:
+                    logTab === tab.id
+                      ? "var(--feature-brand-container-lighter)"
+                      : "var(--neutral-surface-primary)",
+                  color:
+                    logTab === tab.id
+                      ? "var(--feature-brand-primary)"
+                      : "var(--neutral-on-surface-secondary)",
+                  fontSize: "14px",
+                  fontWeight: logTab === tab.id ? "600" : "400",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div
           style={{
@@ -583,43 +652,27 @@ const PoReceiptsTab = ({
                   groupedReceiptLogs.length > 0 ? "1400px" : "100%"
                 )}
               >
-                {groupedReceiptLogs.length > 0 && (
-                  <div
-                    style={poReferenceTableHeaderRowStyle(
-                      "1.2fr 1fr 1.4fr 1fr 1.2fr 1.2fr 0.9fr 1.1fr 1.4fr 1.6fr",
-                      "8px"
+                {logTab === "receipt" ? (
+                  <>
+                    {groupedReceiptLogs.length > 0 && (
+                      <div
+                        style={poReferenceTableHeaderRowStyle(
+                          "1.2fr 1fr 1.4fr 1fr 1.2fr 1.2fr 0.9fr 1.1fr 1.4fr 1.6fr",
+                          "8px"
+                        )}
+                      >
+                        <div style={poReferenceTableHeaderCellStyle()}>Receipt Date & Time</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Receipt No</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Item Name</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>SKU / Code</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>WO Ref</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Assignment ID</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Received Qty</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Received By</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Notes</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Proof Document</div>
+                      </div>
                     )}
-                  >
-                    <div style={poReferenceTableHeaderCellStyle()}>
-                      Receipt Date & Time
-                    </div>
-                    <div style={poReferenceTableHeaderCellStyle()}>
-                      Receipt No
-                    </div>
-                    <div style={poReferenceTableHeaderCellStyle()}>
-                      Item Name
-                    </div>
-                    <div style={poReferenceTableHeaderCellStyle()}>
-                      SKU / Code
-                    </div>
-                    <div style={poReferenceTableHeaderCellStyle()}>
-                      WO Ref
-                    </div>
-                    <div style={poReferenceTableHeaderCellStyle()}>
-                      Assignment ID
-                    </div>
-                    <div style={poReferenceTableHeaderCellStyle()}>
-                      Received Qty
-                    </div>
-                    <div style={poReferenceTableHeaderCellStyle()}>
-                      Received By
-                    </div>
-                    <div style={poReferenceTableHeaderCellStyle()}>Notes</div>
-                    <div style={poReferenceTableHeaderCellStyle()}>
-                      Proof Document
-                    </div>
-                  </div>
-                )}
                 {groupedReceiptLogs.length > 0 ? (
                   groupedReceiptLogs.map((log, idx) => (
                     <div
@@ -768,10 +821,10 @@ const PoReceiptsTab = ({
                               }}
                             >
                               {assignmentId !== "-" ? (
-                                <span style={{ fontSize: "14px", color: "var(--neutral-on-surface-secondary)", lineHeight: "20px" }}>
-                                  <span style={{ color: "var(--feature-brand-primary)", textDecoration: "underline", cursor: "pointer" }}>{assignmentId}</span>
+                                <span style={{ fontSize: "14px", color: "var(--neutral-on-surface-secondary)", lineHeight: "20px", display: "flex", alignItems: "center" }}>
+                                  <span style={{ color: "var(--neutral-on-surface-primary)" }}>{assignmentId}</span>
                                   {outsourceSteps.length > 0 && (
-                                    <span style={{ display: "inline-flex", alignItems: "center", marginLeft: "4px", verticalAlign: "-2px" }}>
+                                    <span style={{ display: "inline-flex", alignItems: "center", marginLeft: "4px" }}>
                                       <Tooltip 
                                         content={
                                           <div style={{ display: "flex", flexDirection: "column", gap: "4px", textAlign: "left" }}>
@@ -836,18 +889,9 @@ const PoReceiptsTab = ({
                           overflow: "hidden",
                         })}
                       >
-                        <Tooltip
-                          content={log.notes || "-"}
-                          position="top"
-                          style={{ display: "block", width: "100%" }}
-                          checkTruncation={true}
-                        >
                           <span
                             style={{
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              overflow: "hidden",
+                              display: "block",
                               fontSize: "var(--text-title-3)",
                               color: "var(--neutral-on-surface-primary)",
                               lineHeight: "1.4",
@@ -856,7 +900,6 @@ const PoReceiptsTab = ({
                           >
                             {log.notes || "-"}
                           </span>
-                        </Tooltip>
                       </div>
                       <div
                         style={poReferenceTableCellStyle({
@@ -895,6 +938,130 @@ const PoReceiptsTab = ({
                   >
                     No receipt history yet.
                   </div>
+                )}
+                  </>
+                ) : (
+                  <>
+                    {groupedReleaseLogs.length > 0 && (
+                      <div
+                        style={poReferenceTableHeaderRowStyle(
+                          "1.2fr 1fr 1.2fr 0.9fr 1fr 1fr 1fr 1.5fr 1.5fr",
+                          "8px"
+                        )}
+                      >
+                        <div style={poReferenceTableHeaderCellStyle()}>Release Date & Time</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Release ID</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Item Name</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>WO Ref</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Assignment ID</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Release Qty</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Released by</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Notes</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Document</div>
+                      </div>
+                    )}
+                    {groupedReleaseLogs.length > 0 ? (
+                      groupedReleaseLogs.map((log, idx) => (
+                        <div
+                          key={idx}
+                          style={poReferenceTableRowStyle(
+                            "1.2fr 1fr 1.2fr 0.9fr 1fr 1fr 1fr 1.5fr 1.5fr",
+                            idx === groupedReleaseLogs.length - 1,
+                            { alignItems: "start", gap: "8px" }
+                          )}
+                        >
+                          <div style={poReferenceTableCellStyle({ padding: "12px 0", alignItems: "flex-start" })}>{log.date} · {log.time}</div>
+                          <div style={poReferenceTableCellStyle({ padding: "12px 0", alignItems: "flex-start" })}>{log.releaseId}</div>
+                          <div style={poReferenceTableCellStyle({ padding: "12px 0", alignItems: "flex-start" })}>
+                            <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>{log.item}</span>
+                          </div>
+                          <div style={poReferenceTableCellStyle({ padding: "12px 0", alignItems: "flex-start" })}>
+                            <span
+                                onClick={() => {
+                                  if (log.woRef === "-") return;
+                                  const woData = MOCK_WO_TABLE_DATA.find((w) => w.wo === log.woRef);
+                                  if (woData) {
+                                    onNavigate("work_order_detail", {
+                                      ...woData,
+                                      from: "purchase_order_detail",
+                                      returnTo: { view: "detail", data: initialData },
+                                    });
+                                  }
+                                }}
+                                style={{
+                                  fontSize: "var(--text-title-3)",
+                                  color: log.woRef !== "-" ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-primary)",
+                                  textDecoration: log.woRef !== "-" ? "underline" : "none",
+                                  cursor: log.woRef !== "-" ? "pointer" : "default",
+                                }}
+                              >
+                                {log.woRef}
+                              </span>
+                          </div>
+                          <div style={poReferenceTableCellStyle({ padding: "12px 0", alignItems: "flex-start" })}>
+                            <div style={{ display: "flex", alignItems: "center" }}>
+                              <span style={{ color: "var(--neutral-on-surface-primary)", fontSize: "14px" }}>
+                                {log.assignmentId}
+                              </span>
+                              {log.outsourceSteps && log.outsourceSteps.length > 0 && (
+                                <span style={{ display: "inline-flex", alignItems: "center", marginLeft: "4px" }}>
+                                <Tooltip 
+                                  content={
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "4px", textAlign: "left" }}>
+                                      {log.outsourceSteps.map(step => {
+                                        const woData = MOCK_WO_TABLE_DATA.find(w => w.wo === log.woRef);
+                                        const stage = woData?.routingStages?.find(s => s.step === step);
+                                        return <div key={step}>Step {step}: {stage ? `${stage.route} - ${stage.op}` : "Unknown Stage"}</div>;
+                                      })}
+                                    </div>
+                                  } 
+                                  position="top"
+                                >
+                                  <div style={{ display: "flex", alignItems: "center" }}>
+                                    <HelpCircle size={14} color="var(--neutral-on-surface-tertiary)" style={{ cursor: "pointer" }} />
+                                  </div>
+                                </Tooltip>
+                              </span>
+                            )}
+                            </div>
+                          </div>
+                          <div style={poReferenceTableCellStyle({ padding: "12px 0", alignItems: "flex-start", fontWeight: "var(--font-weight-bold)" })}>
+                            {log.amount} pcs
+                          </div>
+                          <div style={poReferenceTableCellStyle({ padding: "12px 0", alignItems: "flex-start" })}>{log.sendBy}</div>
+                          <div style={poReferenceTableCellStyle({ padding: "12px 0", alignItems: "flex-start", width: "100%", overflow: "hidden" })}>
+                              <span style={{ display: "block", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", lineHeight: "1.4", wordBreak: "break-word" }}>
+                                {log.note || "-"}
+                              </span>
+                          </div>
+                          <div style={poReferenceTableCellStyle({ padding: "12px 0", alignItems: "flex-start" })}>
+                            <ProofDocumentList
+                              documents={normalizeProofDocuments(log.proofDocuments, null)}
+                              onDocumentClick={(doc) => showToast(`${doc?.name || "Document"} opened`)}
+                            />
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div
+                        style={{
+                          padding: "48px 24px",
+                          textAlign: "center",
+                          color: "var(--neutral-on-surface-tertiary)",
+                          fontSize: "var(--text-title-3)",
+                          background: "var(--neutral-surface-primary)",
+                          border: "1.5px dashed var(--neutral-line-separator-1)",
+                          borderRadius: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minHeight: "120px",
+                        }}
+                      >
+                        No release history yet.
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             </div>
