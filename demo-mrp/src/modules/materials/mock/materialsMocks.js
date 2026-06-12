@@ -169,5 +169,53 @@ export const MOCK_MATERIALS_DATA = [
     status: "Active",
     description: "Industrial grade M8 steel bolt. Zinc plated for corrosion resistance. Optimized for high-torque applications.",
     gallery: []
+  },
+  {
+    id: "mat-011",
+    image: null,
+    name: "Steel Plate 2mm",
+    sku: "MTL-001",
+    category: "Raw Material",
+    abcClassification: "A",
+    type: "Raw",
+    onHandStock: 80,
+    unit: "Sheet",
+    stockRisk: "Low Stock",
+    averageCost: 250000,
+    status: "Active",
+    description: "Hot-rolled steel plate 2mm thickness. Suitable for structural fabrication and general manufacturing.",
+    gallery: []
+  },
+  {
+    id: "mat-012",
+    image: null,
+    name: "Aluminum Tube 50mm",
+    sku: "MTL-002",
+    category: "Raw Material",
+    abcClassification: "B",
+    type: "Raw",
+    onHandStock: 40,
+    unit: "Meter",
+    stockRisk: "Healthy",
+    averageCost: 180000,
+    status: "Active",
+    description: "Extruded aluminum tube 50mm outer diameter. Lightweight and corrosion-resistant for structural applications.",
+    gallery: []
+  },
+  {
+    id: "mat-013",
+    image: null,
+    name: "Rubber Gasket Model X",
+    sku: "MTL-003",
+    category: "Components",
+    abcClassification: "C",
+    type: "Component",
+    onHandStock: 200,
+    unit: "Pcs",
+    stockRisk: "Healthy",
+    averageCost: 45000,
+    status: "Active",
+    description: "Industrial rubber gasket, Model X specification. High-temperature and chemical resistant seal.",
+    gallery: []
   }
 ];

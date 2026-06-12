@@ -9,6 +9,7 @@ import {
   ChevronRightIcon,
   FinancingIcon,
   ManufacturingIcon,
+  ProcurementIcon,
   ProductIcon,
   ResourcesIcon,
   SalesIcon,
@@ -76,6 +77,16 @@ const Sidebar = ({
       ],
     },
     {
+      icon: ProcurementIcon,
+      id: "procurement",
+      label: t("sidebar.procurement"),
+      hasChildren: true,
+      children: [
+        { id: "purchase_order", label: t("sidebar.purchase_order") },
+        { id: "material_forecast", label: t("sidebar.material_forecast") },
+      ],
+    },
+    {
       icon: ManufacturingIcon,
       id: "manufacturing",
       label: t("sidebar.manufacturing"),
@@ -84,7 +95,6 @@ const Sidebar = ({
         { id: "bill_of_materials", label: t("sidebar.bill_of_materials") },
         { id: "routing", label: t("sidebar.routing") },
         { id: "work_order", label: t("sidebar.work_order") },
-        { id: "purchase_order", label: t("sidebar.purchase_order") },
       ],
     },
     {

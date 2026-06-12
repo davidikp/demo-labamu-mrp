@@ -319,6 +319,7 @@ const AnalyticsIcon = ({
 
 const ManufacturingIcon = Wrench;
 const FinancingIcon = CreditCard;
+const ProcurementIcon = ShoppingCart;
 const WorkOrderIcon = Pickaxe;
 const BillOfMaterialsIcon = FileText;
 const RoutingIcon = Route;
@@ -510,6 +511,7 @@ export {
   ResourcesIcon,
   AnalyticsIcon,
   ManufacturingIcon,
+  ProcurementIcon,
   FinancingIcon,
   WorkOrderIcon,
   BillOfMaterialsIcon,

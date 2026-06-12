@@ -484,7 +484,7 @@ const POReportPage = ({ onNavigate, t }) => {
 
   // Filter options
   const vendors = ["all", ...new Set(MOCK_REPORT_POS.map(po => po.vendorName))];
-  const poStatuses = ["all", "Draft", "Waiting for Approval", "Need Revision", "Issued", "Completed", "Canceled"];
+  const poStatuses = ["all", "Issued", "Completed"];
 
   const tableColumns = [
     { label: "PO No", flex: "1.4", key: "poNumber" },
@@ -505,16 +505,18 @@ const POReportPage = ({ onNavigate, t }) => {
 
   return (
     <div style={{
-      flex: 1,
+      height: "calc(100vh - 64px)",
+      padding: "24px",
+      boxSizing: "border-box",
       display: "flex",
       flexDirection: "column",
+      gap: "24px",
       background: "var(--neutral-background-primary)",
-      height: "100%",
-      overflowY: "auto",
-      padding: "32px"
+      overflow: "hidden",
+      minHeight: 0,
     }}>
       {/* Header Section */}
-      <div style={{ marginBottom: "24px" }}>
+      <div>
         <div 
           style={{ 
             display: "flex", 
@@ -612,7 +614,7 @@ const POReportPage = ({ onNavigate, t }) => {
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "24px", marginBottom: "32px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "24px" }}>
         {[
           { label: "Total Orders", value: metrics.totalCount, icon: <FileText /> },
           { label: "Total Order Value", value: formatCurrency(metrics.totalOrderValue || metrics.totalPoValue, currency), icon: <TrendingUp /> },
@@ -656,10 +658,11 @@ const POReportPage = ({ onNavigate, t }) => {
         border: "1px solid var(--neutral-line-separator-1)",
         display: "flex",
         flexDirection: "column",
-        overflow: "hidden"
+        overflow: "hidden",
+        minHeight: 0,
       }}>
         {/* Filters Header */}
-        <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)" }}>
+        <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)", flexShrink: 0 }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <MultiSelectDropdown 
               searchable={true}
@@ -687,9 +690,26 @@ const POReportPage = ({ onNavigate, t }) => {
         </div>
 
         {/* Table Content */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {/* Header Row */}
-          <div style={{ display: "flex", background: "var(--neutral-surface-primary)", borderBottom: "1px solid var(--neutral-line-separator-1)" }}>
+        <div style={{ 
+          flex: 1, 
+          overflow: "auto", 
+          width: "100%" 
+        }}>
+          <div style={{ 
+            minWidth: "1050px", 
+            width: "100%", 
+            display: "flex", 
+            flexDirection: "column" 
+          }}>
+            {/* Header Row */}
+            <div style={{ 
+              display: "flex", 
+              background: "var(--neutral-surface-primary)", 
+              borderBottom: "1px solid var(--neutral-line-separator-1)",
+              position: "sticky",
+              top: 0,
+              zIndex: 20,
+            }}>
             {tableColumns.map((col, idx) => (
               <div 
                 key={idx} 
@@ -733,7 +753,11 @@ const POReportPage = ({ onNavigate, t }) => {
           </div>
 
           {/* Rows */}
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ 
+            display: "flex", 
+            flexDirection: "column",
+            flex: paginatedData.length === 0 ? 1 : "0 0 auto",
+          }}>
             {paginatedData.length > 0 ? paginatedData.map((po, idx) => {
               const invoiced = po.invoices.reduce((s, i) => s + i.amount, 0);
               const paid = po.invoices.reduce((s, i) => s + i.payments.reduce((sp, p) => sp + p.amount, 0), 0);
@@ -773,6 +797,7 @@ const POReportPage = ({ onNavigate, t }) => {
                 No purchase orders found for the selected criteria.
               </div>
             )}
+            </div>
           </div>
         </div>
 

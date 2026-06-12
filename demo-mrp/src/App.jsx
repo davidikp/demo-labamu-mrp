@@ -27,6 +27,10 @@ import { NotificationSettingsPage } from "./modules/administration/pages/Notific
 import { MaterialsListPage } from "./modules/materials/pages/MaterialsListPage.jsx";
 import { MaterialDetailPage } from "./modules/materials/pages/MaterialDetailPage.jsx";
 import { MaterialManagePage } from "./modules/materials/pages/MaterialManagePage.jsx";
+import { MaterialForecastPage } from "./modules/material-forecast/pages/MaterialForecastPage.jsx";
+import { MaterialForecastEmptyPage } from "./modules/material-forecast/pages/MaterialForecastEmptyPage.jsx";
+import { IncomingPOPage } from "./modules/material-forecast/pages/IncomingPOPage.jsx";
+import { DemandUrgencyDetailPage } from "./modules/material-forecast/pages/DemandUrgencyDetailPage.jsx";
 import { ProcurementAPReportPage } from "./modules/analytics/pages/ProcurementAPReportPage.jsx";
 import { POReportPage } from "./modules/analytics/pages/POReportPage.jsx";
 import { VendorLiabilityReportPage } from "./modules/analytics/pages/VendorLiabilityReportPage.jsx";
@@ -58,6 +62,8 @@ const TRANSLATIONS = {
       customers: "Customers",
       resources: "Resources",
       material_request: "Material Request",
+      procurement: "Procurement",
+      material_forecast: "Material Forecast",
       manufacturing: "Manufacturing",
       analytics: "Analytics",
       reports: "Reports",
@@ -118,6 +124,8 @@ const TRANSLATIONS = {
       customers: "Pelanggan",
       resources: "Sumber Daya",
       material_request: "Permintaan Material",
+      procurement: "Pengadaan",
+      material_forecast: "Prakiraan Material",
       manufacturing: "Manufaktur",
       analytics: "Analitik",
       reports: "Laporan",
@@ -176,6 +184,7 @@ const MODULE_TO_ROUTE = {
   user_management: "user-management",
   notification_settings: "notification-settings",
   user_guide: "user-guide",
+  material_forecast: "material-forecast",
   procurement_ap_report: "procurement-ap-report",
   po_report: "po-report",
   vendor_liability_report: "vendor-liability-report",
@@ -382,6 +391,7 @@ const ModuleRenderer = ({
   const isSpecialView = ["list", "create", "settings", "manage"].includes(viewState.view) || 
                         activeModule === "analytics" || 
                         activeModule === "administration" ||
+                        activeModule === "material_forecast" ||
                         activeModule === "procurement_ap_report" ||
                         activeModule === "po_report" ||
                         activeModule === "vendor_liability_report" ||
@@ -710,6 +720,29 @@ const ModuleRenderer = ({
         />
       );
     }
+  }
+  if (activeModule === "material_forecast") {
+    if (viewState.view === "counter_detail") {
+      if (viewState.data?.title === "Incoming PO") {
+        return <IncomingPOPage onNavigate={onNavigate} />;
+      }
+      if (["Overdue", "Urgent", "This Week"].includes(viewState.data?.title)) {
+        return <DemandUrgencyDetailPage onNavigate={onNavigate} statusType={viewState.data.title} showPoSnackbar={showPoSnackbar} />;
+      }
+      return (
+        <MaterialForecastEmptyPage
+          onNavigate={onNavigate}
+          title={viewState.data?.title}
+        />
+      );
+    }
+    return (
+      <MaterialForecastPage
+        onNavigate={onNavigate}
+        t={t}
+        showPoSnackbar={showPoSnackbar}
+      />
+    );
   }
   if (activeModule === "orders") {
     if (viewState.view === "list") {

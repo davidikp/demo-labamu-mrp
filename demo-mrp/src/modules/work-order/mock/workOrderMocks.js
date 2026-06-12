@@ -405,8 +405,10 @@ export const MOCK_WO_TABLE_DATA = [
         assignedSteps: [2, 3],
         receipts: [
           {
+            receiptId: "RCT-202603-104",
             amount: 20,
             date: "2026-03-25",
+            time: "10:00",
             attachment: "proof_of_delivery_01.pdf",
             note: "Delivered in full and received in good condition.",
           },
@@ -427,8 +429,10 @@ export const MOCK_WO_TABLE_DATA = [
         assignedSteps: [3],
         receipts: [
           {
+            receiptId: "RCT-202603-112",
             amount: 4,
             date: "2026-03-26",
+            time: "14:30",
             attachment: "proof_of_delivery_02.pdf",
             note: "Partial delivery received. Remaining quantity still pending.",
           },
@@ -522,8 +526,10 @@ export const MOCK_WO_TABLE_DATA = [
         receivedDate: "2025-12-25",
         receipts: [
           {
+            receiptId: "RCT-202512-105",
             amount: 5,
             date: "2025-12-25",
+            time: "16:00",
             attachment: "Internal routing completion",
             note: "Work Order-recorded from internal routing completion.",
           },
@@ -542,8 +548,10 @@ export const MOCK_WO_TABLE_DATA = [
         isPoApproved: true,
         receipts: [
           {
+            receiptId: "RCT-202512-109",
             amount: 10,
             date: "2025-12-24",
+            time: "09:15",
             attachment: "proof_of_delivery_03.pdf",
             note: "Delivered in full and received in good condition.",
           },

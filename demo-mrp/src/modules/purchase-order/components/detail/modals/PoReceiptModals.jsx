@@ -1,14 +1,17 @@
 import React from "react";
 import { GeneralModal } from "../../../../../components/modal/GeneralModal.jsx";
-import { Info } from "../../../../../components/icons/Icons.jsx";
+import { IconButton } from "../../../../../components/common/IconButton.jsx";
+import { Info, CloseIcon } from "../../../../../components/icons/Icons.jsx";
 import {
   Button,
   InputField,
   UploadDropzone,
   UploadDescriptionCard,
+  LabelValue,
 } from "../shared/PoDetailSharedComponents.jsx";
 
 const PoReceiptModals = ({
+  receiptLines,
   // Adjust WO Modal Props
   showAdjustWoModal,
   setShowAdjustWoModal,
@@ -34,6 +37,8 @@ const PoReceiptModals = ({
   updateReceiptProofDescription,
   removeReceiptProofDocument,
 }) => {
+  const itemsToReceive = (receiptLines || []).filter(line => Number(line.receiveNow) > 0);
+
   return (
     <>
       {/* Adjust WO Modal */}
@@ -86,46 +91,29 @@ const PoReceiptModals = ({
       </GeneralModal>
 
       {/* Confirm Receipt Modal */}
-      <GeneralModal
-        isOpen={showConfirmReceiptModal}
-        onClose={() => {
-          setShowConfirmReceiptModal(false);
-          setReceiptProofDocuments([]);
-          setReceiptProofUploadError("");
-          setReceiptProofDescriptionErrors({});
-          setReceiptNotes("");
-        }}
-        title="Confirm Receipt"
-        width="680px"
-        footer={
-          <div style={{ display: "flex", gap: "12px", width: "100%" }}>
-            <Button
-              variant="outlined"
-              size="large"
-              style={{ flex: 1 }}
-              onClick={() => {
+      {showConfirmReceiptModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.28)", display: "flex", justifyContent: "flex-end", zIndex: 20000 }}>
+          <div style={{ position: "absolute", inset: 0 }} onClick={() => {
+            setShowConfirmReceiptModal(false);
+            setReceiptProofDocuments([]);
+            setReceiptProofUploadError("");
+            setReceiptProofDescriptionErrors({});
+            setReceiptNotes("");
+          }} />
+          <div style={{ position: "relative", width: "600px", background: "var(--neutral-surface-primary)", height: "100%", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ padding: "24px", borderBottom: "1px solid var(--neutral-line-separator-1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "var(--text-title-1)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Confirm Receipt</span>
+              </div>
+              <IconButton icon={CloseIcon} onClick={() => {
                 setShowConfirmReceiptModal(false);
                 setReceiptProofDocuments([]);
                 setReceiptProofUploadError("");
                 setReceiptProofDescriptionErrors({});
                 setReceiptNotes("");
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="filled"
-              size="large"
-              style={{ flex: 1 }}
-              disabled={false}
-              onClick={handleSubmitReceipt}
-            >
-              Submit
-            </Button>
-          </div>
-        }
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+              }} size="small" color="var(--neutral-on-surface-primary)" />
+            </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
           {showAutoAdjustWoMessage && (
             <div
               style={{
@@ -157,11 +145,49 @@ const PoReceiptModals = ({
               </span>
             </div>
           )}
+          {itemsToReceive.length > 0 && (
+            <div style={{ padding: "16px", borderRadius: "16px", border: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column", gap: "16px" }}>
+              {itemsToReceive.length === 1 ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", rowGap: "16px" }}>
+                  <LabelValue 
+                    label="Included Item" 
+                    value={itemsToReceive[0].item || itemsToReceive[0].desc || "-"} 
+                  />
+                  <LabelValue 
+                    label="Item Type" 
+                    value={itemsToReceive[0].type === "wo" ? "Work Order" : itemsToReceive[0].type === "manual" ? "Manual" : "Material"} 
+                  />
+                  <LabelValue 
+                    label="Receive Amount" 
+                    value={`${itemsToReceive[0].receiveNow} pcs`} 
+                  />
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+                    <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>Included Item</span>
+                    <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>Item Type</span>
+                    <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>Receive Amount</span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    {itemsToReceive.map((item, idx) => (
+                      <div key={idx} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", alignItems: "center" }}>
+                        <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", fontWeight: "var(--font-weight-bold)" }}>{item.item || item.desc || "-"}</span>
+                        <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", fontWeight: "var(--font-weight-bold)" }}>{item.type === "wo" ? "Work Order" : item.type === "manual" ? "Manual" : "Material"}</span>
+                        <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", fontWeight: "var(--font-weight-bold)" }}>{item.receiveNow} pcs</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           <InputField
             label="Received By"
             required
-            value={receiptReceivedBy}
-            onChange={(e) => setReceiptReceivedBy(e.target.value)}
+            disabled
+            value="Natasha Smith"
+            onChange={() => {}}
             placeholder="Enter receiver name"
           />
           <InputField
@@ -224,8 +250,34 @@ const PoReceiptModals = ({
               </span>
             )}
           </div>
+            </div>
+            <div style={{ padding: "16px 24px", borderTop: "1px solid var(--neutral-line-separator-1)", background: "var(--neutral-surface-primary)", display: "flex", gap: "12px" }}>
+              <Button
+                variant="outlined"
+                size="large"
+                style={{ flex: 1 }}
+                onClick={() => {
+                  setShowConfirmReceiptModal(false);
+                  setReceiptProofDocuments([]);
+                  setReceiptProofUploadError("");
+                  setReceiptProofDescriptionErrors({});
+                  setReceiptNotes("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="filled"
+                size="large"
+                style={{ flex: 1 }}
+                onClick={handleSubmitReceipt}
+              >
+                Submit
+              </Button>
+            </div>
+          </div>
         </div>
-      </GeneralModal>
+      )}
     </>
   );
 };

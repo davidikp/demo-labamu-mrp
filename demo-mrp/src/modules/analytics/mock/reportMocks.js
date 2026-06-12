@@ -1,129 +1,136 @@
 
 export const MOCK_REPORT_POS = [
+  // 1. Open / Not Due
   {
-    id: "po-1",
-    poNumber: "PO-202603-0001",
-    vendorName: "PT Mitra Sejahtera",
-    amount: 15000000,
+    id: "po-open",
+    poNumber: "PO-202606-0001",
+    vendorName: "PT Baru Buka",
+    amount: 10000000,
     status: "Issued",
-    createdDate: "2026-03-20",
+    createdDate: "2026-06-01",
     invoices: [
       {
-        id: "inv-1",
-        number: "INV/MS/001",
-        amount: 5000000,
-        dueDate: "2026-04-15", // Late 1-30 (diffDays ~28)
-        status: "Settled",
-        payments: [{ amount: 5000000, date: "2026-04-10" }]
-      }
-    ]
-  },
-  {
-    id: "po-2",
-    poNumber: "PO-202603-0002",
-    vendorName: "PT Cahaya Abadi",
-    amount: 8500000,
-    status: "Issued",
-    createdDate: "2026-03-21",
-    invoices: [
-      {
-        id: "inv-2",
-        number: "INV/CA/001",
-        amount: 8500000,
-        dueDate: "2026-04-20", // Late 1-30 (diffDays ~23)
-        status: "Partially Paid",
-        payments: [{ amount: 4000000, date: "2026-04-18" }]
-      }
-    ]
-  },
-  {
-    id: "po-3",
-    poNumber: "PO-202603-0003",
-    vendorName: "Bintang Sejahtera",
-    amount: 22000000,
-    status: "Issued",
-    createdDate: "2026-03-22",
-    invoices: [
-      {
-        id: "inv-3",
-        number: "INV/BS/001",
+        id: "inv-open",
+        number: "INV/BB/001",
         amount: 10000000,
-        dueDate: "2026-04-10", // Late 31-60 (diffDays ~33)
+        dueDate: "2026-06-25", // Not due
         status: "Unpaid",
         payments: []
       }
     ]
   },
+  // 2. Partially Paid / Not Due
   {
-    id: "po-4",
-    poNumber: "PO-202603-0004",
-    vendorName: "CV Kayu Makmur",
-    amount: 12000000,
-    status: "Completed",
-    createdDate: "2026-03-24",
-    invoices: [
-      {
-        id: "inv-4",
-        number: "INV/KM/001",
-        amount: 12000000,
-        dueDate: "2026-05-01", // Late 1-30 (diffDays ~12)
-        status: "Settled",
-        payments: [{ amount: 12000000, date: "2026-04-22" }]
-      }
-    ]
-  },
-  {
-    id: "po-6",
-    poNumber: "PO-202603-0006",
-    vendorName: "PT Mitra Sejahtera",
-    amount: 4500000,
-    status: "Need Revision",
-    createdDate: "2026-03-26",
-    invoices: [
-      {
-        id: "inv-5",
-        number: "INV/MS/002",
-        amount: 2000000,
-        dueDate: "2026-05-15", // Not Due
-        status: "Unpaid",
-        payments: []
-      }
-    ]
-  },
-  {
-    id: "po-7",
-    poNumber: "PO-202602-0007",
-    vendorName: "PT Galaksi Jaya",
-    amount: 9000000,
+    id: "po-partial",
+    poNumber: "PO-202606-0002",
+    vendorName: "CV Sebagian",
+    amount: 20000000,
     status: "Issued",
-    createdDate: "2026-02-15",
+    createdDate: "2026-06-02",
     invoices: [
       {
-        id: "inv-6",
-        number: "INV/GJ/001",
-        amount: 9000000,
-        dueDate: "2026-03-10", // Late 61-90 (diffDays ~64)
+        id: "inv-partial",
+        number: "INV/CS/001",
+        amount: 20000000,
+        dueDate: "2026-06-28", // Not due
+        status: "Partially Paid",
+        payments: [{ amount: 5000000, date: "2026-06-05" }]
+      }
+    ]
+  },
+  // 3. Paid / Not Due
+  {
+    id: "po-paid",
+    poNumber: "PO-202606-0003",
+    vendorName: "PT Lunas",
+    amount: 15000000,
+    status: "Completed",
+    createdDate: "2026-05-20",
+    invoices: [
+      {
+        id: "inv-paid",
+        number: "INV/PL/001",
+        amount: 15000000,
+        dueDate: "2026-06-15", // Not due, but Paid
+        status: "Settled",
+        payments: [{ amount: 15000000, date: "2026-06-01" }]
+      }
+    ]
+  },
+  // 4. Overdue / Late 1-30
+  {
+    id: "po-late1",
+    poNumber: "PO-202605-0001",
+    vendorName: "PT Telat Dikit",
+    amount: 12000000,
+    status: "Issued",
+    createdDate: "2026-05-01",
+    invoices: [
+      {
+        id: "inv-late1",
+        number: "INV/TD/001",
+        amount: 12000000,
+        dueDate: "2026-05-25", // Late ~16 days
         status: "Unpaid",
         payments: []
       }
     ]
   },
+  // 5. Overdue / Late 31-60
   {
-    id: "po-8",
-    poNumber: "PO-202601-0008",
-    vendorName: "CV Maju Terus",
+    id: "po-late2",
+    poNumber: "PO-202604-0001",
+    vendorName: "CV Lumayan Telat",
     amount: 18000000,
     status: "Issued",
-    createdDate: "2026-01-10",
+    createdDate: "2026-04-01",
     invoices: [
       {
-        id: "inv-7",
-        number: "INV/MT/001",
+        id: "inv-late2",
+        number: "INV/LT/001",
         amount: 18000000,
-        dueDate: "2026-02-05", // Late 90+ (diffDays ~97)
+        dueDate: "2026-04-20", // Late ~51 days
+        status: "Unpaid",
+        payments: []
+      }
+    ]
+  },
+  // 6. Overdue / Late 61-90 (Partially Paid)
+  {
+    id: "po-late3",
+    poNumber: "PO-202603-0001",
+    vendorName: "PT Telat Banget",
+    amount: 25000000,
+    status: "Issued",
+    createdDate: "2026-03-01",
+    invoices: [
+      {
+        id: "inv-late3",
+        number: "INV/TB/001",
+        amount: 25000000,
+        dueDate: "2026-03-25", // Late ~77 days
+        status: "Partially Paid",
+        payments: [{ amount: 10000000, date: "2026-04-01" }]
+      }
+    ]
+  },
+  // 7. Overdue / Late 90+
+  {
+    id: "po-late4",
+    poNumber: "PO-202602-0001",
+    vendorName: "CV Parah",
+    amount: 30000000,
+    status: "Issued",
+    createdDate: "2026-02-01",
+    invoices: [
+      {
+        id: "inv-late4",
+        number: "INV/CP/001",
+        amount: 30000000,
+        dueDate: "2026-02-25", // Late ~105 days
         status: "Unpaid",
         payments: []
       }
     ]
   }
-];
+].filter(po => ["Issued", "Completed"].includes(po.status));

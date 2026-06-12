@@ -157,9 +157,13 @@ const APAgingReportPage = ({ onNavigate, t }) => {
         else if (diffDays > 30) agingBucket = "Late 31-60";
         else if (diffDays > 0) agingBucket = "Late 1-30";
 
-        let status = "Unpaid";
-        if (paidAmount > 0) {
-          status = paidAmount >= inv.amount ? "Paid" : "Partially Paid";
+        let status = "Open";
+        if (paidAmount >= inv.amount) {
+          status = "Paid";
+        } else if (diffDays > 0) {
+          status = "Overdue";
+        } else if (paidAmount > 0) {
+          status = "Partially Paid";
         }
 
         list.push({
@@ -186,8 +190,7 @@ const APAgingReportPage = ({ onNavigate, t }) => {
       
       let matchesStatus = true;
       if (paymentStatusFilter.length > 0) {
-        matchesStatus = paymentStatusFilter.includes(inv.status) || 
-          (paymentStatusFilter.includes("Unpaid + Partial") && (inv.status === "Unpaid" || inv.status === "Partially Paid"));
+        matchesStatus = paymentStatusFilter.includes(inv.status);
       }
 
       const matchesSearch = inv.number.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -252,7 +255,7 @@ const APAgingReportPage = ({ onNavigate, t }) => {
     { label: "Invoice Amount", flex: "1.4" },
     { label: "Paid Amount", flex: "1.4" },
     { label: "Outstanding", flex: "1.4", key: "outstanding", sortable: true },
-    { label: "Payment Status", flex: "1.2" },
+    { label: "Invoice Status", flex: "1.2" },
     { label: "Aging Bucket", flex: "1.4" },
   ];
 
@@ -262,16 +265,18 @@ const APAgingReportPage = ({ onNavigate, t }) => {
 
   return (
     <div style={{
-      flex: 1,
+      height: "calc(100vh - 64px)",
+      padding: "24px",
+      boxSizing: "border-box",
       display: "flex",
       flexDirection: "column",
+      gap: "24px",
       background: "var(--neutral-background-primary)",
-      height: "100%",
-      overflowY: "auto",
-      padding: "32px"
+      overflow: "hidden",
+      minHeight: 0,
     }}>
       {/* Header Section */}
-      <div style={{ marginBottom: "32px" }}>
+      <div>
         <div 
           style={{ 
             display: "flex", 
@@ -313,7 +318,7 @@ const APAgingReportPage = ({ onNavigate, t }) => {
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "24px", marginBottom: "32px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "24px" }}>
         {[
           { label: "Not Due", value: summary.notDue, icon: <CheckCircleIcon /> },
           { label: "Late 1–30", value: summary.late1_30, icon: <Calendar /> },
@@ -365,10 +370,11 @@ const APAgingReportPage = ({ onNavigate, t }) => {
         border: "1px solid var(--neutral-line-separator-1)",
         display: "flex",
         flexDirection: "column",
-        overflow: "hidden"
+        overflow: "hidden",
+        minHeight: 0,
       }}>
         {/* Filters Header */}
-        <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)" }}>
+        <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)", flexShrink: 0 }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <MultiSelectDropdown 
               placeholder="Aging Bucket"
@@ -390,11 +396,11 @@ const APAgingReportPage = ({ onNavigate, t }) => {
               onChange={(val) => { setVendorFilter(val); setCurrentPage(1); }}
             />
             <MultiSelectDropdown 
-              placeholder="Status"
+              placeholder="Invoice Status"
               value={paymentStatusFilter}
               options={[
-                { value: "Unpaid + Partial", label: "Unpaid + Partial" },
-                { value: "Unpaid", label: "Unpaid" },
+                { value: "Open", label: "Open" },
+                { value: "Overdue", label: "Overdue" },
                 { value: "Partially Paid", label: "Partially Paid" },
                 { value: "Paid", label: "Paid" }
               ]}
@@ -413,9 +419,26 @@ const APAgingReportPage = ({ onNavigate, t }) => {
         </div>
 
         {/* Table Content */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {/* Header Row */}
-          <div style={{ display: "flex", background: "var(--neutral-surface-primary)", borderBottom: "1px solid var(--neutral-line-separator-1)" }}>
+        <div style={{ 
+          flex: 1, 
+          overflow: "auto", 
+          width: "100%" 
+        }}>
+          <div style={{ 
+            minWidth: "1050px", 
+            width: "100%", 
+            display: "flex", 
+            flexDirection: "column" 
+          }}>
+            {/* Header Row */}
+            <div style={{ 
+              display: "flex", 
+              background: "var(--neutral-surface-primary)", 
+              borderBottom: "1px solid var(--neutral-line-separator-1)",
+              position: "sticky",
+              top: 0,
+              zIndex: 20,
+            }}>
             {tableColumns.map((col, idx) => (
               <div 
                 key={idx} 
@@ -460,11 +483,16 @@ const APAgingReportPage = ({ onNavigate, t }) => {
           </div>
 
           {/* Rows */}
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ 
+            display: "flex", 
+            flexDirection: "column",
+            flex: paginatedData.length === 0 ? 1 : "0 0 auto",
+          }}>
             {paginatedData.length > 0 ? paginatedData.map((inv, idx) => {
-              let statusVariant = "red-light";
+              let statusVariant = "grey-light";
               if (inv.status === "Paid") statusVariant = "green-light";
               if (inv.status === "Partially Paid") statusVariant = "blue-light";
+              if (inv.status === "Overdue") statusVariant = "red-light";
 
               const isOverdue = inv.overdueDays > 0 && inv.status !== "Paid";
 
@@ -529,6 +557,7 @@ const APAgingReportPage = ({ onNavigate, t }) => {
                 No invoices found for the selected criteria.
               </div>
             )}
+            </div>
           </div>
         </div>
 

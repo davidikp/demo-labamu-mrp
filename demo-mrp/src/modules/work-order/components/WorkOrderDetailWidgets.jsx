@@ -50,7 +50,7 @@ const ProgressRing = ({ percentage, color = "inherit" }) => {
   );
 };
 
-const Tooltip = ({ content, children, style = {}, showOnlyIfTruncated = false }) => {
+const Tooltip = ({ content, children, style = {}, showOnlyIfTruncated = false, align = "center" }) => {
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef(null);
 
@@ -81,8 +81,9 @@ const Tooltip = ({ content, children, style = {}, showOnlyIfTruncated = false })
           style={{
             position: "absolute",
             bottom: "100%",
-            left: "50%",
-            transform: "translateX(-50%)",
+            left: align === "right" ? "auto" : "50%",
+            right: align === "right" ? "0" : "auto",
+            transform: align === "right" ? "none" : "translateX(-50%)",
             marginBottom: "8px",
             width: "max-content",
             padding: "8px 12px",
@@ -102,8 +103,9 @@ const Tooltip = ({ content, children, style = {}, showOnlyIfTruncated = false })
             style={{
               position: "absolute",
               top: "100%",
-              left: "50%",
-              transform: "translateX(-50%)",
+              left: align === "right" ? "auto" : "50%",
+              right: align === "right" ? "12px" : "auto",
+              transform: align === "right" ? "none" : "translateX(-50%)",
               borderWidth: "6px",
               borderStyle: "solid",
               borderColor:
@@ -1256,33 +1258,41 @@ const ProofDocumentList = ({ documents = [], onDocumentClick }) => {
               textAlign: "left",
             }}
           >
-            <span
-              style={{
-                fontSize: "var(--text-title-3)",
-                fontWeight: "var(--font-weight-bold)",
-                color: "var(--feature-brand-primary)",
-                lineHeight: "20px",
-                letterSpacing: "0.09625px",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {getDocumentPrimaryLabel(doc)}
-            </span>
-            <span
-              style={{
-                fontSize: "var(--text-body)",
-                color: "var(--feature-brand-primary)",
-                lineHeight: "18px",
-                letterSpacing: "0.0825px",
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {doc.name}
-            </span>
+            <Tooltip content={getDocumentPrimaryLabel(doc)} showOnlyIfTruncated align="right" style={{ display: "block", width: "100%", minWidth: 0 }}>
+              <span
+                style={{
+                  display: "block",
+                  width: "100%",
+                  fontSize: "var(--text-title-3)",
+                  fontWeight: "var(--font-weight-bold)",
+                  color: "var(--feature-brand-primary)",
+                  lineHeight: "20px",
+                  letterSpacing: "0.09625px",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {getDocumentPrimaryLabel(doc)}
+              </span>
+            </Tooltip>
+            <Tooltip content={doc.name} showOnlyIfTruncated align="right" style={{ display: "block", width: "100%", minWidth: 0 }}>
+              <span
+                style={{
+                  display: "block",
+                  width: "100%",
+                  fontSize: "var(--text-body)",
+                  color: "var(--feature-brand-primary)",
+                  lineHeight: "18px",
+                  letterSpacing: "0.0825px",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {doc.name}
+              </span>
+            </Tooltip>
           </button>
         </div>
       ))}

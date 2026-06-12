@@ -3170,6 +3170,7 @@ export const PurchaseOrderDetailPage = ({
       />
 
       <PoReceiptModals
+        receiptLines={receiptLines}
         showAdjustWoModal={showAdjustWoModal}
         setShowAdjustWoModal={setShowAdjustWoModal}
         handleContinueFromAdjustWo={handleContinueFromAdjustWo}

@@ -146,16 +146,18 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
 
   return (
     <div style={{
-      flex: 1,
+      height: "calc(100vh - 64px)",
+      padding: "24px",
+      boxSizing: "border-box",
       display: "flex",
       flexDirection: "column",
+      gap: "24px",
       background: "var(--neutral-background-primary)",
-      height: "100%",
-      overflowY: "auto",
-      padding: "32px"
+      overflow: "hidden",
+      minHeight: 0,
     }}>
       {/* Header Section */}
-      <div style={{ marginBottom: "32px" }}>
+      <div>
         <div 
           style={{ 
             display: "flex", 
@@ -197,7 +199,7 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", marginBottom: "32px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
         {[
           { label: "Total Outstanding", value: summary.total, icon: <TrendingUp /> },
           { label: "Not Due", value: summary.notDue, icon: <CheckCircleIcon /> },
@@ -250,10 +252,11 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
         border: "1px solid var(--neutral-line-separator-1)",
         display: "flex",
         flexDirection: "column",
-        overflow: "hidden"
+        overflow: "hidden",
+        minHeight: 0,
       }}>
         {/* Filters Header */}
-        <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)" }}>
+        <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)", flexShrink: 0 }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <MultiSelectDropdown 
               searchable={true}
@@ -267,9 +270,26 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
         </div>
 
         {/* Table Content */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          {/* Header Row */}
-          <div style={{ display: "flex", background: "var(--neutral-surface-primary)", borderBottom: "1px solid var(--neutral-line-separator-1)" }}>
+        <div style={{ 
+          flex: 1, 
+          overflow: "auto", 
+          width: "100%" 
+        }}>
+          <div style={{ 
+            minWidth: "1050px", 
+            width: "100%", 
+            display: "flex", 
+            flexDirection: "column" 
+          }}>
+            {/* Header Row */}
+            <div style={{ 
+              display: "flex", 
+              background: "var(--neutral-surface-primary)", 
+              borderBottom: "1px solid var(--neutral-line-separator-1)",
+              position: "sticky",
+              top: 0,
+              zIndex: 20,
+            }}>
             {tableColumns.map((col, idx) => (
               <div 
                 key={idx} 
@@ -297,7 +317,11 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
           </div>
 
           {/* Rows */}
-          <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ 
+            display: "flex", 
+            flexDirection: "column",
+            flex: paginatedData.length === 0 ? 1 : "0 0 auto",
+          }}>
             {paginatedData.length > 0 ? paginatedData.map((v, idx) => (
               <div 
                 key={idx} 
@@ -322,6 +346,7 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
                 No vendor liabilities found for the selected criteria.
               </div>
             )}
+            </div>
           </div>
         </div>
 

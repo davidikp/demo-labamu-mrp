@@ -646,7 +646,7 @@ const poReferenceTableInnerStyle = (minWidth = "100%") => ({
 const poReferenceTableHeaderRowStyle = (gridTemplateColumns) => ({
   display: "grid",
   gridTemplateColumns,
-  gap: "0",
+  gap: "8px",
   padding: "0 16px",
   height: "49px",
   alignItems: "center",
@@ -664,7 +664,7 @@ const poReferenceTableRowStyle = (
 ) => ({
   display: "grid",
   gridTemplateColumns,
-  gap: "0",
+  gap: "8px",
   padding: "0 16px",
   minHeight: "64px",
   alignItems: "center",
@@ -7041,11 +7041,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
       ) : null}
 
 {isSendToVendorModalOpen && selectedSendVendor ? (
-        <GeneralModal
-          isOpen={isSendToVendorModalOpen}
-          width="600px"
-          title="Release to Vendor"
-          onClose={() => {
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.28)", display: "flex", justifyContent: "flex-end", zIndex: 20000 }}>
+          <div style={{ position: "absolute", inset: 0 }} onClick={() => {
             setIsSendToVendorModalOpen(false);
             setSelectedSendVendor(null);
             setSendAmount("");
@@ -7053,38 +7050,24 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
             setSendProofDocuments([]);
             setSendErrors({});
             setSendProofUploadError("");
-          }}
-          footer={
-            <div style={{ display: "flex", gap: "12px", width: "100%", justifyContent: "flex-end" }}>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => {
-                  setIsSendToVendorModalOpen(false);
-                  setSelectedSendVendor(null);
-                  setSendAmount("");
-                  setSendNotes("");
-                  setSendProofDocuments([]);
-                  setSendErrors({});
-                  setSendProofUploadError("");
-                }}
-                style={{ flex: 1 }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="filled"
-                size="large"
-                onClick={handleSendToVendor}
-                style={{ flex: 1 }}
-              >
-                Submit
-              </Button>
+          }} />
+          <div style={{ position: "relative", width: "600px", background: "var(--neutral-surface-primary)", height: "100%", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ padding: "24px", borderBottom: "1px solid var(--neutral-line-separator-1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "var(--text-title-1)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Release to Vendor</span>
+              </div>
+              <IconButton icon={CloseIcon} onClick={() => {
+                setIsSendToVendorModalOpen(false);
+                setSelectedSendVendor(null);
+                setSendAmount("");
+                setSendNotes("");
+                setSendProofDocuments([]);
+                setSendErrors({});
+                setSendProofUploadError("");
+              }} size="small" color="var(--neutral-on-surface-primary)" />
             </div>
-          }
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: "24px", marginTop: "16px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
               {selectedSendVendor ? (
                 <Card style={{ padding: "16px", boxShadow: "none", border: "1px solid var(--neutral-line-separator-1)" }}>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", rowGap: "16px" }}>
@@ -7118,11 +7101,9 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
 
               <FormField label="Released by" required error={sendErrors.sendBy}>
                 <InputField
-                  value={sendBy}
-                  onChange={(e) => {
-                    setSendBy(e.target.value);
-                    if (sendErrors.sendBy) setSendErrors(prev => ({ ...prev, sendBy: "" }));
-                  }}
+                  value="Natasha Smith"
+                  disabled
+                  onChange={() => {}}
                   placeholder="Enter name"
                   error={sendErrors.sendBy}
                 />
@@ -7184,74 +7165,52 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 </div>
               ) : null}
             </FormField>
+            </div>
+            <div style={{ padding: "16px 24px", borderTop: "1px solid var(--neutral-line-separator-1)", background: "var(--neutral-surface-primary)", display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => {
+                  setIsSendToVendorModalOpen(false);
+                  setSelectedSendVendor(null);
+                  setSendAmount("");
+                  setSendNotes("");
+                  setSendProofDocuments([]);
+                  setSendErrors({});
+                  setSendProofUploadError("");
+                }}
+                style={{ flex: 1 }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="filled"
+                size="large"
+                onClick={handleSendToVendor}
+                style={{ flex: 1 }}
+              >
+                Submit
+              </Button>
+            </div>
           </div>
-        </GeneralModal>
+        </div>
       ) : null}
 
       {isViewReceiptHistoryModalOpen && receiptHistoryVendor ? (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: "rgba(0, 0, 0, 0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-        >
-            <div
-              style={{
-              width:
-                receiptHistoryVendor.name === "Internal" ? "520px" : "760px",
-              background: "var(--neutral-surface-primary)",
-              borderRadius: "var(--radius-card)",
-              padding: "64px 32px 32px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "24px",
-              position: "relative",
-              boxShadow: "var(--elevation-sm)",
-            }}
-          >
-            <IconButton
-              icon={CloseIcon}
-              size="large"
-              onClick={() => setIsViewReceiptHistoryModalOpen(false)}
-              style={{ position: "absolute", top: "16px", right: "16px" }}
-              color="var(--neutral-on-surface-primary)"
-            />
-            <div
-              style={{
-                position: "relative",
-                minHeight: "40px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "4px",
-                marginBottom: "24px",
-              }}
-            >
-              <h2
-                style={{
-                  margin: "0",
-                  fontSize: "var(--text-headline)",
-                  fontWeight: "var(--font-weight-bold)",
-                  color: "var(--neutral-on-surface-primary)",
-                  textAlign: "center",
-                }}
-              >
-                Assignment Log
-              </h2>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.28)", display: "flex", justifyContent: "flex-end", zIndex: 20000 }}>
+          <div style={{ position: "absolute", inset: 0 }} onClick={() => setIsViewReceiptHistoryModalOpen(false)} />
+          <div style={{ position: "relative", width: "960px", background: "var(--neutral-surface-primary)", height: "100%", display: "flex", flexDirection: "column" }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ padding: "24px", borderBottom: "1px solid var(--neutral-line-separator-1)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                <span style={{ fontSize: "var(--text-title-1)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Assignment Log</span>
+              </div>
+              <IconButton icon={CloseIcon} onClick={() => setIsViewReceiptHistoryModalOpen(false)} size="small" color="var(--neutral-on-surface-primary)" />
             </div>
+            <div style={{ flex: 1, overflowY: "auto", padding: "24px", display: "flex", flexDirection: "column", gap: "24px" }}>
 
             {receiptHistoryVendor.name !== "Internal" && (
               <Card style={{ padding: "16px", boxShadow: "none", border: "1px solid var(--neutral-line-separator-1)" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", rowGap: "16px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "16px", rowGap: "16px" }}>
                   <LabelValue label="Vendor Name" value={receiptHistoryVendor.name} />
                   <LabelValue label="Assignment ID" value={receiptHistoryVendor.assignmentId || "-"} />
                   <LabelValue 
@@ -7326,53 +7285,28 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 }}
               >
                 <div
-                  style={poReferenceTableInnerStyle(
-                    receiptHistoryVendor.name &&
-                      receiptHistoryVendor.name !== "Internal"
-                      ? "720px"
-                      : "360px"
-                  )}
+                  style={poReferenceTableInnerStyle("100%")}
                 >
-                  <div
-                    style={poReferenceTableHeaderRowStyle(
-                      receiptHistoryVendor.name &&
-                        receiptHistoryVendor.name !== "Internal"
-                        ? "1fr 1fr 1.3fr 1fr 1.5fr"
-                        : "1fr 1fr"
-                    )}
-                  >
-                    <div style={poReferenceTableHeaderCellStyle()}>Date</div>
-                    <div style={poReferenceTableHeaderCellStyle()}>
-                      Quantity
-                    </div>
-                    {!receiptHistoryVendor.name ||
-                      receiptHistoryVendor.name !== "Internal" ? (
-                      <div style={poReferenceTableHeaderCellStyle()}>{assignmentLogTab === "send" ? "Notes" : "Note"}</div>
-                    ) : null}
-                    {!receiptHistoryVendor.name ||
-                      receiptHistoryVendor.name !== "Internal" ? (
-                      <div style={poReferenceTableHeaderCellStyle()}>{assignmentLogTab === "send" ? "Released by" : "Received by"}</div>
-                    ) : null}
-                    {!receiptHistoryVendor.name ||
-                      receiptHistoryVendor.name !== "Internal" ? (
-                      <div style={poReferenceTableHeaderCellStyle()}>
-                        Document
-                      </div>
-                    ) : null}
+                  <div style={poReferenceTableHeaderRowStyle("120px 120px 80px 1fr 120px 160px")}>
+                    <div style={poReferenceTableHeaderCellStyle()}>Date & Time</div>
+                    <div style={poReferenceTableHeaderCellStyle()}>{assignmentLogTab === "send" ? "Release ID" : "Receipt ID"}</div>
+                    <div style={poReferenceTableHeaderCellStyle()}>{assignmentLogTab === "send" ? "Release Qty" : "Receipt Qty"}</div>
+                    <div style={poReferenceTableHeaderCellStyle()}>Notes</div>
+                    <div style={poReferenceTableHeaderCellStyle()}>{assignmentLogTab === "send" ? "Released by" : "Received by"}</div>
+                    <div style={poReferenceTableHeaderCellStyle()}>Document</div>
                   </div>
                   
                   {(assignmentLogTab === "send" ? receiptHistoryVendor.sendHistory : receiptHistoryVendor.receipts)?.map((r, i, arr) => (
                     <div
                       key={i}
-                      style={poReferenceTableRowStyle(
-                        receiptHistoryVendor.name &&
-                          receiptHistoryVendor.name !== "Internal"
-                          ? "1fr 1fr 1.3fr 1fr 1.5fr"
-                          : "1fr 1fr",
-                        i === arr.length - 1
-                      )}
+                      style={poReferenceTableRowStyle("120px 120px 80px 1fr 120px 160px", i === arr.length - 1)}
                     >
-                      <div style={poReferenceTableCellStyle()}>{r.date}</div>
+                      <div style={poReferenceTableCellStyle()}>
+                        {r.date}{r.time ? ` · ${r.time}` : ""}
+                      </div>
+                      <div style={poReferenceTableCellStyle()}>
+                        {assignmentLogTab === "send" ? r.releaseId || "-" : r.receiptId || r.receiptNumber || "-"}
+                      </div>
                       <div
                         style={poReferenceTableCellStyle({
                           fontWeight: "var(--font-weight-bold)",
@@ -7380,41 +7314,33 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       >
                         {r.amount} pcs
                       </div>
-                      {!receiptHistoryVendor.name ||
-                        receiptHistoryVendor.name !== "Internal" ? (
-                        <div style={poReferenceTableCellStyle()}>
-                          {r.note || "-"}
-                        </div>
-                      ) : null}
-                      {!receiptHistoryVendor.name ||
-                        receiptHistoryVendor.name !== "Internal" ? (
-                        <div style={poReferenceTableCellStyle()}>
-                          {assignmentLogTab === "send" ? (r.sentBy || "Natasha Smith") : (r.receivedBy || "Natasha Smith")}
-                        </div>
-                      ) : null}
-                      {!receiptHistoryVendor.name ||
-                        receiptHistoryVendor.name !== "Internal" ? (
-                        <div
-                          style={poReferenceTableCellStyle({
-                            alignItems: "flex-start",
-                            padding: "12px 0",
-                          })}
-                        >
-                          <ProofDocumentList
-                            documents={
-                              r.attachments ||
-                              r.proofDocuments ||
-                              normalizeProofDocuments([], r.attachment)
-                            }
-                            onDocumentClick={(doc) => {
-                              setToastMessage(
-                                `${doc?.name || "Document"} opened`
-                              );
-                              setShowSuccessToast(true);
-                            }}
-                          />
-                        </div>
-                      ) : null}
+                      <div style={poReferenceTableCellStyle()}>
+                        {r.note || r.notes || "-"}
+                      </div>
+                      <div style={poReferenceTableCellStyle()}>
+                        {assignmentLogTab === "send" ? (r.sendBy || r.sentBy || "Natasha Smith") : (r.receivedBy || "Natasha Smith")}
+                      </div>
+                      <div
+                        style={poReferenceTableCellStyle({
+                          alignItems: "flex-start",
+                          padding: "12px 0",
+                          minWidth: 0
+                        })}
+                      >
+                        <ProofDocumentList
+                          documents={
+                            r.attachments ||
+                            r.proofDocuments ||
+                            normalizeProofDocuments([], r.attachment)
+                          }
+                          onDocumentClick={(doc) => {
+                            setToastMessage(
+                              `${doc?.name || "Document"} opened`
+                            );
+                            setShowSuccessToast(true);
+                          }}
+                        />
+                      </div>
                     </div>
                   ))}
                   {!(assignmentLogTab === "send" ? receiptHistoryVendor.sendHistory : receiptHistoryVendor.receipts)?.length ? (
@@ -7426,6 +7352,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
               </div>
             </div>
 
+            </div>
           </div>
         </div>
       ) : null}
