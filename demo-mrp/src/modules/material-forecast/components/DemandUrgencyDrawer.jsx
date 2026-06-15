@@ -8,6 +8,7 @@ import { FilterPill } from "../../../components/common/FilterPill.jsx";
 import { FilterPopoverCheckbox } from "../../../components/molecules/FilterPopoverCheckbox.jsx";
 import { DateRangeInputControl } from "../../purchase-order/components/DateRangeInputControl.jsx";
 import { MOCK_DEMAND_URGENCY_ROWS, MOCK_CUSTOMER_PIC_MAP, MOCK_PRODUCT_SKU_MAP } from "../mock/materialForecastMocks.js";
+import { formatNumberWithCommas } from "../../../utils/format/formatUtils.js";
 
 const ROW_BORDER = "1px solid var(--neutral-line-separator-1)";
 
@@ -27,24 +28,25 @@ const STATUS_BANNER = {
   overdue: {
     bg:        "var(--status-red-container)",
     iconColor: "var(--status-red-primary)",
-    title:     "Late PO — Deliveries at Risk",
-    body:      "These work orders have passed their ordering deadline. Ordering now will delay material delivery beyond the planned work order start dates. Review each affected work order and place purchase orders immediately to minimize impact.",
+    title:     "Late PO — Delivery at Risk",
+    body:      "The ordering deadline has passed for these work orders. Place purchase orders immediately to reduce potential production delays.",
   },
   urgent: {
     bg:        "var(--status-orange-container, #FFF3E0)",
     iconColor: "var(--status-orange-primary)",
-    title:     "Urgent — Order Window Closing",
-    body:      "These work orders are approaching their ordering deadline. To avoid delivery delays, place purchase orders as soon as possible using the fastest available vendor. Missing this window means stock will arrive after the planned start date.",
+    title:     "Urgent — Order Soon",
+    body:      "The ordering window is closing. Place purchase orders now to avoid material delivery delays.",
   },
   this_week: {
     bg:        "var(--feature-brand-container)",
     iconColor: "var(--feature-brand-primary)",
     title:     "Order This Week",
-    body:      "These work orders need a purchase order placed this week to receive material on time. Order by the estimated deadline for each item to meet planned work order start dates. Ordering from the fastest vendor gives the most buffer.",
+    body:      "Place purchase orders this week to ensure materials arrive before the planned start date.",
   },
 };
 
-// ── Column widths (same constants as MaterialBreakdownDrawer) ──────────────────
+// ── Column widths ──────────────────────────────────────────────────────────────
+const CHECKBOX_W = 44;
 const WO_ID_W    = 120;
 const ORDER_ID_W = 100;
 const MATERIAL_W = 160;
@@ -55,7 +57,7 @@ const DEMAND_W   = 80;
 const NEED_W     = 100;
 const ACTION_W   = 110;
 
-const TABLE_MIN_W = WO_ID_W + ORDER_ID_W + MATERIAL_W + PRODUCT_W + CUSTOMER_W + EST_W + DEMAND_W + NEED_W + ACTION_W;
+const TABLE_MIN_W = CHECKBOX_W + WO_ID_W + ORDER_ID_W + MATERIAL_W + PRODUCT_W + CUSTOMER_W + EST_W + DEMAND_W + NEED_W + ACTION_W;
 
 const cellBase = (width, extra = {}) => ({
   width: `${width}px`,
@@ -97,7 +99,6 @@ const toISO = (d) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-// Parse "Jul 7" → "2026-07-07" using current year
 const fmtWoStartDate = (str) => {
   if (!str) return str;
   const d = parseShortDate(str);
@@ -146,6 +147,7 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, statusType, onCreatePo })
   const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const scrollerRef = useRef(null);
   const [scrollShadows, setScrollShadows] = useState({ left: false, right: false });
@@ -169,9 +171,21 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, statusType, onCreatePo })
   [statusKey]);
 
   const orderIdOptions = useMemo(() => [...new Set(sourceRows.map((r) => r.orderId).filter(Boolean))].sort().map((v) => ({ value: v, label: v })), [sourceRows]);
-  const materialOptions = useMemo(() => [...new Set(sourceRows.map((r) => r.materialName))].sort().map((m) => ({ value: m, label: m })), [sourceRows]);
-  const productOptions  = useMemo(() => [...new Set(sourceRows.map((r) => r.productName))].sort().map((p) => ({ value: p, label: p })), [sourceRows]);
-  const customerOptions = useMemo(() => [...new Set(sourceRows.map((r) => r.customer))].sort().map((c) => ({ value: c, label: c })), [sourceRows]);
+  const materialOptions = useMemo(() => {
+    const seen = new Map();
+    sourceRows.forEach((r) => { if (!seen.has(r.materialName)) seen.set(r.materialName, r.sku); });
+    return [...seen.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([name, sku]) => ({ value: name, label: name, subLabel: sku }));
+  }, [sourceRows]);
+  const productOptions = useMemo(() => {
+    const seen = new Map();
+    sourceRows.forEach((r) => { if (!seen.has(r.productName)) seen.set(r.productName, MOCK_PRODUCT_SKU_MAP[r.productName] || ""); });
+    return [...seen.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([name, sku]) => ({ value: name, label: name, subLabel: sku || undefined }));
+  }, [sourceRows]);
+  const customerOptions = useMemo(() => {
+    const seen = new Map();
+    sourceRows.forEach((r) => { if (!seen.has(r.customer)) seen.set(r.customer, MOCK_CUSTOMER_PIC_MAP[r.customer] || ""); });
+    return [...seen.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([name, pic]) => ({ value: name, label: name, subLabel: pic || undefined }));
+  }, [sourceRows]);
 
   const dateFilterActive = dateFilterType !== "all";
 
@@ -203,10 +217,48 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, statusType, onCreatePo })
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
   const pagedRows = filteredRows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
+  const allPagedSelectable = pagedRows.filter((r) => r.needToBuy > 0);
+  const allPagedSelected = allPagedSelectable.length > 0 && allPagedSelectable.every((r) => selectedIds.includes(r.id));
+  const somePagedSelected = allPagedSelectable.some((r) => selectedIds.includes(r.id));
+
+  const toggleRow = (id) => {
+    setSelectedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
+  };
+
+  const toggleAll = () => {
+    if (allPagedSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !allPagedSelectable.find((r) => r.id === id)));
+    } else {
+      const toAdd = allPagedSelectable.map((r) => r.id).filter((id) => !selectedIds.includes(id));
+      setSelectedIds((prev) => [...prev, ...toAdd]);
+    }
+  };
+
   const handleClose = () => {
     setSearchQuery(""); setOrderIdFilter([]); setMaterialFilter([]); setProductFilter([]); setCustomerFilter([]);
     setDateFilterType("all"); setCustomDateRange({ start: "", end: "" }); setOpenFilterKey(null); setCurrentPage(1);
+    setSelectedIds([]);
     onClose();
+  };
+
+  const buildPoRow = (row) => ({
+    woId: row.woId,
+    demandQty: row.demandQty,
+    materialName: row.materialName,
+    sku: row.sku,
+    needToBuy: row.needToBuy,
+    urgencyStatus: row.status,
+  });
+
+  const handleSingleCreatePo = (row) => {
+    setSelectedIds([]);
+    onCreatePo([buildPoRow(row)]);
+  };
+
+  const handleBulkCreatePo = () => {
+    const selected = filteredRows.filter((r) => selectedIds.includes(r.id));
+    setSelectedIds([]);
+    onCreatePo(selected.map(buildPoRow));
   };
 
   const leftShadow  = scrollShadows.left  ? "4px 0 8px -4px rgba(0,0,0,0.12)"  : "none";
@@ -224,7 +276,7 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, statusType, onCreatePo })
       {/* Backdrop */}
       <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.28)", zIndex: 20000, opacity: isOpen ? 1 : 0, transition: "opacity 0.2s ease-in-out", pointerEvents: isOpen ? "auto" : "none" }} onClick={handleClose} />
 
-      {/* Drawer panel — same 900px width as MaterialBreakdownDrawer */}
+      {/* Drawer panel */}
       <div
         style={{ position: "fixed", top: 0, right: 0, width: "900px", height: "100%", background: "var(--neutral-surface-primary)", display: "flex", flexDirection: "column", zIndex: 20001, transform: isOpen ? "translateX(0)" : "translateX(100%)", transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)", boxShadow: "-4px 0 16px rgba(0,0,0,0.12)" }}
         onClick={(e) => e.stopPropagation()}
@@ -278,13 +330,38 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, statusType, onCreatePo })
           <TableSearchField value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} placeholder="Search WO ID..." width="200px" />
         </div>
 
-        {/* Table — same flex-row pattern as MaterialBreakdownDrawer */}
+        {/* Selection action bar */}
+        {selectedIds.length > 0 && (
+          <div style={{ padding: "10px 24px", borderBottom: ROW_BORDER, background: "var(--feature-brand-container)", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+            <span style={{ fontSize: "var(--text-title-3)", color: "var(--feature-brand-primary)", fontWeight: "var(--font-weight-semi-bold)" }}>
+              {selectedIds.length} row{selectedIds.length !== 1 ? "s" : ""} selected
+            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Button variant="tertiary" size="small" onClick={() => setSelectedIds([])}>Clear</Button>
+              <Button variant="filled" size="small" onClick={handleBulkCreatePo}>
+                Create PO for Selected
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Table */}
         <div ref={scrollerRef} style={{ flex: 1, minHeight: 0, overflowX: "auto", overflowY: "auto" }}>
           <div style={{ minWidth: `${TABLE_MIN_W}px`, display: "inline-flex", flexDirection: "column", width: "100%" }}>
 
             {/* Header */}
             <div style={{ display: "flex", borderBottom: ROW_BORDER, position: "sticky", top: 0, zIndex: 3, background: "var(--neutral-surface-primary)" }}>
-              <div style={{ ...thBase(WO_ID_W, { paddingLeft: "24px" }), position: "sticky", left: 0, zIndex: 4, background: "var(--neutral-surface-primary)", boxShadow: leftShadow, transition: "box-shadow 0.2s ease" }}>WO ID</div>
+              {/* Checkbox header — sticky leftmost */}
+              <div style={{ ...thBase(CHECKBOX_W, { padding: "0 12px", justifyContent: "center" }), position: "sticky", left: 0, zIndex: 4, background: "var(--neutral-surface-primary)" }}>
+                <input
+                  type="checkbox"
+                  checked={allPagedSelected}
+                  ref={(el) => { if (el) el.indeterminate = somePagedSelected && !allPagedSelected; }}
+                  onChange={toggleAll}
+                  style={{ width: "16px", height: "16px", cursor: "pointer", accentColor: "var(--feature-brand-primary)" }}
+                />
+              </div>
+              <div style={{ ...thBase(WO_ID_W), position: "sticky", left: `${CHECKBOX_W}px`, zIndex: 4, background: "var(--neutral-surface-primary)", boxShadow: leftShadow, transition: "box-shadow 0.2s ease" }}>WO ID</div>
               <div style={thBase(ORDER_ID_W)}>Order ID</div>
               <div style={thBase(MATERIAL_W)}>Material</div>
               <div style={thBase(PRODUCT_W)}>Product</div>
@@ -300,64 +377,78 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, statusType, onCreatePo })
               <div style={{ padding: "48px 0", textAlign: "center", color: "var(--neutral-on-surface-tertiary)", fontSize: "var(--text-title-3)" }}>
                 No demand rows found.
               </div>
-            ) : pagedRows.map((row) => (
-              <div key={row.id} style={{ display: "flex", borderBottom: ROW_BORDER, background: "var(--neutral-surface-primary)" }}>
-                {/* WO ID — sticky left */}
-                <div style={{ ...cellBase(WO_ID_W, { paddingLeft: "24px" }), position: "sticky", left: 0, zIndex: 2, background: "inherit", boxShadow: leftShadow, transition: "box-shadow 0.2s ease", alignSelf: "stretch" }}>
-                  <span style={linkStyle} onClick={() => window.open(`/work-order/${row.woId}`, "_blank")}>{row.woId}</span>
+            ) : pagedRows.map((row) => {
+              const isSelected = selectedIds.includes(row.id);
+              return (
+                <div key={row.id} style={{ display: "flex", borderBottom: ROW_BORDER, background: isSelected ? "var(--feature-brand-container)" : "var(--neutral-surface-primary)" }}>
+                  {/* Checkbox — sticky leftmost */}
+                  <div style={{ ...cellBase(CHECKBOX_W, { padding: "0 12px", justifyContent: "center" }), position: "sticky", left: 0, zIndex: 2, background: "inherit", alignSelf: "stretch" }}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleRow(row.id)}
+                      disabled={row.needToBuy === 0}
+                      style={{ width: "16px", height: "16px", cursor: row.needToBuy === 0 ? "not-allowed" : "pointer", accentColor: "var(--feature-brand-primary)", opacity: row.needToBuy === 0 ? 0.4 : 1 }}
+                    />
+                  </div>
+
+                  {/* WO ID — sticky left */}
+                  <div style={{ ...cellBase(WO_ID_W), position: "sticky", left: `${CHECKBOX_W}px`, zIndex: 2, background: "inherit", boxShadow: leftShadow, transition: "box-shadow 0.2s ease", alignSelf: "stretch" }}>
+                    <span style={linkStyle} onClick={() => window.open(`/work-order/${row.woId}`, "_blank")}>{row.woId}</span>
+                  </div>
+
+                  {/* Order ID */}
+                  <div style={cellBase(ORDER_ID_W)}>
+                    <span style={linkStyle} onClick={() => window.open(`/sales-order/${row.orderId}`, "_blank")}>{row.orderId}</span>
+                  </div>
+
+                  {/* Material + SKU */}
+                  <div style={{ ...cellBase(MATERIAL_W), flexDirection: "column", alignItems: "flex-start", gap: "2px", paddingTop: "10px", paddingBottom: "10px" }}>
+                    <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{row.materialName}</span>
+                    <span style={{ ...linkStyle, fontSize: "var(--text-body)" }} onClick={() => window.open(`/materials/${row.sku}`, "_blank")}>{row.sku}</span>
+                  </div>
+
+                  {/* Product + SKU */}
+                  <div style={{ ...cellBase(PRODUCT_W), flexDirection: "column", alignItems: "flex-start", gap: "2px", paddingTop: "10px", paddingBottom: "10px" }}>
+                    <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{row.productName}</span>
+                    {MOCK_PRODUCT_SKU_MAP[row.productName] && (
+                      <span style={{ ...linkStyle, fontSize: "var(--text-body)" }} onClick={() => window.open(`/products/${MOCK_PRODUCT_SKU_MAP[row.productName]}`, "_blank")}>{MOCK_PRODUCT_SKU_MAP[row.productName]}</span>
+                    )}
+                  </div>
+
+                  {/* Customer + PIC */}
+                  <div style={{ ...cellBase(CUSTOMER_W), flexDirection: "column", alignItems: "flex-start", gap: "2px", paddingTop: "10px", paddingBottom: "10px" }}>
+                    <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{row.customer}</span>
+                    {MOCK_CUSTOMER_PIC_MAP[row.customer] && (
+                      <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{MOCK_CUSTOMER_PIC_MAP[row.customer]}</span>
+                    )}
+                  </div>
+
+                  {/* Est. Start */}
+                  <div style={cellBase(EST_W)}>{fmtWoStartDate(row.woStartDate)}</div>
+
+                  {/* Demand */}
+                  <div style={cellBase(DEMAND_W, { fontWeight: "var(--font-weight-semi-bold)" })}>{formatNumberWithCommas(row.demandQty)} pcs</div>
+
+                  {/* Need to Buy */}
+                  <div style={cellBase(NEED_W, { fontWeight: "var(--font-weight-bold)", color: row.needToBuy > 0 ? "var(--status-red-primary)" : "var(--neutral-on-surface-secondary)" })}>
+                    {row.needToBuy > 0 ? `${formatNumberWithCommas(row.needToBuy)} pcs` : "Covered"}
+                  </div>
+
+                  {/* Action — sticky right */}
+                  <div style={{ ...cellBase(ACTION_W, { paddingRight: "24px", justifyContent: "center" }), position: "sticky", right: 0, zIndex: 2, background: "inherit", alignSelf: "stretch", boxShadow: rightShadow, transition: "box-shadow 0.2s ease" }}>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      disabled={row.needToBuy === 0}
+                      onClick={() => handleSingleCreatePo(row)}
+                    >
+                      Create PO
+                    </Button>
+                  </div>
                 </div>
-
-                {/* Order ID */}
-                <div style={cellBase(ORDER_ID_W)}>
-                  <span style={linkStyle} onClick={() => window.open(`/sales-order/${row.orderId}`, "_blank")}>{row.orderId}</span>
-                </div>
-
-                {/* Material + SKU clickable */}
-                <div style={{ ...cellBase(MATERIAL_W), flexDirection: "column", alignItems: "flex-start", gap: "2px", paddingTop: "10px", paddingBottom: "10px" }}>
-                  <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{row.materialName}</span>
-                  <span style={{ ...linkStyle, fontSize: "var(--text-body)" }} onClick={() => window.open(`/materials/${row.sku}`, "_blank")}>{row.sku}</span>
-                </div>
-
-                {/* Product + SKU secondary clickable */}
-                <div style={{ ...cellBase(PRODUCT_W), flexDirection: "column", alignItems: "flex-start", gap: "2px", paddingTop: "10px", paddingBottom: "10px" }}>
-                  <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{row.productName}</span>
-                  {MOCK_PRODUCT_SKU_MAP[row.productName] && (
-                    <span style={{ ...linkStyle, fontSize: "var(--text-body)" }} onClick={() => window.open(`/products/${MOCK_PRODUCT_SKU_MAP[row.productName]}`, "_blank")}>{MOCK_PRODUCT_SKU_MAP[row.productName]}</span>
-                  )}
-                </div>
-
-                {/* Customer + PIC secondary */}
-                <div style={{ ...cellBase(CUSTOMER_W), flexDirection: "column", alignItems: "flex-start", gap: "2px", paddingTop: "10px", paddingBottom: "10px" }}>
-                  <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{row.customer}</span>
-                  {MOCK_CUSTOMER_PIC_MAP[row.customer] && (
-                    <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%" }}>{MOCK_CUSTOMER_PIC_MAP[row.customer]}</span>
-                  )}
-                </div>
-
-                {/* Est. Start — YYYY-MM-DD */}
-                <div style={cellBase(EST_W)}>{fmtWoStartDate(row.woStartDate)}</div>
-
-                {/* Demand */}
-                <div style={cellBase(DEMAND_W, { fontWeight: "var(--font-weight-semi-bold)" })}>{row.demandQty} pcs</div>
-
-                {/* Need to Buy */}
-                <div style={cellBase(NEED_W, { fontWeight: "var(--font-weight-bold)", color: row.needToBuy > 0 ? "var(--status-red-primary)" : "var(--neutral-on-surface-secondary)" })}>
-                  {row.needToBuy > 0 ? `${row.needToBuy} pcs` : "Covered"}
-                </div>
-
-                {/* Action — sticky right */}
-                <div style={{ ...cellBase(ACTION_W, { paddingRight: "24px", justifyContent: "center" }), position: "sticky", right: 0, zIndex: 2, background: "inherit", alignSelf: "stretch", boxShadow: rightShadow, transition: "box-shadow 0.2s ease" }}>
-                  <Button
-                    variant="secondary"
-                    size="small"
-                    disabled={row.needToBuy === 0}
-                    onClick={() => onCreatePo({ materialName: row.materialName, sku: row.sku, needToBuy: row.needToBuy, urgencyStatus: row.status })}
-                  >
-                    Create PO
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

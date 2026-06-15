@@ -131,7 +131,7 @@ const StartDatePopover = ({ dateFilterType, setDateFilterType, customDateRange, 
   return (
     <div ref={ref} style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, width: "300px", background: "var(--neutral-surface-primary)", border: ROW_BORDER, borderRadius: "var(--radius-card)", boxShadow: "var(--elevation-sm)", padding: "16px", display: "flex", flexDirection: "column", gap: "16px", zIndex: 100000 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Est. Start Date</span>
+        <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Est. Start</span>
         <button onClick={() => { setDateFilterType("all"); setCustomDateRange({ start: "", end: "" }); onClose(); }} style={{ background: "none", border: "none", padding: 0, color: "var(--status-red-primary)", cursor: "pointer", fontSize: "var(--text-body)", fontWeight: "var(--font-weight-bold)" }}>Remove Filter</button>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -161,6 +161,7 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
   const [filterProduct, setFilterProduct] = useState([]);
   const [filterCustomer, setFilterCustomer] = useState([]);
   const [filterOrderId, setFilterOrderId] = useState([]);
+  const [filterUrgency, setFilterUrgency] = useState([]);
   const [openFilterKey, setOpenFilterKey] = useState(null);
   const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -236,6 +237,13 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
     return ids.map((v) => ({ value: v, label: v }));
   }, [allRows]);
 
+  const urgencyOptions = [
+    { value: "overdue",   label: "Overdue" },
+    { value: "urgent",    label: "Urgent" },
+    { value: "this_week", label: "This Week" },
+    { value: "on_track",  label: "On Track" },
+  ];
+
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     const now = new Date(); now.setHours(0, 0, 0, 0);
@@ -244,6 +252,7 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
       if (filterProduct.length > 0 && !filterProduct.includes(r.productName)) return false;
       if (filterCustomer.length > 0 && !filterCustomer.includes(r.customerName)) return false;
       if (filterOrderId.length > 0 && !filterOrderId.includes(r.orderId)) return false;
+      if (filterUrgency.length > 0 && !filterUrgency.includes(r.urgencyStatus)) return false;
       if (dateFilterType !== "all") {
         const d = new Date(r.estStart); d.setHours(0, 0, 0, 0);
         if (isNaN(d.getTime())) return false;
@@ -258,9 +267,9 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
       }
       return true;
     });
-  }, [allRows, searchQuery, filterProduct, filterCustomer, filterOrderId, dateFilterType, customDateRange]);
+  }, [allRows, searchQuery, filterProduct, filterCustomer, filterOrderId, filterUrgency, dateFilterType, customDateRange]);
 
-  const hasActiveFilters = filterProduct.length > 0 || filterCustomer.length > 0 || filterOrderId.length > 0;
+  const hasActiveFilters = filterProduct.length > 0 || filterCustomer.length > 0 || filterOrderId.length > 0 || filterUrgency.length > 0;
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
   const pagedRows = filteredRows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
@@ -270,6 +279,7 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
     setFilterProduct([]);
     setFilterCustomer([]);
     setFilterOrderId([]);
+    setFilterUrgency([]);
     setOpenFilterKey(null);
     setCurrentPage(1);
     setDateFilterType("all");
@@ -361,14 +371,15 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
               </div>
             ))}
 
-            {openFilterKey === "orderId"  && <FilterPopoverCheckbox title="Order ID" options={orderIdOptions}  value={filterOrderId}  onChange={setFilterOrderId}  onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "product"  && <FilterPopoverCheckbox title="Product"  options={productOptions}  value={filterProduct}  onChange={setFilterProduct}  onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "customer" && <FilterPopoverCheckbox title="Customer" options={customerOptions} value={filterCustomer} onChange={setFilterCustomer} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "orderId"  && <FilterPopoverCheckbox title="Order ID" options={orderIdOptions}  value={filterOrderId}  onChange={(v) => { setFilterOrderId(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "product"  && <FilterPopoverCheckbox title="Product"  options={productOptions}  value={filterProduct}  onChange={(v) => { setFilterProduct(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "customer" && <FilterPopoverCheckbox title="Customer" options={customerOptions} value={filterCustomer} onChange={(v) => { setFilterCustomer(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "urgency"  && <FilterPopoverCheckbox title="Urgency"  options={urgencyOptions}  value={filterUrgency}  onChange={(v) => { setFilterUrgency(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} searchable={false} />}
 
-            {/* Est. Start Date */}
+            {/* Est. Start */}
             <div style={{ position: "relative" }}>
               <div onClick={() => setShowDatePopover((p) => !p)}>
-                <FilterPill label="Est. Start Date" active={dateFilterType !== "all"} isOpen={showDatePopover} count={dateFilterType !== "all" ? 1 : 0} />
+                <FilterPill label="Est. Start" active={dateFilterType !== "all"} isOpen={showDatePopover} count={dateFilterType !== "all" ? 1 : 0} />
               </div>
               {showDatePopover && (
                 <StartDatePopover
@@ -379,6 +390,11 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
                   onClose={() => setShowDatePopover(false)}
                 />
               )}
+            </div>
+
+            {/* Urgency — last */}
+            <div onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); setPopoverTriggerRect(rect); setOpenFilterKey((prev) => prev === "urgency" ? null : "urgency"); }}>
+              <FilterPill label="Urgency" active={filterUrgency.length > 0} isOpen={openFilterKey === "urgency"} count={filterUrgency.length} />
             </div>
           </div>
           <TableSearchField

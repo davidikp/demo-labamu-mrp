@@ -6,6 +6,7 @@ import { TablePaginationFooter } from "../../../components/table/TablePagination
 import { FilterPill } from "../../../components/common/FilterPill.jsx";
 import { FilterPopoverCheckbox } from "../../../components/molecules/FilterPopoverCheckbox.jsx";
 import { MOCK_UNSCHEDULED_WOS, MOCK_CUSTOMER_PIC_MAP, MOCK_PRODUCT_SKU_MAP } from "../mock/materialForecastMocks.js";
+import { formatNumberWithCommas } from "../../../utils/format/formatUtils.js";
 
 const ROW_BORDER = "1px solid var(--neutral-line-separator-1)";
 
@@ -138,7 +139,8 @@ export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData }) => {
           <div style={{ padding: "16px", borderRadius: "var(--radius-card)", border: ROW_BORDER, display: "flex", gap: "24px" }}>
             <LabelValue label="Material Name" value={materialData.materialName} />
             <LabelValue label="Material SKU" value={materialData.sku} />
-            <LabelValue label="Unscheduled WOs" value={allRows.length} />
+            <LabelValue label="On-Hand Stock" value={materialData.onHandStock != null ? formatNumberWithCommas(materialData.onHandStock) : "—"} />
+            <LabelValue label="Incoming PO" value={materialData.incomingPoStock != null ? formatNumberWithCommas(materialData.incomingPoStock) : "—"} />
           </div>
         </div>
 

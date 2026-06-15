@@ -3,6 +3,7 @@ import { CloseIcon, ChevronDownIcon, ChevronRightIcon, Info } from "../../../com
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { MOCK_PROCUREMENT_STATUS } from "../mock/materialForecastMocks.js";
+import { formatNumberWithCommas } from "../../../utils/format/formatUtils.js";
 
 // ── Date helpers ───────────────────────────────────────────────────────────────
 
@@ -199,12 +200,12 @@ const DemandRow = ({ dailyData, weeklyDemand, expanded, onToggle }) => (
       <ChevronBtn expanded={expanded} onClick={onToggle} />
       <div>
         <div style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Demand</div>
-        <div style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", marginTop: "2px" }}>Total: {weeklyDemand}</div>
+        <div style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", marginTop: "2px" }}>Total: {formatNumberWithCommas(weeklyDemand)}</div>
       </div>
     </div>
     {dailyData.map((row, i) => (
       <div key={i} style={dateCellStyle({ minHeight: "64px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }, i === 6)}>
-        {row.demand}
+        {formatNumberWithCommas(row.demand)}
       </div>
     ))}
   </div>
@@ -221,7 +222,7 @@ const WoSubRow = ({ wo, hasBatch, shortfall }) => (
         <LinkText href={`/work-order/${wo.id}`}>{wo.id}</LinkText>
         {wo.isSlipped && wo.originalEstimatedStartDate && (
           <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>
-            Slipped {wo.slippedDays}d, Originally: {wo.originalEstimatedStartDate}
+            Delayed {wo.slippedDays}d, Originally: {wo.originalEstimatedStartDate}
           </span>
         )}
       </div>
@@ -260,12 +261,12 @@ const StockRow = ({ dailyData, initialStock, expanded, onToggle }) => (
       <ChevronBtn expanded={expanded} onClick={onToggle} />
       <div>
         <div style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Stock</div>
-        <div style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", marginTop: "2px" }}>Initial: {initialStock}</div>
+        <div style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", marginTop: "2px" }}>Initial: {formatNumberWithCommas(initialStock)}</div>
       </div>
     </div>
     {dailyData.map((row, i) => (
       <div key={i} style={dateCellStyle({ minHeight: "64px", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: row.stock < 0 ? "var(--status-red-primary)" : "var(--status-green-primary)" }, i === 6)}>
-        {row.stock}
+        {formatNumberWithCommas(row.stock)}
       </div>
     ))}
   </div>

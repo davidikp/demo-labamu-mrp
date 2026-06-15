@@ -8,6 +8,7 @@ import { FilterPill } from "../../../components/common/FilterPill.jsx";
 import { FilterPopoverCheckbox } from "../../../components/molecules/FilterPopoverCheckbox.jsx";
 import { MaterialBreakdownDrawer } from "../components/MaterialBreakdownDrawer.jsx";
 import { DemandUrgencyDrawer } from "../components/DemandUrgencyDrawer.jsx";
+import { formatNumberWithCommas } from "../../../utils/format/formatUtils.js";
 import { UnscheduledWoDrawer } from "../components/UnscheduledWoDrawer.jsx";
 import { MOCK_MATERIAL_FORECAST_DATA, MOCK_FORECAST_COUNTERS, MOCK_PROCUREMENT_STATUS, MOCK_CUSTOMER_PIC_MAP, MOCK_PRODUCT_SKU_MAP } from "../mock/materialForecastMocks.js";
 
@@ -20,6 +21,7 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar }) => {
   const [createPoMaterial, setCreatePoMaterial] = useState(null);
   const [urgencyDrawerOpen, setUrgencyDrawerOpen] = useState(false);
   const [urgencyDrawerType, setUrgencyDrawerType] = useState(null);
+  const [createPoMaterials, setCreatePoMaterials] = useState(null);
   const [unscheduledDrawerOpen, setUnscheduledDrawerOpen] = useState(false);
   const [unscheduledMaterial, setUnscheduledMaterial] = useState(null);
 
@@ -62,14 +64,16 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar }) => {
     setIsCreatePoOpen(true);
   };
 
-  const handleUrgencyCreatePo = (material) => {
-    setCreatePoMaterial(material);
+  const handleUrgencyCreatePo = (rows) => {
+    setCreatePoMaterials(rows);
+    setCreatePoMaterial(rows.length === 1 ? rows[0] : null);
     setUrgencyDrawerOpen(false);
     setIsCreatePoOpen(true);
   };
 
   const handleCreatePoBack = () => {
     setIsCreatePoOpen(false);
+    setCreatePoMaterials(null);
     if (urgencyDrawerType) {
       setUrgencyDrawerOpen(true);
     } else if (selectedMaterial) {
@@ -82,6 +86,7 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar }) => {
   const handleCreatePoClose = () => {
     setIsCreatePoOpen(false);
     setSelectedMaterial(null);
+    setCreatePoMaterials(null);
   };
 
   const allTimelineColumns = MOCK_MATERIAL_FORECAST_DATA[0]?.timeline.map(t => t.week) || [];
@@ -154,7 +159,7 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar }) => {
       <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", flexShrink: 0 }}>
         <ListStatusCounterCard label="Overdue" count={MOCK_FORECAST_COUNTERS.overdue} badgeVariant="red-light" onClick={() => handleCounterClick("Overdue")} />
         <ListStatusCounterCard label="Urgent" count={MOCK_FORECAST_COUNTERS.urgent} badgeVariant="orange-light" onClick={() => handleCounterClick("Urgent")} />
-        <ListStatusCounterCard label="This Week" count={MOCK_FORECAST_COUNTERS.thisWeek} badgeVariant="green-light" onClick={() => handleCounterClick("This Week")} />
+        <ListStatusCounterCard label="This Week" count={MOCK_FORECAST_COUNTERS.thisWeek} badgeVariant="blue-light" onClick={() => handleCounterClick("This Week")} />
       </div>
 
       <div
@@ -314,9 +319,9 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar }) => {
                   <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>{row.sku}</span>
                 </div>
                 <div style={{ width: "140px", padding: "16px 12px", position: "sticky", left: "240px", background: "var(--neutral-surface-primary)", borderRight: "1px solid var(--neutral-line-separator-1)", zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>{row.onHandStock}</span>
+                  <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>{formatNumberWithCommas(row.onHandStock)}</span>
                   {!!row.incomingPoStock && (
-                    <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", marginTop: "4px" }}>+ {row.incomingPoStock} incoming PO</span>
+                    <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", marginTop: "4px" }}>+ {formatNumberWithCommas(row.incomingPoStock)} incoming PO</span>
                   )}
                 </div>
                 <div
@@ -325,7 +330,7 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar }) => {
                   onMouseLeave={(e) => { e.currentTarget.style.background = "var(--neutral-surface-primary)"; }}
                   style={{ width: "120px", padding: "16px 12px", position: "sticky", left: "380px", background: "var(--neutral-surface-primary)", borderRight: "2px solid var(--neutral-line-separator-2)", zIndex: 10, display: "flex", alignItems: "center", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", cursor: row.unscheduled > 0 ? "pointer" : "default", transition: "background 0.2s ease" }}
                 >
-                  {row.unscheduled}
+                  {formatNumberWithCommas(row.unscheduled)}
                 </div>
                 {row.timeline.slice(0, forecastWeeks).map((tData, tIdx) => {
                   const procStatus = MOCK_PROCUREMENT_STATUS[row.sku];
@@ -344,16 +349,16 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar }) => {
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-body)" }}>
                         <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>Demand</span>
-                        <span style={{ fontWeight: "var(--font-weight-semi-bold)", color: "var(--neutral-on-surface-primary)" }}>{tData.demand}</span>
+                        <span style={{ fontWeight: "var(--font-weight-semi-bold)", color: "var(--neutral-on-surface-primary)" }}>{formatNumberWithCommas(tData.demand)}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-body)" }}>
                         <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>End Stock</span>
-                        <span style={{ fontWeight: "var(--font-weight-bold)", color: tData.endStock < 0 ? "var(--status-red-primary)" : "var(--status-green-primary)" }}>{tData.endStock}</span>
+                        <span style={{ fontWeight: "var(--font-weight-bold)", color: tData.endStock < 0 ? "var(--status-red-primary)" : "var(--status-green-primary)" }}>{formatNumberWithCommas(tData.endStock)}</span>
                       </div>
                       {slippedWos.length > 0 && (
                         <div style={{ marginTop: "2px" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 6px", borderRadius: "4px", background: "var(--status-red-container)", color: "var(--status-red-primary)", fontSize: "10px", fontWeight: "700", whiteSpace: "nowrap" }}>
-                            {slippedWos.length} WO(s) slipped
+                          <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 6px", borderRadius: "4px", background: "#F3F4F6", color: "#525252", fontSize: "10px", fontWeight: "700", whiteSpace: "nowrap" }}>
+                            {slippedWos.length} WO(s) delayed
                           </span>
                         </div>
                       )}
@@ -430,7 +435,8 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar }) => {
         onClose={handleCreatePoClose}
         onBack={handleCreatePoBack}
         showBack={true}
-        initialMaterial={createPoMaterial}
+        initialMaterial={createPoMaterials ? null : createPoMaterial}
+        initialMaterials={createPoMaterials}
         showPoSnackbar={showPoSnackbar}
         materialSku={createPoMaterial?.sku}
         urgencyStatus={createPoMaterial?.urgencyStatus || null}

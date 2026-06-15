@@ -252,6 +252,33 @@ const MaterialSelect = ({ value, onChange, error }) => {
   );
 };
 
+// ── Urgency helpers ───────────────────────────────────────────────────────────
+
+const URGENCY_LABELS = {
+  overdue:   "Late PO",
+  urgent:    "Urgent",
+  this_week: "Order This Week",
+};
+
+const URGENCY_COLORS = {
+  overdue:   "var(--status-red-primary)",
+  urgent:    "var(--status-orange-primary)",
+  this_week: "var(--feature-brand-primary)",
+};
+
+const URGENCY_BG = {
+  overdue:   "var(--status-red-container)",
+  urgent:    "var(--status-orange-container, #FFF3E0)",
+  this_week: "var(--feature-brand-container)",
+};
+
+const getFastestVendor = (sku) => {
+  if (!sku) return null;
+  const vendors = MOCK_VENDOR_LEAD_TIMES.filter((v) => v.sku === sku);
+  if (!vendors.length) return null;
+  return vendors.reduce((a, b) => a.leadTimeDays <= b.leadTimeDays ? a : b);
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const generatePoNumber = () => {
@@ -327,7 +354,7 @@ const getUrgencyBanner = (urgencyStatus, sku) => {
   return null;
 };
 
-export const CreatePoDrawer = ({ isOpen, onClose, onBack, showBack = false, initialMaterial = null, showPoSnackbar, materialSku = null, urgencyStatus = null }) => {
+export const CreatePoDrawer = ({ isOpen, onClose, onBack, showBack = false, initialMaterial = null, initialMaterials = null, showPoSnackbar, materialSku = null, urgencyStatus = null }) => {
   const [vendorId, setVendorId] = useState("");
   const [vendorError, setVendorError] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
@@ -345,7 +372,42 @@ export const CreatePoDrawer = ({ isOpen, onClose, onBack, showBack = false, init
     setLineErrors({}); setShowConfirm(false);
     setTax("11"); setFeeLines([emptyFee()]);
 
-    if (initialMaterial) {
+    if (initialMaterials && initialMaterials.length > 0) {
+      // Group by SKU so multiple WOs using the same material become one line
+      const grouped = [];
+      initialMaterials.forEach((item) => {
+        const key = item.sku || item.materialName;
+        const existing = grouped.find((g) => g.key === key);
+        if (existing) {
+          existing.woEntries.push({ woId: item.woId, needToBuy: item.needToBuy, urgencyStatus: item.urgencyStatus });
+          existing.totalNeedToBuy += item.needToBuy || 0;
+        } else {
+          grouped.push({
+            key,
+            sku: item.sku,
+            materialName: item.materialName,
+            totalNeedToBuy: item.needToBuy || 0,
+            woEntries: [{ woId: item.woId, needToBuy: item.needToBuy, urgencyStatus: item.urgencyStatus }],
+          });
+        }
+      });
+      setLines(grouped.map((g, idx) => {
+        const mat = MOCK_MATERIALS_DATA.find((m) => m.sku === g.sku || m.name === g.materialName);
+        const avgCost = mat?.averageCost;
+        return {
+          id: `locked-${idx}`,
+          materialId: mat?.id || "",
+          materialName: g.materialName || mat?.name || "",
+          materialSku: g.sku || mat?.sku || "",
+          materialUnit: mat?.unit || "",
+          qty: g.totalNeedToBuy ? formatNumberWithCommas(g.totalNeedToBuy) : "",
+          unitPrice: avgCost ? formatNumberWithCommas(avgCost) : "",
+          description: "",
+          locked: true,
+          woEntries: g.woEntries,
+        };
+      }));
+    } else if (initialMaterial) {
       const mat = MOCK_MATERIALS_DATA.find((m) => m.sku === initialMaterial.sku || m.name === initialMaterial.materialName);
       const avgCost = mat?.averageCost;
       setLines([{
@@ -358,11 +420,14 @@ export const CreatePoDrawer = ({ isOpen, onClose, onBack, showBack = false, init
         unitPrice: avgCost ? formatNumberWithCommas(avgCost) : "",
         description: "",
         locked: true,
+        woEntries: initialMaterial.woId
+          ? [{ woId: initialMaterial.woId, needToBuy: initialMaterial.needToBuy || 0, urgencyStatus: initialMaterial.urgencyStatus || urgencyStatus }]
+          : null,
       }]);
     } else {
       setLines([emptyLine()]);
     }
-  }, [isOpen, initialMaterial]);
+  }, [isOpen, initialMaterial, initialMaterials]);
 
   const updateLine = (id, field, value) => {
     setLines((prev) => prev.map((l) => l.id === id ? { ...l, [field]: value } : l));
@@ -535,17 +600,43 @@ export const CreatePoDrawer = ({ isOpen, onClose, onBack, showBack = false, init
                       value={line.materialSku ? `${line.materialName} (${line.materialSku})` : line.materialName}
                       disabled
                     />
-                    {urgencyStatus && (() => {
-                      const banner = getUrgencyBanner(urgencyStatus, line.materialSku);
-                      if (!banner) return null;
-                      const { bg, iconColor, title, body } = banner;
+                    {/* WO list + recommended vendor info box */}
+                    {(line.woEntries?.length > 0 || getFastestVendor(line.materialSku)) && (() => {
+                      const fastest = getFastestVendor(line.materialSku);
                       return (
-                        <div style={{ background: bg, borderRadius: "10px", padding: "14px 16px", display: "flex", gap: "12px", alignItems: "flex-start" }}>
-                          <div style={{ marginTop: "2px", flexShrink: 0 }}><Info size={18} color={iconColor} /></div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                            <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-semi-bold)", color: iconColor }}>{title}</span>
-                            <div style={{ color: iconColor }}>{body}</div>
-                          </div>
+                        <div style={{ border: BORDER, borderRadius: "10px", padding: "12px 14px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                          {line.woEntries?.map((entry, eIdx) => {
+                            const status = entry.urgencyStatus || urgencyStatus;
+                            const color = URGENCY_COLORS[status];
+                            const bg = URGENCY_BG[status];
+                            const label = URGENCY_LABELS[status];
+                            return (
+                              <div key={eIdx} style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                                <span style={{ fontSize: "var(--text-body)", fontWeight: "var(--font-weight-semi-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                                  {entry.woId}
+                                </span>
+                                <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-tertiary)" }}>·</span>
+                                <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-primary)" }}>
+                                  Need to Buy {entry.needToBuy}
+                                </span>
+                                {label && (
+                                  <>
+                                    <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-tertiary)" }}>·</span>
+                                    <span style={{ fontSize: "var(--text-body)", fontWeight: "var(--font-weight-semi-bold)", color, background: bg, padding: "1px 8px", borderRadius: "6px" }}>
+                                      {label}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                          {fastest && (
+                            <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", marginTop: line.woEntries?.length ? "4px" : 0 }}>
+                              Recommended vendor:{" "}
+                              <span style={{ fontWeight: "var(--font-weight-semi-bold)", color: "var(--neutral-on-surface-primary)" }}>{fastest.vendor}</span>
+                              {" "}({fastest.leadTimeDays}-day lead time)
+                            </span>
+                          )}
                         </div>
                       );
                     })()}
