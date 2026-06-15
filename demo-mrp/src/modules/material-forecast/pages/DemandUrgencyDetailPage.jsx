@@ -3,8 +3,8 @@ import { ChevronLeft, ChevronRightIcon } from "../../../components/icons/Icons.j
 import { StatusBadge } from "../../../components/atoms/StatusBadge.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
-import { MultiSelectDropdown } from "../../../components/common/MultiSelectDropdown.jsx";
 import { FilterPill } from "../../../components/common/FilterPill.jsx";
+import { FilterPopoverCheckbox } from "../../../components/molecules/FilterPopoverCheckbox.jsx";
 import { DateRangeInputControl } from "../../purchase-order/components/DateRangeInputControl.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { MOCK_DEMAND_URGENCY_ROWS } from "../mock/materialForecastMocks.js";
@@ -109,12 +109,15 @@ const WoStartDateFilterPopover = ({ dateFilterType, setDateFilterType, customDat
 
 export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [orderIdFilter, setOrderIdFilter] = useState([]);
   const [materialFilter, setMaterialFilter] = useState([]);
   const [productFilter, setProductFilter] = useState([]);
   const [customerFilter, setCustomerFilter] = useState([]);
   const [dateFilterType, setDateFilterType] = useState("all");
   const [customDateRange, setCustomDateRange] = useState({ start: "", end: "" });
   const [showDatePopover, setShowDatePopover] = useState(false);
+  const [openFilterKey, setOpenFilterKey] = useState(null);
+  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [isCreatePoOpen, setIsCreatePoOpen] = useState(false);
@@ -127,16 +130,20 @@ export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar
     MOCK_DEMAND_URGENCY_ROWS.filter((r) => r.status === statusKey),
   [statusKey]);
 
+  const orderIdOptions = useMemo(() =>
+    [...new Set(sourceRows.map((r) => r.orderId).filter(Boolean))].sort().map((v) => ({ value: v, label: v })),
+  [sourceRows]);
+
   const materialOptions = useMemo(() =>
-    [...new Set(sourceRows.map((r) => r.materialName))].map((m) => ({ value: m, label: m })),
+    [...new Set(sourceRows.map((r) => r.materialName))].sort().map((m) => ({ value: m, label: m })),
   [sourceRows]);
 
   const productOptions = useMemo(() =>
-    [...new Set(sourceRows.map((r) => r.productName))].map((p) => ({ value: p, label: p })),
+    [...new Set(sourceRows.map((r) => r.productName))].sort().map((p) => ({ value: p, label: p })),
   [sourceRows]);
 
   const customerOptions = useMemo(() =>
-    [...new Set(sourceRows.map((r) => r.customer))].map((c) => ({ value: c, label: c })),
+    [...new Set(sourceRows.map((r) => r.customer))].sort().map((c) => ({ value: c, label: c })),
   [sourceRows]);
 
   const dateFilterActive = dateFilterType !== "all";
@@ -148,6 +155,7 @@ export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar
 
     return sourceRows.filter((row) => {
       if (searchQuery && !row.woId.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (orderIdFilter.length > 0 && !orderIdFilter.includes(row.orderId)) return false;
       if (materialFilter.length > 0 && !materialFilter.includes(row.materialName)) return false;
       if (productFilter.length > 0 && !productFilter.includes(row.productName)) return false;
       if (customerFilter.length > 0 && !customerFilter.includes(row.customer)) return false;
@@ -182,6 +190,7 @@ export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar
   const paginated = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
   const hasActiveFilters =
+    orderIdFilter.length > 0 ||
     materialFilter.length > 0 ||
     productFilter.length > 0 ||
     customerFilter.length > 0 ||
@@ -220,7 +229,7 @@ export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar
           </h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-secondary)" }}>
-          <span style={{ cursor: "pointer" }} onClick={() => onNavigate("list")}>Material Forecast</span>
+          <span style={{ cursor: "pointer" }} onClick={() => onNavigate("list")}>Material Planning</span>
           <ChevronRightIcon size={14} color="var(--neutral-on-surface-tertiary)" />
           <span>{pageTitle}</span>
         </div>
@@ -252,37 +261,30 @@ export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            <MultiSelectDropdown
-              placeholder="Material"
-              value={materialFilter}
-              options={materialOptions}
-              onChange={(v) => { setMaterialFilter(v); setCurrentPage(1); }}
-              searchable={true}
-            />
-            <MultiSelectDropdown
-              placeholder="Product"
-              value={productFilter}
-              options={productOptions}
-              onChange={(v) => { setProductFilter(v); setCurrentPage(1); }}
-              searchable={true}
-            />
-            <MultiSelectDropdown
-              placeholder="Customer"
-              value={customerFilter}
-              options={customerOptions}
-              onChange={(v) => { setCustomerFilter(v); setCurrentPage(1); }}
-              searchable={true}
-            />
+            {/* Order ID — first */}
+            {[
+              { key: "orderId",  label: "Order ID", value: orderIdFilter,  options: orderIdOptions,  onChange: (v) => { setOrderIdFilter(v);  setCurrentPage(1); } },
+              { key: "material", label: "Material",  value: materialFilter, options: materialOptions, onChange: (v) => { setMaterialFilter(v); setCurrentPage(1); } },
+              { key: "customer", label: "Customer",  value: customerFilter, options: customerOptions, onChange: (v) => { setCustomerFilter(v); setCurrentPage(1); } },
+              { key: "product",  label: "Product",   value: productFilter,  options: productOptions,  onChange: (v) => { setProductFilter(v);  setCurrentPage(1); } },
+            ].map(({ key, label, value, options, onChange }) => (
+              <div
+                key={key}
+                onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); setPopoverTriggerRect(rect); setOpenFilterKey((prev) => prev === key ? null : key); }}
+              >
+                <FilterPill label={label} active={value.length > 0} isOpen={openFilterKey === key} count={value.length} />
+              </div>
+            ))}
+
+            {openFilterKey === "orderId"  && <FilterPopoverCheckbox title="Order ID" options={orderIdOptions}  value={orderIdFilter}  onChange={(v) => { setOrderIdFilter(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "material" && <FilterPopoverCheckbox title="Material" options={materialOptions} value={materialFilter} onChange={(v) => { setMaterialFilter(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "customer" && <FilterPopoverCheckbox title="Customer" options={customerOptions} value={customerFilter} onChange={(v) => { setCustomerFilter(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "product"  && <FilterPopoverCheckbox title="Product"  options={productOptions}  value={productFilter}  onChange={(v) => { setProductFilter(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
 
             {/* WO Start Date filter */}
             <div style={{ position: "relative" }}>
               <div onClick={() => setShowDatePopover((p) => !p)}>
-                <FilterPill
-                  label="WO Start Date"
-                  active={dateFilterActive}
-                  isOpen={showDatePopover}
-                  count={dateFilterCount}
-                />
+                <FilterPill label="WO Start Date" active={dateFilterActive} isOpen={showDatePopover} count={dateFilterCount} />
               </div>
               {showDatePopover && (
                 <WoStartDateFilterPopover
@@ -318,29 +320,17 @@ export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar
             }}
           >
             <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>Active filters:</span>
+            {orderIdFilter.map((id) => (
+              <FilterPill key={`oid-${id}`} label={id} active={true} onRemove={() => setOrderIdFilter((prev) => prev.filter((x) => x !== id))} />
+            ))}
             {materialFilter.map((m) => (
-              <FilterPill
-                key={`mat-${m}`}
-                label={m}
-                active={true}
-                onRemove={() => setMaterialFilter((prev) => prev.filter((x) => x !== m))}
-              />
+              <FilterPill key={`mat-${m}`} label={m} active={true} onRemove={() => setMaterialFilter((prev) => prev.filter((x) => x !== m))} />
             ))}
             {productFilter.map((p) => (
-              <FilterPill
-                key={`prod-${p}`}
-                label={p}
-                active={true}
-                onRemove={() => setProductFilter((prev) => prev.filter((x) => x !== p))}
-              />
+              <FilterPill key={`prod-${p}`} label={p} active={true} onRemove={() => setProductFilter((prev) => prev.filter((x) => x !== p))} />
             ))}
             {customerFilter.map((c) => (
-              <FilterPill
-                key={`cust-${c}`}
-                label={c}
-                active={true}
-                onRemove={() => setCustomerFilter((prev) => prev.filter((x) => x !== c))}
-              />
+              <FilterPill key={`cust-${c}`} label={c} active={true} onRemove={() => setCustomerFilter((prev) => prev.filter((x) => x !== c))} />
             ))}
             {dateFilterActive && (
               <FilterPill

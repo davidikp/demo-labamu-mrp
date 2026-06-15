@@ -467,6 +467,144 @@ const mtl003OrderIdMap = {
   "WO-2455": "SO-3091", "WO-2456": "SO-3092", "WO-2457": "SO-3093", "WO-2458": "SO-3094", "WO-2459": "SO-3095",
 };
 
+// ── Customer PIC mapping ───────────────────────────────────────────────────────
+export const MOCK_CUSTOMER_PIC_MAP = {
+  "PT Maju Jaya":         "Budi Santoso",
+  "CV Sinar Abadi":       "Rina Wulandari",
+  "PT Karya Utama":       "Hendra Kurniawan",
+  "PT Demo Nusantara":    "Dewi Rahayu",
+  "CV Bintang Mas":       "Agus Prasetyo",
+  "PT Pagar Nusantara":   "Siti Aminah",
+  "CV Besi Mas":          "Joko Widodo",
+  "PT Plastik Teknik":    "Farida Hanum",
+  "CV Nylon Jaya":        "Rudi Hermawan",
+  "PT Dirgantara":        "Anwar Syahputra",
+  "CV Aero Prima":        "Lestari Ningrum",
+  "PT Cor Logam":         "Bambang Susilo",
+  "CV Magnesium Indo":    "Yuli Astuti",
+  "PT Display Nusantara": "Toni Saputra",
+  "CV Plastik Mas":       "Nisa Rahmawati",
+  "CV Logam Prima":       "Wahyu Nugroho",
+  "PT Teknik Maju":       "Surya Pratama",
+  "PT Industri Nusantara":"Endang Suryani",
+  "CV Delta Teknik":      "Firman Hidayat",
+  "PT Elektro Jaya":      "Indah Permatasari",
+  "CV Cahaya Teknik":     "Doni Setiawan",
+  "PT Bangun Raya":       "Maulana Akbar",
+  "CV Inti Karya":        "Ratna Sari",
+  "CV Polimer Jaya":      "Galih Pratama",
+  "PT Plastik Prima":     "Wulan Anggraini",
+  "PT Alumindo Glass":    "Fauzi Rahman",
+  "CV Kaca Mas":          "Sri Mulyani",
+  "PT Mesin Utama":       "Arif Budiman",
+  "PT Komposit Indo":     "Dian Pertiwi",
+  "CV Resin Jaya":        "Hendro Susanto",
+};
+
+// ── Product SKU mapping ────────────────────────────────────────────────────────
+export const MOCK_PRODUCT_SKU_MAP = {
+  // MTL-001 products
+  "Bracket Frame X9":     "PRD-101",
+  "Frame Assembly Alpha": "PRD-102",
+  "Cabinet Unit B":       "PRD-103",
+  "Prototype Frame X":    "PRD-104",
+  "Panel Structure C":    "PRD-105",
+  "Frame Assembly Beta":  "PRD-106",
+  "Cabinet Unit D":       "PRD-107",
+  "Frame Assembly Gamma": "PRD-108",
+  "Steel Frame Unit E":   "PRD-109",
+  "Frame Panel F":        "PRD-110",
+  "Connector Block G":    "PRD-111",
+  "Frame Assembly H":     "PRD-112",
+  "Cabinet Unit J":       "PRD-113",
+  "Panel Structure K":    "PRD-114",
+  "Frame Unit L":         "PRD-115",
+  // MTL-002 products
+  "Tube Module Y7":        "PRD-121",
+  "Pipe Joint Assembly":   "PRD-122",
+  "Frame Tube Unit":       "PRD-123",
+  "Support Bracket A":     "PRD-124",
+  "Pipe Joint Assembly B": "PRD-125",
+  "Tube Joint D":          "PRD-126",
+  "Frame Pipe E":          "PRD-127",
+  "Bracket Tube F":        "PRD-128",
+  "Pipe Support G":        "PRD-129",
+  "Tube Connect J":        "PRD-130",
+  "Pipe Frame K":          "PRD-131",
+  "Joint Unit L":          "PRD-132",
+  // MTL-003 products
+  "Gasket Set Z2":         "PRD-141",
+  "Engine Seal Z3":        "PRD-142",
+  "Engine Seal Kit A":     "PRD-143",
+  "Valve Assembly Z":      "PRD-144",
+  "Engine Seal Kit B":     "PRD-145",
+  "Gasket Frame Unit":     "PRD-146",
+  "Valve Assembly W":      "PRD-147",
+  "Gasket Set D":          "PRD-148",
+  "Seal Kit E":            "PRD-149",
+  "Engine Gasket F":       "PRD-150",
+  "Valve Frame G":         "PRD-151",
+  "Gasket Unit H":         "PRD-152",
+  "Seal Assembly J":       "PRD-153",
+  "Valve Set K":           "PRD-154",
+  "Gasket Connect L":      "PRD-155",
+  "Seal Frame M":          "PRD-156",
+  "Valve Unit N":          "PRD-157",
+  // MTL-004 products
+  "Control Panel A":       "PRD-161",
+  "Wiring Harness B":      "PRD-162",
+  "Panel Unit C":          "PRD-163",
+  "Control Panel D":       "PRD-164",
+  "Harness E":             "PRD-165",
+  // MTL-005 products
+  "Machine Frame A":       "PRD-171",
+  "Assembly Rack B":       "PRD-172",
+  "Support Frame C":       "PRD-173",
+  // MTL-006 products
+  "Plumbing Kit A":        "PRD-181",
+  "Pipeline Unit B":       "PRD-182",
+  "Plumbing Kit C":        "PRD-183",
+  // MTL-007 products
+  "Enclosure Box A":       "PRD-191",
+  "Shield Panel B":        "PRD-192",
+  "Enclosure Box C":       "PRD-193",
+  // MTL-008 products
+  "Tank Liner A":          "PRD-201",
+  "Container Base B":      "PRD-202",
+  "Tank Liner C":          "PRD-203",
+  // MTL-009 products
+  "Window Frame A":        "PRD-211",
+  "Door Seal B":           "PRD-212",
+  "Frame Assembly C":      "PRD-213",
+  // MTL-010 products
+  "Shaft Assembly A":      "PRD-221",
+  "Axle Unit B":           "PRD-222",
+  "Rod Assembly C":        "PRD-223",
+  "Shaft Unit D":          "PRD-224",
+  // MTL-011 products
+  "Composite Panel A":     "PRD-231",
+  "Laminate Board B":      "PRD-232",
+  // MTL-012 products
+  "Fence Panel A":         "PRD-241",
+  "Gate Frame B":          "PRD-242",
+  "Fence Panel C":         "PRD-243",
+  // MTL-013 products
+  "Gear Housing A":        "PRD-251",
+  "Bearing Cage B":        "PRD-252",
+  "Gear Housing C":        "PRD-253",
+  // MTL-014 products
+  "Aerospace Bracket A":   "PRD-261",
+  "Flight Frame B":        "PRD-262",
+  // MTL-015 products
+  "Die Cast Part A":       "PRD-271",
+  "Housing Shell B":       "PRD-272",
+  "Die Cast Part C":       "PRD-273",
+  // MTL-016 products
+  "Display Cover A":       "PRD-281",
+  "Panel Guard B":         "PRD-282",
+  "Display Cover C":       "PRD-283",
+};
+
 // ── Exported mock data ─────────────────────────────────────────────────────────
 
 export const MOCK_MATERIAL_FORECAST_DATA = [
@@ -518,7 +656,7 @@ export const MOCK_MATERIAL_FORECAST_DATA = [
   makeSimpleMaterial("Nylon 66 Pellet",          "MTL-013", 700,  50, 0,  [150, 100, 0, 0, 0, 120, 0, 0, 0, 0, 0, 0], [550, 450, 450, 450, 450, 330, 330, 330, 330, 330, 330, 330], mtl013Wos),
   makeSimpleMaterial("Titanium Screw M5",        "MTL-014", 1000, 0,  0,  [200, 0, 0, 150, 0, 0, 0, 0, 0, 0, 0, 0],  [800, 800, 800, 650, 650, 650, 650, 650, 650, 650, 650, 650], mtl014Wos),
   makeSimpleMaterial("Magnesium Alloy Bar",      "MTL-015", 400,  0,  0,  [0, 80, 60, 0, 0, 90, 0, 0, 0, 0, 0, 0],   [400, 320, 260, 260, 260, 170, 170, 170, 170, 170, 170, 170], mtl015Wos),
-  makeSimpleMaterial("Polycarbonate Sheet 3mm",  "MTL-016", 550,  20, 15, [100, 0, 0, 80, 120, 0, 0, 0, 0, 0, 0, 0], [450, 450, 450, 370, 250, 250, 250, 250, 250, 250, 250, 250], mtl016Wos),
+  makeSimpleMaterial("Polycarbonate Sheet 3mm",  "MTL-016", 550,  20, 15, [100, 0, 0, 80, 120, 0, 0, 0, 0, 0, 0, 0], [450, 450, -50, -130, -250, -250, -250, -250, -250, -250, -250, -250], mtl016Wos),
 ];
 
 // ── Vendor lead times (per vendor + material pair) ─────────────────────────────
@@ -526,26 +664,37 @@ export const MOCK_MATERIAL_FORECAST_DATA = [
 // Fastest vendor lead time drives overdue/urgent; average drives this_week.
 
 export const MOCK_VENDOR_LEAD_TIMES = [
-  { sku: "MTL-001", vendor: "PT Baja Nusantara",  leadTimeDays: 21 },
-  { sku: "MTL-001", vendor: "CV Logam Prima",      leadTimeDays: 28 },
-  { sku: "MTL-001", vendor: "PT Karya Logam",      leadTimeDays: 35 },
-  { sku: "MTL-002", vendor: "CV Alumindo",          leadTimeDays: 37 },
-  { sku: "MTL-002", vendor: "PT Teknik Maju",       leadTimeDays: 45 },
-  { sku: "MTL-003", vendor: "CV Karet Jaya",        leadTimeDays: 25 },
-  { sku: "MTL-003", vendor: "PT Seal Industri",     leadTimeDays: 31 },
-  { sku: "MTL-004", vendor: "CV Kawat Prima",       leadTimeDays: 14 },
-  { sku: "MTL-005", vendor: "PT Baut Nusantara",    leadTimeDays: 10 },
-  { sku: "MTL-006", vendor: "CV Pipa Jaya",         leadTimeDays: 18 },
-  { sku: "MTL-007", vendor: "PT Seng Utama",        leadTimeDays: 22 },
-  { sku: "MTL-008", vendor: "CV HDPE Indo",         leadTimeDays: 30 },
-  { sku: "MTL-009", vendor: "PT Sealant Prima",     leadTimeDays: 7  },
-  { sku: "MTL-010", vendor: "CV Baja Karya",        leadTimeDays: 25 },
-  { sku: "MTL-011", vendor: "PT Resin Jaya",        leadTimeDays: 12 },
-  { sku: "MTL-012", vendor: "CV Kawat Galvanis",    leadTimeDays: 20 },
-  { sku: "MTL-013", vendor: "PT Plastik Teknik",    leadTimeDays: 28 },
-  { sku: "MTL-014", vendor: "CV Titanium Indo",     leadTimeDays: 45 },
-  { sku: "MTL-015", vendor: "PT Magnesium Prima",   leadTimeDays: 35 },
-  { sku: "MTL-016", vendor: "CV Polikarbonat Jaya", leadTimeDays: 21 },
+  { sku: "MTL-001", vendor: "PT Baja Nusantara",    leadTimeDays: 21 },
+  { sku: "MTL-001", vendor: "CV Logam Prima",        leadTimeDays: 28 },
+  { sku: "MTL-001", vendor: "PT Karya Logam",        leadTimeDays: 35 },
+  // MTL-002 urgent: fastest=40 → buffer=42-40=2 ≤ 3
+  { sku: "MTL-002", vendor: "CV Alumindo",            leadTimeDays: 40 },
+  { sku: "MTL-002", vendor: "PT Teknik Maju",         leadTimeDays: 43 },
+  { sku: "MTL-003", vendor: "CV Karet Jaya",          leadTimeDays: 25 },
+  { sku: "MTL-003", vendor: "PT Seal Industri",       leadTimeDays: 31 },
+  { sku: "MTL-004", vendor: "CV Kawat Prima",         leadTimeDays: 14 },
+  // MTL-005 urgent: neg at week 6 (42d), fastest=40 → buffer=2
+  { sku: "MTL-005", vendor: "PT Baut Nusantara",      leadTimeDays: 40 },
+  { sku: "MTL-005", vendor: "CV Baut Prima",          leadTimeDays: 43 },
+  // MTL-006 overdue: neg at week 4 (28d), fastest=30 ≥ 28
+  { sku: "MTL-006", vendor: "CV Pipa Jaya",           leadTimeDays: 30 },
+  { sku: "MTL-006", vendor: "PT Pipa Nusantara",      leadTimeDays: 35 },
+  { sku: "MTL-007", vendor: "PT Seng Utama",          leadTimeDays: 22 },
+  // MTL-008 urgent: neg at week 5 (35d), fastest=33 → buffer=2
+  { sku: "MTL-008", vendor: "CV HDPE Indo",           leadTimeDays: 33 },
+  { sku: "MTL-008", vendor: "PT Polimer Jaya",        leadTimeDays: 36 },
+  { sku: "MTL-009", vendor: "PT Sealant Prima",       leadTimeDays: 7  },
+  { sku: "MTL-010", vendor: "CV Baja Karya",          leadTimeDays: 25 },
+  // MTL-011 this_week: neg at week 4 (28d), fastest=22, avg=22 → 28-22=6 ≤ 7
+  { sku: "MTL-011", vendor: "PT Resin Jaya",          leadTimeDays: 22 },
+  { sku: "MTL-012", vendor: "CV Kawat Galvanis",      leadTimeDays: 20 },
+  // MTL-013 this_week: neg at week 5 (35d), fastest=28, avg=28 → 35-28=7 ≤ 7
+  { sku: "MTL-013", vendor: "PT Plastik Teknik",      leadTimeDays: 28 },
+  { sku: "MTL-014", vendor: "CV Titanium Indo",       leadTimeDays: 45 },
+  { sku: "MTL-015", vendor: "PT Magnesium Prima",     leadTimeDays: 35 },
+  // MTL-016 overdue: neg at week 2 (14d), fastest=16 ≥ 14
+  { sku: "MTL-016", vendor: "CV Polikarbonat Jaya",   leadTimeDays: 16 },
+  { sku: "MTL-016", vendor: "PT Polycarbonate Prima", leadTimeDays: 21 },
 ];
 
 // ── Procurement status computation ────────────────────────────────────────────
@@ -617,18 +766,23 @@ const computeProcurementStatus = (sku, endStocks, workOrdersByWeek, leadTimes) =
 
 const simpleEndStocks = {
   "MTL-004": [480, 400, 250, 190, 190, 190, 100, 100, 100, 100, 100, 100],
-  "MTL-005": [1500, 1200, 1200, 1200, 800, 800, 800, 800, 800, 800, 800, 800],
+  // MTL-005 urgent: neg starts week 6
+  "MTL-005": [1500, 1200, 1200, 1200, 800, 800, -200, -400, -400, -400, -400, -400],
   "MTL-006": [300, 300, 300, 150, -100, -100, -100, -100, -100, -100, -100, -100],
   "MTL-007": [320, 200, 200, 200, 100, 100, 100, 100, 100, 100, 100, 100],
-  "MTL-008": [300, 250, 180, 180, 180, 120, 120, 120, 120, 120, 120, 120],
+  // MTL-008 urgent: neg starts week 5
+  "MTL-008": [300, 250, 180, 180, 180, -20, -80, -140, -140, -140, -140, -140],
   "MTL-009": [130, 130, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80],
   "MTL-010": [900, 700, 450, 450, 450, 270, 270, 270, 270, 270, 270, 270],
-  "MTL-011": [150, 125, 125, 125, 95, 95, 95, 95, 95, 95, 95, 95],
+  // MTL-011 this_week: neg starts week 4
+  "MTL-011": [150, 125, 125, 125, -5, -55, -55, -55, -55, -55, -55, -55],
   "MTL-012": [1900, 1900, 1900, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000],
-  "MTL-013": [550, 450, 450, 450, 450, 330, 330, 330, 330, 330, 330, 330],
+  // MTL-013 this_week: neg starts week 5
+  "MTL-013": [550, 450, 450, 450, 450, -70, -70, -70, -70, -70, -70, -70],
   "MTL-014": [800, 800, 800, 650, 650, 650, 650, 650, 650, 650, 650, 650],
   "MTL-015": [400, 320, 260, 260, 260, 170, 170, 170, 170, 170, 170, 170],
-  "MTL-016": [450, 450, 450, 370, 250, 250, 250, 250, 250, 250, 250, 250],
+  // MTL-016 overdue: neg starts week 2
+  "MTL-016": [450, 450, -50, -130, -250, -250, -250, -250, -250, -250, -250, -250],
 };
 const simpleWos = {
   "MTL-004": mtl004Wos, "MTL-005": mtl005Wos, "MTL-006": mtl006Wos, "MTL-007": mtl007Wos,
@@ -648,12 +802,7 @@ export const MOCK_PROCUREMENT_STATUS = {
   ),
 };
 
-export const MOCK_FORECAST_COUNTERS = {
-  incomingPo: 12,
-  overdue:   Object.values(MOCK_PROCUREMENT_STATUS).filter(s => s.status === "overdue").length,
-  urgent:    Object.values(MOCK_PROCUREMENT_STATUS).filter(s => s.status === "urgent").length,
-  thisWeek:  Object.values(MOCK_PROCUREMENT_STATUS).filter(s => s.status === "this_week").length,
-};
+// MOCK_FORECAST_COUNTERS is computed after MOCK_DEMAND_URGENCY_ROWS (defined below)
 
 // ── Incoming PO helpers ────────────────────────────────────────────────────────
 
@@ -755,8 +904,75 @@ const getWoStartDate = (weekOffset, dayOffset) => {
   return fmtShort(m);
 };
 
+// ── Unscheduled Work Orders ────────────────────────────────────────────────────
+export const MOCK_UNSCHEDULED_WOS = {
+  "MTL-001": [
+    { woId: "WO-2498", orderId: "SO-3220", productName: "Bracket Frame X9",    customer: "PT Maju Jaya",      qty: 200 },
+    { woId: "WO-2499", orderId: "SO-3221", productName: "Panel Structure C",   customer: "PT Karya Utama",    qty: 150 },
+    { woId: "WO-2497", orderId: "SO-3222", productName: "Frame Assembly Alpha", customer: "CV Sinar Abadi",   qty: 100 },
+    { woId: "WO-2496", orderId: "SO-3223", productName: "Cabinet Unit B",       customer: "PT Demo Nusantara",qty: 50  },
+  ],
+  "MTL-002": [
+    { woId: "WO-2495", orderId: "SO-3140", productName: "Tube Module Y7",       customer: "CV Logam Prima",   qty: 50  },
+    { woId: "WO-2494", orderId: "SO-3141", productName: "Frame Tube Unit",      customer: "PT Teknik Maju",   qty: 60  },
+  ],
+  "MTL-003": [],
+  "MTL-004": [
+    { woId: "WO-2505", orderId: "SO-4005", productName: "Harness E",            customer: "CV Cahaya Teknik", qty: 90  },
+    { woId: "WO-2506", orderId: "SO-4006", productName: "Panel Unit C",         customer: "PT Elektro Jaya",  qty: 30  },
+  ],
+  "MTL-005": [
+    { woId: "WO-2513", orderId: "SO-4013", productName: "Assembly Rack B",      customer: "CV Sinar Abadi",   qty: 300 },
+  ],
+  "MTL-006": [
+    { woId: "WO-2523", orderId: "SO-4023", productName: "Plumbing Kit C",       customer: "PT Bangun Raya",   qty: 250 },
+  ],
+  "MTL-007": [],
+  "MTL-008": [
+    { woId: "WO-2543", orderId: "SO-4043", productName: "Container Base B",     customer: "PT Plastik Prima", qty: 70  },
+  ],
+  "MTL-009": [
+    { woId: "WO-2553", orderId: "SO-4053", productName: "Door Seal B",          customer: "CV Kaca Mas",      qty: 30  },
+  ],
+  "MTL-010": [
+    { woId: "WO-2564", orderId: "SO-4064", productName: "Rod Assembly C",       customer: "PT Mesin Utama",   qty: 180 },
+  ],
+  "MTL-011": [],
+  "MTL-012": [
+    { woId: "WO-2583", orderId: "SO-4083", productName: "Fence Panel A",        customer: "PT Pagar Nusantara", qty: 600 },
+  ],
+  "MTL-013": [
+    { woId: "WO-2593", orderId: "SO-4093", productName: "Gear Housing C",       customer: "PT Plastik Teknik", qty: 120 },
+  ],
+  "MTL-014": [],
+  "MTL-015": [
+    { woId: "WO-2613", orderId: "SO-4113", productName: "Die Cast Part C",      customer: "PT Cor Logam",     qty: 90  },
+  ],
+  "MTL-016": [
+    { woId: "WO-2623", orderId: "SO-4123", productName: "Display Cover C",      customer: "PT Display Nusantara", qty: 120 },
+  ],
+};
+
 export const MOCK_DEMAND_URGENCY_ROWS = [
-  { id: "DUR-001", status: "overdue",   materialName: "Steel Plate 2mm",       sku: "MTL-001", productName: "Frame Assembly Gamma",  woId: "WO-2406", orderId: "SO-3201", customer: "PT Karya Utama",        woStartDate: getWoStartDate(3, 1), demandQty: 300, fromStock: 0,  needToBuy: 300 },
-  { id: "DUR-002", status: "urgent",    materialName: "Aluminum Tube 50mm",    sku: "MTL-002", productName: "Pipe Support G",        woId: "WO-2433", orderId: "SO-3145", customer: "CV Logam Prima",         woStartDate: getWoStartDate(6, 4), demandQty: 100, fromStock: 70, needToBuy: 30  },
-  { id: "DUR-003", status: "this_week", materialName: "Rubber Gasket Model X", sku: "MTL-003", productName: "Valve Frame G",         woId: "WO-2453", orderId: "SO-3089", customer: "PT Industri Nusantara",  woStartDate: getWoStartDate(5, 1), demandQty: 400, fromStock: 0,  needToBuy: 400 },
+  // Overdue — MTL-001 (overdue), MTL-006 (overdue), MTL-016 (overdue)
+  { id: "DUR-001", status: "overdue",   materialName: "Steel Plate 2mm",         sku: "MTL-001", productName: "Frame Assembly Gamma",  woId: "WO-2406", orderId: "SO-3201", customer: "PT Karya Utama",        woStartDate: getWoStartDate(3, 1), demandQty: 300, fromStock: 0,   needToBuy: 300 },
+  { id: "DUR-004", status: "overdue",   materialName: "Steel Plate 2mm",         sku: "MTL-001", productName: "Frame Assembly H",      woId: "WO-2423", orderId: "SO-3210", customer: "PT Maju Jaya",          woStartDate: getWoStartDate(8, 0), demandQty: 100, fromStock: 0,   needToBuy: 100 },
+  { id: "DUR-005", status: "overdue",   materialName: "PVC Pipe 32mm",           sku: "MTL-006", productName: "Plumbing Kit C",        woId: "WO-2522", orderId: "SO-4022", customer: "PT Bangun Raya",        woStartDate: getWoStartDate(4, 0), demandQty: 250, fromStock: 0,   needToBuy: 250 },
+  { id: "DUR-010", status: "overdue",   materialName: "Polycarbonate Sheet 3mm", sku: "MTL-016", productName: "Display Cover A",       woId: "WO-2620", orderId: "SO-4120", customer: "PT Display Nusantara",  woStartDate: getWoStartDate(2, 0), demandQty: 100, fromStock: 0,   needToBuy: 100 },
+  // Urgent — MTL-002 (urgent), MTL-005 (urgent), MTL-008 (urgent)
+  { id: "DUR-002", status: "urgent",    materialName: "Aluminum Tube 50mm",      sku: "MTL-002", productName: "Pipe Support G",        woId: "WO-2433", orderId: "SO-3145", customer: "CV Logam Prima",        woStartDate: getWoStartDate(6, 4), demandQty: 100, fromStock: 70,  needToBuy: 30  },
+  { id: "DUR-006", status: "urgent",    materialName: "Aluminum Tube 50mm",      sku: "MTL-002", productName: "Frame Assembly H",      woId: "WO-2434", orderId: "SO-3147", customer: "PT Teknik Maju",        woStartDate: getWoStartDate(7, 2), demandQty: 200, fromStock: 0,   needToBuy: 200 },
+  { id: "DUR-007", status: "urgent",    materialName: "Stainless Bolt M8",       sku: "MTL-005", productName: "Support Frame C",       woId: "WO-2512", orderId: "SO-4012", customer: "PT Karya Utama",        woStartDate: getWoStartDate(6, 1), demandQty: 400, fromStock: 0,   needToBuy: 400 },
+  { id: "DUR-011", status: "urgent",    materialName: "HDPE Sheet 10mm",         sku: "MTL-008", productName: "Tank Liner C",          woId: "WO-2542", orderId: "SO-4042", customer: "CV Polimer Jaya",       woStartDate: getWoStartDate(5, 0), demandQty: 60,  fromStock: 0,   needToBuy: 60  },
+  // This Week — MTL-003 (this_week), MTL-011 (this_week), MTL-013 (this_week)
+  { id: "DUR-003", status: "this_week", materialName: "Rubber Gasket Model X",   sku: "MTL-003", productName: "Valve Frame G",         woId: "WO-2453", orderId: "SO-3089", customer: "PT Industri Nusantara", woStartDate: getWoStartDate(5, 1), demandQty: 400, fromStock: 0,   needToBuy: 400 },
+  { id: "DUR-008", status: "this_week", materialName: "Rubber Gasket Model X",   sku: "MTL-003", productName: "Seal Assembly J",       woId: "WO-2455", orderId: "SO-3088", customer: "PT Industri Nusantara", woStartDate: getWoStartDate(7, 2), demandQty: 300, fromStock: 0,   needToBuy: 300 },
+  { id: "DUR-009", status: "this_week", materialName: "Epoxy Resin 1kg",         sku: "MTL-011", productName: "Composite Panel A",     woId: "WO-2570", orderId: "SO-4070", customer: "PT Komposit Indo",      woStartDate: getWoStartDate(4, 2), demandQty: 25,  fromStock: 0,   needToBuy: 25  },
+  { id: "DUR-012", status: "this_week", materialName: "Nylon 66 Pellet",         sku: "MTL-013", productName: "Gear Housing C",        woId: "WO-2592", orderId: "SO-4092", customer: "PT Plastik Teknik",     woStartDate: getWoStartDate(5, 2), demandQty: 120, fromStock: 0,   needToBuy: 120 },
 ];
+
+export const MOCK_FORECAST_COUNTERS = {
+  overdue:  MOCK_DEMAND_URGENCY_ROWS.filter(r => r.status === "overdue").length,
+  urgent:   MOCK_DEMAND_URGENCY_ROWS.filter(r => r.status === "urgent").length,
+  thisWeek: MOCK_DEMAND_URGENCY_ROWS.filter(r => r.status === "this_week").length,
+};

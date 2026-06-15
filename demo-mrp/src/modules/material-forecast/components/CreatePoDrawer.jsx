@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ChevronLeft, CloseIcon, Plus, Trash2, ChevronDownIcon, CheckIcon, DeleteIcon } from "../../../components/icons/Icons.jsx";
+import { ChevronLeft, CloseIcon, Plus, Trash2, ChevronDownIcon, CheckIcon, DeleteIcon, Info } from "../../../components/icons/Icons.jsx";
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { FormField } from "../../../components/molecules/FormField.jsx";
@@ -10,6 +10,7 @@ import { inputFrameStyle, inputControlStyle, baseInputBorderColor, focusInputFra
 import { createSyntheticInputEvent } from "../../../utils/upload/uploadUtils.js";
 import { formatNumberWithCommas, parseNumberFromCommas } from "../../../utils/format/formatUtils.js";
 import { MOCK_VENDORS } from "../../../data/vendors.js";
+import { MOCK_VENDOR_LEAD_TIMES, MOCK_PROCUREMENT_STATUS } from "../mock/materialForecastMocks.js";
 import { MOCK_MATERIALS_DATA } from "../../materials/mock/materialsMocks.js";
 import { MOCK_PO_TABLE_DATA } from "../../purchase-order/mock/purchaseOrderMocks.js";
 
@@ -272,7 +273,61 @@ const totalLabelStyle = { fontSize: "var(--text-title-1)", fontWeight: "var(--fo
 const totalValueStyle = { fontSize: "var(--text-title-1)", fontWeight: "var(--font-weight-black)", color: "var(--neutral-on-surface-primary)" };
 
 // ── Main component ────────────────────────────────────────────────────────────
-export const CreatePoDrawer = ({ isOpen, onClose, onBack, showBack = false, initialMaterial = null, showPoSnackbar }) => {
+const getUrgencyBanner = (urgencyStatus, sku) => {
+  const p = sku ? MOCK_PROCUREMENT_STATUS[sku] : null;
+
+  if (urgencyStatus === "overdue") {
+    const body = p ? (
+      <span style={{ fontSize: "var(--text-body)", lineHeight: "1.6" }}>
+        Ordering now will delay{" "}
+        <strong>{(p.affectedWoIds || []).join(", ") || "affected work orders"}</strong>{" "}
+        by an estimated <strong>{p.delayDays} day{p.delayDays !== 1 ? "s" : ""}</strong> due to fastest vendor lead time of{" "}
+        <strong>{p.fastestLeadTimeDays} days ({p.fastestVendor})</strong>.
+      </span>
+    ) : (
+      <span style={{ fontSize: "var(--text-body)", lineHeight: "1.6" }}>
+        Ordering now will delay delivery beyond the planned work order start date. Place this PO immediately and notify the relevant teams to minimize schedule impact.
+      </span>
+    );
+    return { bg: "var(--status-red-container)", iconColor: "var(--status-red-primary)", title: "Late PO — Delivery at Risk", body };
+  }
+
+  if (urgencyStatus === "urgent") {
+    const body = p ? (
+      <span style={{ fontSize: "var(--text-body)", lineHeight: "1.6" }}>
+        Only <strong>{p.bufferDays} day{p.bufferDays !== 1 ? "s" : ""}</strong> left to order on time.
+        {" "}Place this PO by <strong>{p.orderByDate}</strong> using the fastest vendor{" "}
+        <strong>{p.fastestVendor}</strong> (lead time: {p.fastestLeadTimeDays} days).
+        {" "}Missing this window means stock arrives after demand on <strong>{p.demandDate}</strong>.
+      </span>
+    ) : (
+      <span style={{ fontSize: "var(--text-body)", lineHeight: "1.6" }}>
+        Only a few days remain to order on time. Select the fastest available vendor and confirm the delivery date to avoid stock arriving after the planned work order start date.
+      </span>
+    );
+    return { bg: "var(--status-orange-container, #FFF3E0)", iconColor: "var(--status-orange-primary)", title: "Urgent — Order Window Closing", body };
+  }
+
+  if (urgencyStatus === "this_week") {
+    const body = p ? (
+      <span style={{ fontSize: "var(--text-body)", lineHeight: "1.6" }}>
+        Place this PO by <strong>{p.orderByDateAvg}</strong> to meet demand on{" "}
+        <strong>{p.demandDate}</strong>.
+        {" "}Average vendor lead time is <strong>{p.avgLeadTimeDays} days</strong>.
+        {" "}Ordering from <strong>{p.fastestVendor}</strong> ({p.fastestLeadTimeDays} days) gives the most buffer.
+      </span>
+    ) : (
+      <span style={{ fontSize: "var(--text-body)", lineHeight: "1.6" }}>
+        This PO should be placed this week to meet the planned work order start date. Ordering from the fastest vendor gives the most buffer.
+      </span>
+    );
+    return { bg: "var(--feature-brand-container)", iconColor: "var(--feature-brand-primary)", title: "Order This Week", body };
+  }
+
+  return null;
+};
+
+export const CreatePoDrawer = ({ isOpen, onClose, onBack, showBack = false, initialMaterial = null, showPoSnackbar, materialSku = null, urgencyStatus = null }) => {
   const [vendorId, setVendorId] = useState("");
   const [vendorError, setVendorError] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
@@ -417,7 +472,25 @@ export const CreatePoDrawer = ({ isOpen, onClose, onBack, showBack = false, init
 
           {/* Vendor */}
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            <VendorSelect value={vendorId} onChange={(id) => { setVendorId(id); setVendorError(""); }} error={vendorError} />
+            <VendorSelect
+              value={vendorId}
+              onChange={(id) => {
+                setVendorId(id);
+                setVendorError("");
+                const sku = materialSku || initialMaterial?.sku;
+                const vendor = MOCK_VENDORS.find((v) => v.id === id);
+                if (sku && vendor) {
+                  const lt = MOCK_VENDOR_LEAD_TIMES.find((l) => l.sku === sku && l.vendor === vendor.name);
+                  if (lt) {
+                    const d = new Date();
+                    d.setDate(d.getDate() + lt.leadTimeDays);
+                    setDeliveryDate(d.toISOString().split("T")[0]);
+                    setDeliveryDateError("");
+                  }
+                }
+              }}
+              error={vendorError}
+            />
             {selectedVendor && (
               <div style={{ padding: "14px 16px", borderRadius: "10px", background: "var(--neutral-surface-primary)", border: BORDER, display: "flex", flexDirection: "column", gap: "8px" }}>
                 <InfoRow label="Phone" value={selectedVendor.phone} />
@@ -455,12 +528,28 @@ export const CreatePoDrawer = ({ isOpen, onClose, onBack, showBack = false, init
 
                 {/* Material */}
                 {line.locked ? (
-                  <InputField
-                    label="Material"
-                    required
-                    value={line.materialSku ? `${line.materialName} (${line.materialSku})` : line.materialName}
-                    disabled
-                  />
+                  <>
+                    <InputField
+                      label="Material"
+                      required
+                      value={line.materialSku ? `${line.materialName} (${line.materialSku})` : line.materialName}
+                      disabled
+                    />
+                    {urgencyStatus && (() => {
+                      const banner = getUrgencyBanner(urgencyStatus, line.materialSku);
+                      if (!banner) return null;
+                      const { bg, iconColor, title, body } = banner;
+                      return (
+                        <div style={{ background: bg, borderRadius: "10px", padding: "14px 16px", display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                          <div style={{ marginTop: "2px", flexShrink: 0 }}><Info size={18} color={iconColor} /></div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-semi-bold)", color: iconColor }}>{title}</span>
+                            <div style={{ color: iconColor }}>{body}</div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </>
                 ) : (
                   <MaterialSelect
                     value={line.materialId}

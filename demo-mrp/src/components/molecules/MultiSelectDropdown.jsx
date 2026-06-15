@@ -49,7 +49,13 @@ export const MultiSelectDropdown = ({
   }, [isOpen]);
 
   const visibleOptions = searchable && searchTerm
-    ? options.filter(opt => opt.label.toLowerCase().includes(searchTerm.toLowerCase()) && opt.value !== "all")
+    ? options.filter(opt => {
+        const q = searchTerm.toLowerCase();
+        return opt.value !== "all" && (
+          opt.label.toLowerCase().includes(q) ||
+          (opt.subLabel && opt.subLabel.toLowerCase().includes(q))
+        );
+      })
     : options.filter(opt => opt.value !== "all");
 
   const toggleOption = (val) => {
@@ -167,7 +173,12 @@ export const MultiSelectDropdown = ({
                 }}
               >
                 <Checkbox checked={value.includes(opt.value)} onChange={() => toggleOption(opt.value)} />
-                <span style={{ fontSize: "var(--text-title-3)", fontWeight: value.includes(opt.value) ? "bold" : "normal", color: "var(--neutral-on-surface-primary)" }}>{opt.label}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1px" }}>
+                  <span style={{ fontSize: "var(--text-title-3)", fontWeight: value.includes(opt.value) ? "bold" : "normal", color: "var(--neutral-on-surface-primary)" }}>{opt.label}</span>
+                  {opt.subLabel && (
+                    <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-tertiary)" }}>{opt.subLabel}</span>
+                  )}
+                </div>
               </div>
             )) : (
               <div style={{ padding: "16px", textAlign: "center", color: "var(--neutral-on-surface-secondary)", fontSize: "var(--text-title-3)" }}>

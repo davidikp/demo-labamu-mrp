@@ -394,7 +394,7 @@ export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, selectedCe
         {/* Header */}
         <div style={{ padding: "24px", borderBottom: ROW_BORDER, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <span style={{ fontSize: "var(--text-title-1)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
-            Forecast Breakdown
+            Planning Breakdown
           </span>
           <IconButton icon={CloseIcon} onClick={onClose} size="small" color="var(--neutral-on-surface-primary)" />
         </div>
@@ -524,6 +524,7 @@ export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, selectedCe
               materialName: selectedCell.materialName,
               sku: selectedCell.sku,
               needToBuy: selectedCell.endStock < 0 ? Math.abs(selectedCell.endStock) : 0,
+              urgencyStatus: procStatus?.status || null,
             })}
           >
             Create PO
