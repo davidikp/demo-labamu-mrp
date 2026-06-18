@@ -3281,7 +3281,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "140px 60px 1.5fr 1.5fr 120px 80px 80px 80px",
+                    gridTemplateColumns: "140px 60px 1.5fr 1.5fr 80px 80px 80px",
                     columnGap: "16px",
                     paddingBottom: "12px",
                     borderBottom: "1px solid var(--neutral-line-separator-1)",
@@ -3293,7 +3293,6 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   <div style={{ paddingLeft: "8px" }}>Step</div>
                   <div>Routing</div>
                   <div>Operation</div>
-                  <div>Planned Date</div>
                   <div>Yet to Start</div>
                   <div>In Progress</div>
                   <div>Completed</div>
@@ -3312,7 +3311,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       key={i}
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "140px 60px 1.5fr 1.5fr 120px 80px 80px 80px",
+                        gridTemplateColumns: "140px 60px 1.5fr 1.5fr 80px 80px 80px",
                         columnGap: "16px",
                         alignItems: "start",
                         padding: "16px 0",
@@ -3361,33 +3360,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                           </span>
                         </div>
                       </div>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ minHeight: "32px", display: "flex", alignItems: "center" }}>
-                          {row.plannedDate?.start && row.plannedDate?.end ? (
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "var(--text-title-3)" }}>
-                              <span>{row.plannedDate.start} - {row.plannedDate.end}</span>
-                              {!isDisabled && (
-                                <IconButton
-                                  icon={EditIcon}
-                                  size="small"
-                                  title="Edit Planned Date"
-                                  onClick={() => openPlannedDateModal(row.step, row.plannedDate)}
-                                />
-                              )}
-                            </div>
-                          ) : (
-                            <Button
-                              variant="tertiary"
-                              size="small"
-                              disabled={isDisabled}
-                              onClick={() => openPlannedDateModal(row.step)}
-                              style={{ padding: "0 8px", height: "24px", minHeight: "unset" }}
-                            >
-                              Add Date
-                            </Button>
-                          )}
-                        </div>
-                      </div>
+
                       <div style={{ height: "32px", display: "flex", alignItems: "center" }}>{start}</div>
                       <div style={{ height: "32px", display: "flex", alignItems: "center" }}>{row.prog || 0}</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -4175,6 +4148,10 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       } else {
                         dependencyText = `Avail Qty to Process: ${availableToProcess}`;
                       }
+                    }
+                    
+                    if (!isInternal && resolvedVendorStatus === "Not Started") {
+                      dependencyText = null;
                     }
                   }
 

@@ -77,7 +77,7 @@ const mtl001WorkOrders = [
       slippedDays: 5,
       originalEstimatedStartDate: getSlippedOriginalDate(5),
     },
-    { id: "WO-2401", productName: "Frame Assembly Alpha", customerName: "PT Maju Jaya", estimatedStartDayOffset: 1, qty: 200 },
+    { id: "WO-2401", productName: "Frame Assembly Alpha", customerName: "PT Maju Jaya", estimatedStartDayOffset: 1, qty: 200, isStarted: true },
     { id: "WO-2402", productName: "Cabinet Unit B", customerName: "CV Sinar Abadi", estimatedStartDayOffset: 3, qty: 300 },
     { id: "WO-2400", productName: "Prototype Frame X", customerName: "PT Demo Nusantara", estimatedStartDayOffset: 5, qty: 50 },
   ],
@@ -154,7 +154,7 @@ const mtl001PurchaseOrders = [
   [], [], [],
 ];
 
-const mtl001EndStocks = [800, 200, 0, -300, -300, -400, -600, -650, -750, -950, -1100, -1150];
+const mtl001EndStocks = [800, -400, -600, -900, -900, -1000, -1200, -1250, -1350, -1550, -1700, -1750];
 
 // ── Aluminum Tube 50mm (MTL-002) ──────────────────────────────────────────────
 // Slipped WO added to W0: WO-2491 (80 pcs, slipped 8 days ago)
@@ -175,7 +175,7 @@ const mtl002WorkOrders = [
       slippedDays: 8,
       originalEstimatedStartDate: getSlippedOriginalDate(8),
     },
-    { id: "WO-2407", productName: "Pipe Joint Assembly", customerName: "PT Teknik Maju", estimatedStartDayOffset: 2, qty: 100 },
+    { id: "WO-2407", productName: "Pipe Joint Assembly", customerName: "PT Teknik Maju", estimatedStartDayOffset: 2, qty: 100, isStarted: true },
   ],
   [
     { id: "WO-2408", productName: "Frame Tube Unit", customerName: "CV Logam Prima", estimatedStartDayOffset: 0, qty: 80 },
@@ -223,7 +223,7 @@ const mtl002PurchaseOrders = [
   [], [],
 ];
 
-const mtl002EndStocks = [620, 470, 270, 220, 120, 70, -30, -230, -230, -280, -330, -430];
+const mtl002EndStocks = [-180, -330, -530, -580, -680, -730, -760, -960, -960, -1010, -1060, -1160];
 
 // ── Rubber Gasket Model X (MTL-003) ───────────────────────────────────────────
 // Slipped WOs added to W0: WO-2492 (200 pcs, 3d ago) + WO-2493 (300 pcs, 11d ago)
@@ -254,7 +254,7 @@ const mtl003WorkOrders = [
       slippedDays: 11,
       originalEstimatedStartDate: getSlippedOriginalDate(11),
     },
-    { id: "WO-2411", productName: "Engine Seal Kit A", customerName: "PT Industri Nusantara", estimatedStartDayOffset: 0, qty: 250 },
+    { id: "WO-2411", productName: "Engine Seal Kit A", customerName: "PT Industri Nusantara", estimatedStartDayOffset: 0, qty: 250, isStarted: true },
     { id: "WO-2412", productName: "Valve Assembly Z", customerName: "CV Delta Teknik", estimatedStartDayOffset: 4, qty: 250 },
   ],
   [{ id: "WO-2413", productName: "Engine Seal Kit B", customerName: "PT Industri Nusantara", estimatedStartDayOffset: 2, qty: 500 }],
@@ -613,7 +613,7 @@ export const MOCK_MATERIAL_FORECAST_DATA = [
     sku: "MTL-001",
     onHandStock: 1500,
     incomingPoStock: 150,
-    unscheduled: 200,
+    unscheduled: 500,
     timeline: generateTimeline(
       [700, 600, 200, 300, 0, 100, 200, 50, 100, 200, 150, 50],
       mtl001EndStocks,
@@ -625,7 +625,7 @@ export const MOCK_MATERIAL_FORECAST_DATA = [
     sku: "MTL-002",
     onHandStock: 800,
     incomingPoStock: 50,
-    unscheduled: 50,
+    unscheduled: 110,
     timeline: generateTimeline(
       [180, 150, 200, 50, 100, 50, 100, 200, 0, 50, 50, 100],
       mtl002EndStocks,
@@ -644,19 +644,19 @@ export const MOCK_MATERIAL_FORECAST_DATA = [
       addOrderIds(mtl003WorkOrders, mtl003OrderIdMap), mtl003Batches, mtl003PurchaseOrders
     ),
   },
-  makeSimpleMaterial("Copper Wire 2.5mm",       "MTL-004", 600,  30, 10, [120, 80, 150, 60, 0, 0, 90, 0, 0, 0, 0, 0], [480, 400, 250, 190, 190, 190, 100, 100, 100, 100, 100, 100], mtl004Wos),
-  makeSimpleMaterial("Stainless Bolt M8",        "MTL-005", 2000, 0,  50, [500, 300, 0, 0, 400, 0, 0, 0, 0, 0, 0, 0], [1500, 1200, 1200, 1200, 800, 800, 800, 800, 800, 800, 800, 800], mtl005Wos),
-  makeSimpleMaterial("PVC Pipe 32mm",            "MTL-006", 500,  20, 0,  [200, 0, 0, 150, 250, 0, 0, 0, 0, 0, 0, 0], [300, 300, 300, 150, -100, -100, -100, -100, -100, -100, -100, -100], mtl006Wos),
-  makeSimpleMaterial("Zinc Plate 1mm",           "MTL-007", 400,  0,  20, [80, 120, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0],  [320, 200, 200, 200, 100, 100, 100, 100, 100, 100, 100, 100], mtl007Wos),
-  makeSimpleMaterial("HDPE Sheet 10mm",          "MTL-008", 300,  0,  0,  [0, 50, 70, 0, 0, 60, 0, 0, 0, 0, 0, 0],   [300, 250, 180, 180, 180, 120, 120, 120, 120, 120, 120, 120], mtl008Wos),
-  makeSimpleMaterial("Silicone Sealant 300ml",   "MTL-009", 200,  10, 5,  [70, 0, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0],    [130, 130, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80], mtl009Wos),
-  makeSimpleMaterial("Carbon Steel Rod 20mm",    "MTL-010", 1200, 80, 30, [300, 200, 250, 0, 0, 180, 0, 0, 0, 0, 0, 0], [900, 700, 450, 450, 450, 270, 270, 270, 270, 270, 270, 270], mtl010Wos),
-  makeSimpleMaterial("Epoxy Resin 1kg",          "MTL-011", 150,  0,  0,  [0, 25, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0],    [150, 125, 125, 125, 95, 95, 95, 95, 95, 95, 95, 95], mtl011Wos),
-  makeSimpleMaterial("Galvanized Wire 1.6mm",    "MTL-012", 2500, 0,  100,[600, 0, 0, 400, 0, 0, 500, 0, 0, 0, 0, 0], [1900, 1900, 1900, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000], mtl012Wos),
-  makeSimpleMaterial("Nylon 66 Pellet",          "MTL-013", 700,  50, 0,  [150, 100, 0, 0, 0, 120, 0, 0, 0, 0, 0, 0], [550, 450, 450, 450, 450, 330, 330, 330, 330, 330, 330, 330], mtl013Wos),
+  makeSimpleMaterial("Copper Wire 2.5mm",       "MTL-004", 600,  30, 120, [120, 80, 150, 60, 0, 0, 90, 0, 0, 0, 0, 0], [480, 400, 250, 190, 190, 190, 100, 100, 100, 100, 100, 100], mtl004Wos),
+  makeSimpleMaterial("Stainless Bolt M8",        "MTL-005", 2000, 0,  300, [500, 300, 0, 0, 400, 0, 0, 0, 0, 0, 0, 0], [1500, 1200, 1200, 1200, 800, 800, -200, -400, -400, -400, -400, -400], mtl005Wos),
+  makeSimpleMaterial("PVC Pipe 32mm",            "MTL-006", 500,  20, 250,  [200, 0, 0, 150, 250, 0, 0, 0, 0, 0, 0, 0], [300, 300, 300, 150, -100, -100, -100, -100, -100, -100, -100, -100], mtl006Wos),
+  makeSimpleMaterial("Zinc Plate 1mm",           "MTL-007", 400,  0,  0, [80, 120, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0],  [320, 200, 200, 200, 100, 100, 100, 100, 100, 100, 100, 100], mtl007Wos),
+  makeSimpleMaterial("HDPE Sheet 10mm",          "MTL-008", 300,  0,  70,  [0, 50, 70, 0, 0, 60, 0, 0, 0, 0, 0, 0],   [300, 250, 180, 180, 180, -20, -80, -140, -140, -140, -140, -140], mtl008Wos),
+  makeSimpleMaterial("Silicone Sealant 300ml",   "MTL-009", 200,  10, 30,  [70, 0, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0],    [130, 130, 80, 80, 80, 80, 80, 80, 80, 80, 80, 80], mtl009Wos),
+  makeSimpleMaterial("Carbon Steel Rod 20mm",    "MTL-010", 1200, 80, 180, [300, 200, 250, 0, 0, 180, 0, 0, 0, 0, 0, 0], [900, 700, 450, 450, 450, 270, 270, 270, 270, 270, 270, 270], mtl010Wos),
+  makeSimpleMaterial("Epoxy Resin 1kg",          "MTL-011", 150,  0,  0,  [0, 25, 0, 0, 30, 0, 0, 0, 0, 0, 0, 0],    [150, 125, 125, 125, -5, -55, -55, -55, -55, -55, -55, -55], mtl011Wos),
+  makeSimpleMaterial("Galvanized Wire 1.6mm",    "MTL-012", 2500, 0,  600,[600, 0, 0, 400, 0, 0, 500, 0, 0, 0, 0, 0], [1900, 1900, 1900, 1500, 1500, 1500, 1000, 1000, 1000, 1000, 1000, 1000], mtl012Wos),
+  makeSimpleMaterial("Nylon 66 Pellet",          "MTL-013", 700,  50, 120,  [150, 100, 0, 0, 0, 120, 0, 0, 0, 0, 0, 0], [550, 450, 450, 450, 450, -70, -70, -70, -70, -70, -70, -70], mtl013Wos),
   makeSimpleMaterial("Titanium Screw M5",        "MTL-014", 1000, 0,  0,  [200, 0, 0, 150, 0, 0, 0, 0, 0, 0, 0, 0],  [800, 800, 800, 650, 650, 650, 650, 650, 650, 650, 650, 650], mtl014Wos),
-  makeSimpleMaterial("Magnesium Alloy Bar",      "MTL-015", 400,  0,  0,  [0, 80, 60, 0, 0, 90, 0, 0, 0, 0, 0, 0],   [400, 320, 260, 260, 260, 170, 170, 170, 170, 170, 170, 170], mtl015Wos),
-  makeSimpleMaterial("Polycarbonate Sheet 3mm",  "MTL-016", 550,  20, 15, [100, 0, 0, 80, 120, 0, 0, 0, 0, 0, 0, 0], [450, 450, -50, -130, -250, -250, -250, -250, -250, -250, -250, -250], mtl016Wos),
+  makeSimpleMaterial("Magnesium Alloy Bar",      "MTL-015", 400,  0,  90,  [0, 80, 60, 0, 0, 90, 0, 0, 0, 0, 0, 0],   [400, 320, 260, 260, 260, 170, 170, 170, 170, 170, 170, 170], mtl015Wos),
+  makeSimpleMaterial("Polycarbonate Sheet 3mm",  "MTL-016", 550,  20, 120, [100, 0, 0, 80, 120, 0, 0, 0, 0, 0, 0, 0], [450, 450, -50, -130, -250, -250, -250, -250, -250, -250, -250, -250], mtl016Wos),
 ];
 
 // ── Vendor lead times (per vendor + material pair) ─────────────────────────────
@@ -954,25 +954,63 @@ export const MOCK_UNSCHEDULED_WOS = {
 };
 
 export const MOCK_DEMAND_URGENCY_ROWS = [
-  // Overdue — MTL-001 (overdue), MTL-006 (overdue), MTL-016 (overdue)
-  { id: "DUR-001", status: "overdue",   materialName: "Steel Plate 2mm",         sku: "MTL-001", productName: "Frame Assembly Gamma",  woId: "WO-2406", orderId: "SO-3201", customer: "PT Karya Utama",        woStartDate: getWoStartDate(3, 1), demandQty: 300, fromStock: 0,   needToBuy: 300 },
-  { id: "DUR-004", status: "overdue",   materialName: "Steel Plate 2mm",         sku: "MTL-001", productName: "Frame Assembly H",      woId: "WO-2423", orderId: "SO-3210", customer: "PT Maju Jaya",          woStartDate: getWoStartDate(8, 0), demandQty: 100, fromStock: 0,   needToBuy: 100 },
-  { id: "DUR-005", status: "overdue",   materialName: "PVC Pipe 32mm",           sku: "MTL-006", productName: "Plumbing Kit C",        woId: "WO-2522", orderId: "SO-4022", customer: "PT Bangun Raya",        woStartDate: getWoStartDate(4, 0), demandQty: 250, fromStock: 0,   needToBuy: 250 },
-  { id: "DUR-010", status: "overdue",   materialName: "Polycarbonate Sheet 3mm", sku: "MTL-016", productName: "Display Cover A",       woId: "WO-2620", orderId: "SO-4120", customer: "PT Display Nusantara",  woStartDate: getWoStartDate(2, 0), demandQty: 100, fromStock: 0,   needToBuy: 100 },
-  // Urgent — MTL-002 (urgent), MTL-005 (urgent), MTL-008 (urgent)
-  { id: "DUR-002", status: "urgent",    materialName: "Aluminum Tube 50mm",      sku: "MTL-002", productName: "Pipe Support G",        woId: "WO-2433", orderId: "SO-3145", customer: "CV Logam Prima",        woStartDate: getWoStartDate(6, 4), demandQty: 100, fromStock: 70,  needToBuy: 30  },
-  { id: "DUR-006", status: "urgent",    materialName: "Aluminum Tube 50mm",      sku: "MTL-002", productName: "Frame Assembly H",      woId: "WO-2434", orderId: "SO-3147", customer: "PT Teknik Maju",        woStartDate: getWoStartDate(7, 2), demandQty: 200, fromStock: 0,   needToBuy: 200 },
-  { id: "DUR-007", status: "urgent",    materialName: "Stainless Bolt M8",       sku: "MTL-005", productName: "Support Frame C",       woId: "WO-2512", orderId: "SO-4012", customer: "PT Karya Utama",        woStartDate: getWoStartDate(6, 1), demandQty: 400, fromStock: 0,   needToBuy: 400 },
-  { id: "DUR-011", status: "urgent",    materialName: "HDPE Sheet 10mm",         sku: "MTL-008", productName: "Tank Liner C",          woId: "WO-2542", orderId: "SO-4042", customer: "CV Polimer Jaya",       woStartDate: getWoStartDate(5, 0), demandQty: 60,  fromStock: 0,   needToBuy: 60  },
-  // This Week — MTL-003 (this_week), MTL-011 (this_week), MTL-013 (this_week)
-  { id: "DUR-003", status: "this_week", materialName: "Rubber Gasket Model X",   sku: "MTL-003", productName: "Valve Frame G",         woId: "WO-2453", orderId: "SO-3089", customer: "PT Industri Nusantara", woStartDate: getWoStartDate(5, 1), demandQty: 400, fromStock: 0,   needToBuy: 400 },
-  { id: "DUR-008", status: "this_week", materialName: "Rubber Gasket Model X",   sku: "MTL-003", productName: "Seal Assembly J",       woId: "WO-2455", orderId: "SO-3088", customer: "PT Industri Nusantara", woStartDate: getWoStartDate(7, 2), demandQty: 300, fromStock: 0,   needToBuy: 300 },
-  { id: "DUR-009", status: "this_week", materialName: "Epoxy Resin 1kg",         sku: "MTL-011", productName: "Composite Panel A",     woId: "WO-2570", orderId: "SO-4070", customer: "PT Komposit Indo",      woStartDate: getWoStartDate(4, 2), demandQty: 25,  fromStock: 0,   needToBuy: 25  },
-  { id: "DUR-012", status: "this_week", materialName: "Nylon 66 Pellet",         sku: "MTL-013", productName: "Gear Housing C",        woId: "WO-2592", orderId: "SO-4092", customer: "PT Plastik Teknik",     woStartDate: getWoStartDate(5, 2), demandQty: 120, fromStock: 0,   needToBuy: 120 },
+  // Future WOs with uncovered demand (needToBuy > 0)
+  { id: "DUR-001", materialName: "Steel Plate 2mm",         sku: "MTL-001", productName: "Frame Assembly Gamma",  woId: "WO-2406", orderId: "SO-3201", customer: "PT Karya Utama",        woStartDate: getWoStartDate(3, 1), demandQty: 300, fromStock: 0,   needToBuy: 300 },
+  { id: "DUR-004", materialName: "Steel Plate 2mm",         sku: "MTL-001", productName: "Frame Assembly H",      woId: "WO-2423", orderId: "SO-3210", customer: "PT Maju Jaya",          woStartDate: getWoStartDate(8, 0), demandQty: 100, fromStock: 0,   needToBuy: 100 },
+  { id: "DUR-005", materialName: "PVC Pipe 32mm",           sku: "MTL-006", productName: "Plumbing Kit C",        woId: "WO-2522", orderId: "SO-4022", customer: "PT Bangun Raya",        woStartDate: getWoStartDate(4, 0), demandQty: 250, fromStock: 0,   needToBuy: 250 },
+  { id: "DUR-010", materialName: "Polycarbonate Sheet 3mm", sku: "MTL-016", productName: "Display Cover A",       woId: "WO-2620", orderId: "SO-4120", customer: "PT Display Nusantara",  woStartDate: getWoStartDate(2, 0), demandQty: 100, fromStock: 0,   needToBuy: 100 },
+  { id: "DUR-002", materialName: "Aluminum Tube 50mm",      sku: "MTL-002", productName: "Pipe Support G",        woId: "WO-2433", orderId: "SO-3145", customer: "CV Logam Prima",        woStartDate: getWoStartDate(6, 4), demandQty: 100, fromStock: 70,  needToBuy: 30  },
+  { id: "DUR-006", materialName: "Aluminum Tube 50mm",      sku: "MTL-002", productName: "Frame Assembly H",      woId: "WO-2434", orderId: "SO-3147", customer: "PT Teknik Maju",        woStartDate: getWoStartDate(7, 2), demandQty: 200, fromStock: 0,   needToBuy: 200 },
+  { id: "DUR-007", materialName: "Stainless Bolt M8",       sku: "MTL-005", productName: "Support Frame C",       woId: "WO-2512", orderId: "SO-4012", customer: "PT Karya Utama",        woStartDate: getWoStartDate(6, 1), demandQty: 400, fromStock: 0,   needToBuy: 400 },
+  { id: "DUR-011", materialName: "HDPE Sheet 10mm",         sku: "MTL-008", productName: "Tank Liner C",          woId: "WO-2542", orderId: "SO-4042", customer: "CV Polimer Jaya",       woStartDate: getWoStartDate(5, 0), demandQty: 60,  fromStock: 0,   needToBuy: 60  },
+  { id: "DUR-003", materialName: "Rubber Gasket Model X",   sku: "MTL-003", productName: "Valve Frame G",         woId: "WO-2453", orderId: "SO-3089", customer: "PT Industri Nusantara", woStartDate: getWoStartDate(5, 1), demandQty: 400, fromStock: 0,   needToBuy: 400 },
+  { id: "DUR-008", materialName: "Rubber Gasket Model X",   sku: "MTL-003", productName: "Seal Assembly J",       woId: "WO-2455", orderId: "SO-3088", customer: "PT Industri Nusantara", woStartDate: getWoStartDate(7, 2), demandQty: 300, fromStock: 0,   needToBuy: 300 },
+  { id: "DUR-009", materialName: "Epoxy Resin 1kg",         sku: "MTL-011", productName: "Composite Panel A",     woId: "WO-2570", orderId: "SO-4070", customer: "PT Komposit Indo",      woStartDate: getWoStartDate(4, 2), demandQty: 25,  fromStock: 0,   needToBuy: 25  },
+  { id: "DUR-012", materialName: "Nylon 66 Pellet",         sku: "MTL-013", productName: "Gear Housing C",        woId: "WO-2592", orderId: "SO-4092", customer: "PT Plastik Teknik",     woStartDate: getWoStartDate(5, 2), demandQty: 120, fromStock: 0,   needToBuy: 120 },
+  // Near-term rows (within a few days from now) — will appear as urgent when setting <= N days
+  { id: "DUR-017", materialName: "Copper Wire 2.5mm",       sku: "MTL-004", productName: "Control Panel A",       woId: "WO-2500", orderId: "SO-4001", customer: "PT Elektro Jaya",       woStartDate: addDays(1),           demandQty: 120, fromStock: 0,   needToBuy: 120 },
+  { id: "DUR-018", materialName: "Zinc Plate 1mm",          sku: "MTL-007", productName: "Enclosure Box A",       woId: "WO-2530", orderId: "SO-4030", customer: "PT Industri Nusantara", woStartDate: addDays(2),           demandQty: 80,  fromStock: 20,  needToBuy: 60  },
+  { id: "DUR-019", materialName: "Carbon Steel Rod 20mm",   sku: "MTL-010", productName: "Shaft Assembly A",      woId: "WO-2560", orderId: "SO-4060", customer: "PT Mesin Utama",        woStartDate: addDays(4),           demandQty: 300, fromStock: 120, needToBuy: 180 },
+  // Delayed WOs (past start date, not started — carried over slipped work orders)
+  { id: "DUR-013", isDelayed: true, materialName: "Steel Plate 2mm",         sku: "MTL-001", productName: "Bracket Frame X9",    woId: "WO-2490", orderId: "SO-3200", customer: "PT Maju Jaya",          woStartDate: getSlippedOriginalDate(5),  demandQty: 150, fromStock: 150, needToBuy: 0   },
+  { id: "DUR-014", isDelayed: true, materialName: "Aluminum Tube 50mm",      sku: "MTL-002", productName: "Tube Module Y7",      woId: "WO-2491", orderId: "SO-3140", customer: "CV Logam Prima",        woStartDate: getSlippedOriginalDate(8),  demandQty: 80,  fromStock: 70,  needToBuy: 10  },
+  { id: "DUR-015", isDelayed: true, materialName: "Rubber Gasket Model X",   sku: "MTL-003", productName: "Gasket Set Z2",       woId: "WO-2492", orderId: "SO-3080", customer: "PT Industri Nusantara", woStartDate: getSlippedOriginalDate(3),  demandQty: 200, fromStock: 200, needToBuy: 0   },
+  { id: "DUR-016", isDelayed: true, materialName: "Rubber Gasket Model X",   sku: "MTL-003", productName: "Engine Seal Z3",      woId: "WO-2493", orderId: "SO-3081", customer: "CV Delta Teknik",       woStartDate: getSlippedOriginalDate(11), demandQty: 300, fromStock: 0,   needToBuy: 300 },
 ];
 
-export const MOCK_FORECAST_COUNTERS = {
-  overdue:  MOCK_DEMAND_URGENCY_ROWS.filter(r => r.status === "overdue").length,
-  urgent:   MOCK_DEMAND_URGENCY_ROWS.filter(r => r.status === "urgent").length,
-  thisWeek: MOCK_DEMAND_URGENCY_ROWS.filter(r => r.status === "this_week").length,
+// ── Flat list of all unscheduled WOs across all materials ─────────────────────
+export const MOCK_UNSCHEDULED_WO_ROWS = (() => {
+  const materialNameMap = {};
+  MOCK_MATERIAL_FORECAST_DATA.forEach(m => { materialNameMap[m.sku] = m.materialName; });
+  return Object.entries(MOCK_UNSCHEDULED_WOS).flatMap(([sku, wos]) =>
+    wos.map(wo => ({ ...wo, sku, materialName: materialNameMap[sku] || sku }))
+  );
+})();
+
+// ── Dynamic counter computation (depends on urgencyDaysInAdvance setting) ─────
+export const computeForecastCounters = (urgencyDaysInAdvance = 5) => {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const parseDate = (str) => {
+    if (!str) return null;
+    const d = new Date(`${str} ${today.getFullYear()}`);
+    return isNaN(d.getTime()) ? null : d;
+  };
+  const urgentToBuy = MOCK_DEMAND_URGENCY_ROWS.filter(r => {
+    if (r.needToBuy <= 0 || r.isDelayed) return false;
+    const d = parseDate(r.woStartDate);
+    if (!d) return false;
+    d.setHours(0, 0, 0, 0);
+    return (d - today) / 86400000 <= urgencyDaysInAdvance;
+  }).length;
+  const delayedWo = MOCK_DEMAND_URGENCY_ROWS.filter(r => {
+    if (!r.isDelayed) return false;
+    return true;
+  }).length;
+  const unscheduledWo = MOCK_UNSCHEDULED_WO_ROWS.length;
+  const materialsToBuy = new Set(
+    MOCK_DEMAND_URGENCY_ROWS.filter(r => r.needToBuy > 0).map(r => r.sku)
+  ).size;
+  return { urgentToBuy, delayedWo, unscheduledWo, materialsToBuy };
 };
+
+export const MOCK_FORECAST_COUNTERS = computeForecastCounters(5);

@@ -10,15 +10,17 @@ import { formatNumberWithCommas } from "../../../utils/format/formatUtils.js";
 
 const ROW_BORDER = "1px solid var(--neutral-line-separator-1)";
 
-// ── Column widths — same as MaterialBreakdownDrawer (minus hidden cols) ─────
-const WO_ID_W    = 130;
-const ORDER_ID_W = 110;
-const PRODUCT_W  = 200;
-const CUSTOMER_W = 180;
-const DEMAND_W   = 100;
-const ACTION_W   = 0; // hidden
+// ── Column widths ────────────────────────────────────────────────────────────
+const WO_ID_W    = 120;
+const ORDER_ID_W = 100;
+const DEMAND_W   = 110;
 
-const TABLE_MIN_W = WO_ID_W + ORDER_ID_W + PRODUCT_W + CUSTOMER_W + DEMAND_W;
+// Minimum widths for fill columns
+const MATERIAL_MIN_W = 150;
+const PRODUCT_MIN_W  = 150;
+const CUSTOMER_MIN_W = 150;
+
+const TABLE_MIN_W = WO_ID_W + ORDER_ID_W + MATERIAL_MIN_W + PRODUCT_MIN_W + CUSTOMER_MIN_W + DEMAND_W;
 
 const cellBase = (width, extra = {}) => ({
   width: `${width}px`,
@@ -35,10 +37,10 @@ const cellBase = (width, extra = {}) => ({
 
 const thBase = (width, extra = {}) => ({
   ...cellBase(width, extra),
-  fontSize: "var(--text-body)",
-  fontWeight: "var(--font-weight-semi-bold)",
-  color: "var(--neutral-on-surface-secondary)",
-  minHeight: "44px",
+  fontSize: "var(--text-title-3)",
+  fontWeight: "var(--font-weight-bold)",
+  color: "var(--neutral-on-surface-primary)",
+  minHeight: "49px",
   whiteSpace: "nowrap",
 });
 
@@ -171,9 +173,10 @@ export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData }) => {
             <div style={{ display: "flex", borderBottom: ROW_BORDER, position: "sticky", top: 0, zIndex: 3, background: "var(--neutral-surface-primary)" }}>
               <div style={{ ...thBase(WO_ID_W, { paddingLeft: "24px" }), position: "sticky", left: 0, zIndex: 4, background: "var(--neutral-surface-primary)", boxShadow: leftShadow, transition: "box-shadow 0.2s ease" }}>WO ID</div>
               <div style={thBase(ORDER_ID_W)}>Order ID</div>
-              <div style={thBase(PRODUCT_W)}>Product</div>
-              <div style={thBase(CUSTOMER_W)}>Customer</div>
-              <div style={thBase(DEMAND_W)}>Demand</div>
+              <div style={{ ...thBase(0), flex: 1, minWidth: `${MATERIAL_MIN_W}px` }}>Material</div>
+              <div style={{ ...thBase(0), flex: 1, minWidth: `${PRODUCT_MIN_W}px` }}>Product</div>
+              <div style={{ ...thBase(0), flex: 1, minWidth: `${CUSTOMER_MIN_W}px` }}>Customer</div>
+              <div style={thBase(DEMAND_W, { paddingRight: "24px" })}>Demand</div>
             </div>
 
             {/* Body */}
@@ -219,7 +222,7 @@ export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData }) => {
                 </div>
 
                 {/* Demand / Qty */}
-                <div style={cellBase(DEMAND_W, { fontWeight: "var(--font-weight-semi-bold)" })}>
+                <div style={cellBase(DEMAND_W, { fontWeight: "var(--font-weight-semi-bold)", paddingRight: "24px" })}>
                   {row.qty.toLocaleString()}
                 </div>
               </div>

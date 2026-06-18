@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { CloseIcon, ChevronDownIcon, ChevronRightIcon, Info } from "../../../components/icons/Icons.jsx";
+import React, { useState, useEffect, useRef } from "react";
+import { CloseIcon, ChevronDownIcon, ChevronRightIcon, Info, AddIcon, DocumentIcon } from "../../../components/icons/Icons.jsx";
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { MOCK_PROCUREMENT_STATUS } from "../mock/materialForecastMocks.js";
@@ -235,7 +235,7 @@ const WoSubRow = ({ wo, hasBatch, shortfall }) => (
               bg={wo.isSlipped ? "var(--status-red-container)" : "var(--status-green-container)"}
               color={wo.isSlipped ? "var(--status-red-primary)" : "var(--status-green-primary)"}
             >
-              <div>{wo.isSlipped ? "Carried Over" : "Est. Start"}</div>
+              <div>{wo.isSlipped ? "Carried Over" : wo.isStarted ? "Started" : "Est. Start"}</div>
               <div>{wo.qty} pcs</div>
             </Tag>
             {!hasBatch && (
@@ -318,9 +318,11 @@ const BatchSubRow = ({ batch }) => (
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, selectedCell }) => {
+export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, onSelectExistingPo, selectedCell, urgencyDaysInAdvance = 5 }) => {
   const [demandExpanded, setDemandExpanded] = useState(false);
   const [stockExpanded, setStockExpanded] = useState(false);
+  const [poMenuOpen, setPoMenuOpen] = useState(false);
+  const [poMenuPos, setPoMenuPos] = useState({ bottom: null, top: null, left: 0 });
 
   useEffect(() => {
     setDemandExpanded(false);
@@ -359,9 +361,10 @@ export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, selectedCe
 
   const procStatus = MOCK_PROCUREMENT_STATUS[selectedCell.sku];
   const isFirstNegWeek = procStatus && selectedCell.weekOffset === procStatus.firstNegativeWeekOffset;
-  const showOverdueAlert  = isFirstNegWeek && procStatus.status === "overdue"    && procStatus.affectedWoIds.length > 0;
-  const showUrgentAlert   = isFirstNegWeek && procStatus.status === "urgent";
-  const showThisWeekAlert = isFirstNegWeek && procStatus.status === "this_week";
+  const isUrgentToBuy = isFirstNegWeek && procStatus.status !== "ok" && procStatus.daysUntilDemand <= urgencyDaysInAdvance;
+  const showOverdueAlert  = isUrgentToBuy && procStatus.status === "overdue" && procStatus.affectedWoIds.length > 0;
+  const showUrgentAlert   = isUrgentToBuy && procStatus.status === "urgent";
+  const showThisWeekAlert = isUrgentToBuy && procStatus.status === "this_week";
   const showConsequenceAlert = showOverdueAlert || showUrgentAlert || showThisWeekAlert;
 
   return (
@@ -413,64 +416,29 @@ export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, selectedCe
           </div>
         </div>
 
-        {/* Procurement alert — shown on first negative stock week */}
+        {/* Procurement alert — shown on first negative stock week within urgency threshold */}
         {showConsequenceAlert && (() => {
-          let bg, iconColor, title, body;
-
-          if (showOverdueAlert) {
-            bg        = "var(--status-red-container)";
-            iconColor = "var(--status-red-primary)";
-            title     = "Late PO — Delivery at Risk";
-            body = (
-              <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)", lineHeight: "1.6" }}>
-                Ordering now will delay{" "}
-                <strong>{procStatus.affectedWoIds.join(", ")}</strong>{" "}
-                by an estimated <strong>{procStatus.delayDays} day{procStatus.delayDays !== 1 ? "s" : ""}</strong> due to fastest vendor lead time of{" "}
-                <strong>{procStatus.fastestLeadTimeDays} days ({procStatus.fastestVendor})</strong>.
-              </span>
-            );
-          } else if (showUrgentAlert) {
-            bg        = "var(--status-orange-container, #FFF3E0)";
-            iconColor = "var(--status-orange-primary)";
-            title     = "Urgent — Order Window Closing";
-            body = (
-              <span style={{ fontSize: "var(--text-body)", color: "var(--status-orange-primary)", lineHeight: "1.6" }}>
-                Only <strong>{procStatus.bufferDays} day{procStatus.bufferDays !== 1 ? "s" : ""}</strong> left to order on time.
-                Place this PO by <strong>{procStatus.orderByDate}</strong> using the fastest vendor{" "}
-                <strong>{procStatus.fastestVendor}</strong> (lead time: {procStatus.fastestLeadTimeDays} days).
-                Missing this window means stock arrives after demand on <strong>{procStatus.demandDate}</strong>.
-              </span>
-            );
-          } else {
-            bg        = "var(--feature-brand-container)";
-            iconColor = "var(--feature-brand-primary)";
-            title     = "Order This Week";
-            body = (
-              <span style={{ fontSize: "var(--text-body)", color: "var(--feature-brand-primary)", lineHeight: "1.6" }}>
-                Place this PO by <strong>{procStatus.orderByDateAvg}</strong> to meet demand on{" "}
-                <strong>{procStatus.demandDate}</strong>.
-                Average vendor lead time is <strong>{procStatus.avgLeadTimeDays} days</strong>.
-                Ordering from <strong>{procStatus.fastestVendor}</strong> ({procStatus.fastestLeadTimeDays} days) gives{" "}
-                the most buffer.
-              </span>
-            );
-          }
+          const woIds = procStatus.affectedWoIds?.length > 0
+            ? procStatus.affectedWoIds.join(", ")
+            : (selectedCell.workOrders?.map(wo => wo.id).join(", ") || "related work orders");
 
           return (
             <div style={{ padding: "0 24px 12px", flexShrink: 0 }}>
               <div style={{
-                width: "100%", background: bg, borderRadius: "12px",
+                width: "100%", background: "var(--status-red-container)", borderRadius: "12px",
                 padding: "16px 20px", display: "flex", gap: "16px",
                 alignItems: "flex-start", boxSizing: "border-box",
               }}>
                 <div style={{ marginTop: "2px", flexShrink: 0 }}>
-                  <Info size={20} color={iconColor} />
+                  <Info size={20} color="var(--status-red-primary)" />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-semi-bold)", color: iconColor }}>
-                    {title}
+                  <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-semi-bold)", color: "var(--status-red-primary)" }}>
+                    Urgent to Buy
                   </span>
-                  {body}
+                  <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)", lineHeight: "1.6" }}>
+                    Current stock cannot fulfill demand for <strong>{woIds}</strong>. Purchase these materials soon to keep production on schedule.
+                  </span>
                 </div>
               </div>
             </div>
@@ -515,21 +483,50 @@ export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, selectedCe
         </div>
 
         {/* Footer */}
-        <div style={{ padding: "16px 24px", borderTop: ROW_BORDER, flexShrink: 0 }}>
+        <div style={{ padding: "16px 24px", borderTop: ROW_BORDER, flexShrink: 0, position: "relative" }}>
           <Button
             variant="filled"
             size="large"
             disabled={!hasNegativeStock}
+            rightIcon={ChevronDownIcon}
             style={{ width: "100%" }}
-            onClick={() => onCreatePo && onCreatePo({
-              materialName: selectedCell.materialName,
-              sku: selectedCell.sku,
-              needToBuy: selectedCell.endStock < 0 ? Math.abs(selectedCell.endStock) : 0,
-              urgencyStatus: procStatus?.status || null,
-            })}
+            onClick={(e) => {
+              if (!hasNegativeStock) return;
+              const rect = e.currentTarget.getBoundingClientRect();
+              const menuHeight = 96;
+              if (rect.top > menuHeight + 8) {
+                setPoMenuPos({ bottom: window.innerHeight - rect.top + 4, top: null, left: rect.left });
+              } else {
+                setPoMenuPos({ top: rect.bottom + 4, bottom: null, left: rect.left });
+              }
+              setPoMenuOpen(p => !p);
+            }}
           >
             Create PO
           </Button>
+          {poMenuOpen && (
+            <>
+              <div style={{ position: "fixed", inset: 0, zIndex: 29999 }} onClick={() => setPoMenuOpen(false)} />
+              <div style={{ position: "fixed", top: poMenuPos.top ?? "auto", bottom: poMenuPos.bottom ?? "auto", left: poMenuPos.left, width: "220px", background: "var(--neutral-surface-primary)", border: ROW_BORDER, borderRadius: "var(--radius-card)", boxShadow: "var(--elevation-sm)", overflow: "hidden", zIndex: 30000 }}>
+                <div
+                  onClick={() => { setPoMenuOpen(false); onCreatePo && onCreatePo({ materialName: selectedCell.materialName, sku: selectedCell.sku, needToBuy: selectedCell.endStock < 0 ? Math.abs(selectedCell.endStock) : 0, urgencyStatus: procStatus?.status || null }); }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--neutral-surface-grey-lighter)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}
+                >
+                  <AddIcon size={16} /> Create New PO
+                </div>
+                <div
+                  onClick={() => { setPoMenuOpen(false); onSelectExistingPo && onSelectExistingPo({ materialName: selectedCell.materialName, sku: selectedCell.sku }); }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--neutral-surface-grey-lighter)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", borderTop: ROW_BORDER }}
+                >
+                  <DocumentIcon size={16} /> Select Existing PO
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

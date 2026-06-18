@@ -31,6 +31,7 @@ import { MaterialForecastPage } from "./modules/material-forecast/pages/Material
 import { MaterialForecastEmptyPage } from "./modules/material-forecast/pages/MaterialForecastEmptyPage.jsx";
 import { IncomingPOPage } from "./modules/material-forecast/pages/IncomingPOPage.jsx";
 import { DemandUrgencyDetailPage } from "./modules/material-forecast/pages/DemandUrgencyDetailPage.jsx";
+import { MaterialPlanningSettingsPage } from "./modules/material-forecast/pages/MaterialPlanningSettingsPage.jsx";
 import { ProcurementAPReportPage } from "./modules/analytics/pages/ProcurementAPReportPage.jsx";
 import { POReportPage } from "./modules/analytics/pages/POReportPage.jsx";
 import { VendorLiabilityReportPage } from "./modules/analytics/pages/VendorLiabilityReportPage.jsx";
@@ -184,7 +185,7 @@ const MODULE_TO_ROUTE = {
   user_management: "user-management",
   notification_settings: "notification-settings",
   user_guide: "user-guide",
-  material_forecast: "material-forecast",
+  material_forecast: "material-planning",
   procurement_ap_report: "procurement-ap-report",
   po_report: "po-report",
   vendor_liability_report: "vendor-liability-report",
@@ -360,21 +361,23 @@ const LabamuStyles = () => (
   `}</style>
 );
 
-const ModuleRenderer = ({ 
+const ModuleRenderer = ({
   location,
-  onNavigate, 
-  t, 
-  isSidebarCollapsed, 
-  poApprovalSettings, 
+  onNavigate,
+  t,
+  isSidebarCollapsed,
+  poApprovalSettings,
   setPoApprovalSettings,
   orderApprovalSettings,
   setOrderApprovalSettings,
-  showPoSnackbar, 
-  notificationSettings, 
-  setNotificationSettings, 
+  showPoSnackbar,
+  notificationSettings,
+  setNotificationSettings,
   systemNotifications,
-  setSystemNotifications, 
-  handleModuleChange 
+  setSystemNotifications,
+  handleModuleChange,
+  materialPlanningSettings,
+  setMaterialPlanningSettings,
 }) => {
   const { module: moduleRoute, id, subview } = useParams();
   const activeModule = ROUTE_TO_MODULE[moduleRoute] || moduleRoute?.replace(/-/g, '_');
@@ -722,6 +725,20 @@ const ModuleRenderer = ({
     }
   }
   if (activeModule === "material_forecast") {
+    if (viewState.view === "settings") {
+      return (
+        <MaterialPlanningSettingsPage
+          onNavigate={onNavigate}
+          isSidebarCollapsed={isSidebarCollapsed}
+          settings={materialPlanningSettings}
+          onSaveSettings={(s) => {
+            setMaterialPlanningSettings(s);
+            showPoSnackbar("Material planning settings saved", "success");
+            onNavigate("list");
+          }}
+        />
+      );
+    }
     if (viewState.view === "counter_detail") {
       if (viewState.data?.title === "Incoming PO") {
         return <IncomingPOPage onNavigate={onNavigate} />;
@@ -741,6 +758,7 @@ const ModuleRenderer = ({
         onNavigate={onNavigate}
         t={t}
         showPoSnackbar={showPoSnackbar}
+        materialPlanningSettings={materialPlanningSettings}
       />
     );
   }
@@ -865,6 +883,9 @@ export default function App() {
     isApprovalActive: false,
     requireComment: false,
     approvers: [],
+  });
+  const [materialPlanningSettings, setMaterialPlanningSettings] = useState({
+    urgencyDaysInAdvance: 5,
   });
   const [orderApprovalSettings, setOrderApprovalSettings] = useState({
     isApprovalActive: false,
@@ -1156,7 +1177,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/work-order" replace />} />
             <Route path="/:module" element={
-              <ModuleRenderer 
+              <ModuleRenderer
                 location={location}
                 onNavigate={onNavigate}
                 t={t}
@@ -1171,10 +1192,12 @@ export default function App() {
                 systemNotifications={systemNotifications}
                 setSystemNotifications={setSystemNotifications}
                 handleModuleChange={handleModuleChange}
+                materialPlanningSettings={materialPlanningSettings}
+                setMaterialPlanningSettings={setMaterialPlanningSettings}
               />
             } />
             <Route path="/:module/:id" element={
-              <ModuleRenderer 
+              <ModuleRenderer
                 location={location}
                 onNavigate={onNavigate}
                 t={t}
@@ -1189,10 +1212,12 @@ export default function App() {
                 systemNotifications={systemNotifications}
                 setSystemNotifications={setSystemNotifications}
                 handleModuleChange={handleModuleChange}
+                materialPlanningSettings={materialPlanningSettings}
+                setMaterialPlanningSettings={setMaterialPlanningSettings}
               />
             } />
             <Route path="/:module/:id/:subview" element={
-              <ModuleRenderer 
+              <ModuleRenderer
                 location={location}
                 onNavigate={onNavigate}
                 t={t}
@@ -1207,6 +1232,8 @@ export default function App() {
                 systemNotifications={systemNotifications}
                 setSystemNotifications={setSystemNotifications}
                 handleModuleChange={handleModuleChange}
+                materialPlanningSettings={materialPlanningSettings}
+                setMaterialPlanningSettings={setMaterialPlanningSettings}
               />
             } />
             <Route path="*" element={
