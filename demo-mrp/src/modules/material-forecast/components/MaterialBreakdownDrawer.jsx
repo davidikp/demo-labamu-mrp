@@ -53,17 +53,19 @@ const getUrgencyStatus = (woStartDate, needToBuy, daysInAdvance) => {
   const start = new Date(woStartDate);
   start.setHours(0, 0, 0, 0);
   const diffDays = Math.floor((start - today) / 86400000);
+  if (diffDays < 0) return "delayed";
   if (diffDays <= daysInAdvance) return "urgent";
   return "on_track";
 };
 
 const STATUS_CONFIG = {
-  covered:  { label: "Covered",  bg: "var(--status-green-container, #E8F5E9)",      color: "var(--status-green-primary)" },
-  urgent:   { label: "Urgent",   bg: "var(--status-orange-container, #FFF3E0)",     color: "var(--status-orange-primary)" },
-  on_track: { label: "On Track", bg: "var(--status-green-container, #E8F5E9)",      color: "var(--status-green-primary)" },
+  delayed:      { label: "Delayed",     bg: "var(--neutral-surface-grey-lighter, #F5F5F5)", color: "var(--neutral-on-surface-secondary)" },
+  urgent:       { label: "Urgent",      bg: "var(--status-red-container, #FFEBEE)",          color: "var(--status-red-primary)" },
+  on_track:     { label: "Not Covered", bg: "var(--status-orange-container, #FFF3E0)",       color: "var(--status-orange-primary)" },
+  covered:      { label: "Covered",     bg: "var(--status-green-container, #E8F5E9)",        color: "var(--status-green-primary)" },
 };
 
-const STATUS_ORDER = { urgent: 0, on_track: 1, covered: 2 };
+const STATUS_ORDER = { delayed: 0, urgent: 1, on_track: 2, covered: 3 };
 
 // ── Column definitions ─────────────────────────────────────────────────────────
 
@@ -162,11 +164,11 @@ const linkStyle = {
   fontSize: "var(--text-title-3)",
 };
 
-export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreatePo, urgencyDaysInAdvance = 5 }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreatePo, urgencyDaysInAdvance = 5, pageFilters = {} }) => {
   const [filterProduct, setFilterProduct] = useState([]);
   const [filterCustomer, setFilterCustomer] = useState([]);
   const [filterOrderId, setFilterOrderId] = useState([]);
+  const [filterWoId, setFilterWoId] = useState([]);
   const [filterStatus, setFilterStatus] = useState([]);
   const [openFilterKey, setOpenFilterKey] = useState(null);
   const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
@@ -175,6 +177,8 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
   const [dateFilterType, setDateFilterType] = useState("all");
   const [customDateRange, setCustomDateRange] = useState({ start: "", end: "" });
   const [showDatePopover, setShowDatePopover] = useState(false);
+  const [sortCol, setSortCol] = useState(null); // null | "estStart" | "status"
+  const [sortDir, setSortDir] = useState("asc");
   const scrollerRef = useRef(null);
   const [scrollShadows, setScrollShadows] = useState({ left: false, right: false });
 
@@ -196,6 +200,17 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
     if (scroller) { scroller.addEventListener("scroll", handleScroll); handleScroll(); }
     return () => scroller?.removeEventListener("scroll", handleScroll);
   }, [isOpen, materialData]);
+
+  // Sync page-level filters into drawer filter state when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      setFilterCustomer(pageFilters.customers || []);
+      setFilterOrderId(pageFilters.orderIds   || []);
+      setFilterProduct(pageFilters.products   || []);
+      setFilterWoId(pageFilters.woIds         || []);
+      setCurrentPage(1);
+    }
+  }, [isOpen]);
 
   // Close PO menu on outside click
   useEffect(() => {
@@ -252,21 +267,22 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
   const productOptions = useMemo(() => [...new Set(allRows.map((r) => r.productName))].sort().map((v) => ({ value: v, label: v })), [allRows]);
   const customerOptions = useMemo(() => [...new Set(allRows.map((r) => r.customerName))].sort().map((v) => ({ value: v, label: v })), [allRows]);
   const orderIdOptions  = useMemo(() => [...new Set(allRows.map((r) => r.orderId).filter((id) => id && id !== "—"))].sort().map((v) => ({ value: v, label: v })), [allRows]);
+  const woIdOptions     = useMemo(() => [...new Set(allRows.map((r) => r.woId))].sort().map((v) => ({ value: v, label: v })), [allRows]);
 
   const statusOptions = [
+    { value: "delayed",  label: "Delayed" },
     { value: "urgent",   label: "Urgent" },
     { value: "on_track", label: "On Track" },
     { value: "covered",  label: "Covered" },
   ];
 
   const filteredRows = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
     const now = new Date(); now.setHours(0, 0, 0, 0);
     return allRows.filter((r) => {
-      if (q && !r.woId.toLowerCase().includes(q)) return false;
       if (filterProduct.length > 0 && !filterProduct.includes(r.productName)) return false;
       if (filterCustomer.length > 0 && !filterCustomer.includes(r.customerName)) return false;
       if (filterOrderId.length > 0 && !filterOrderId.includes(r.orderId)) return false;
+      if (filterWoId.length > 0 && !filterWoId.includes(r.woId)) return false;
       if (filterStatus.length > 0 && !filterStatus.includes(r.statusKey)) return false;
       if (dateFilterType !== "all") {
         const d = new Date(r.estStart); d.setHours(0, 0, 0, 0);
@@ -282,16 +298,32 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
       }
       return true;
     });
-  }, [allRows, searchQuery, filterProduct, filterCustomer, filterOrderId, filterStatus, dateFilterType, customDateRange]);
+  }, [allRows, filterProduct, filterCustomer, filterOrderId, filterWoId, filterStatus, dateFilterType, customDateRange]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
-  const pagedRows  = filteredRows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  const toggleSort = (col) => {
+    if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir("asc"); }
+  };
+
+  const sortedRows = useMemo(() => {
+    if (!sortCol) return filteredRows;
+    return [...filteredRows].sort((a, b) => {
+      let cmp = 0;
+      if (sortCol === "estStart") cmp = a.estStart.localeCompare(b.estStart);
+      else if (sortCol === "status") cmp = (STATUS_ORDER[a.statusKey] ?? 99) - (STATUS_ORDER[b.statusKey] ?? 99);
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [filteredRows, sortCol, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedRows.length / rowsPerPage));
+  const pagedRows  = sortedRows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
   const handleClose = () => {
-    setSearchQuery(""); setFilterProduct([]); setFilterCustomer([]); setFilterOrderId([]); setFilterStatus([]);
+    setFilterProduct([]); setFilterCustomer([]); setFilterOrderId([]); setFilterWoId([]); setFilterStatus([]);
     setOpenFilterKey(null); setCurrentPage(1);
     setDateFilterType("all"); setCustomDateRange({ start: "", end: "" }); setShowDatePopover(false);
     setPoMenuOpenRowId(null); setIsSelectExistingPoOpen(false); setSelectPoRow(null);
+    setSortCol(null); setSortDir("asc");
     onClose();
   };
 
@@ -371,23 +403,25 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
           </div>
         </div>
 
-        {/* Search & filter bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "0 24px 12px", flexShrink: 0, borderBottom: ROW_BORDER }}>
+        {/* Filter bar */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "0 24px 12px", flexShrink: 0, borderBottom: ROW_BORDER }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             {[
-              { key: "orderId",  label: "Order ID", value: filterOrderId,  options: orderIdOptions,  onChange: setFilterOrderId  },
-              { key: "product",  label: "Product",  value: filterProduct,  options: productOptions,  onChange: setFilterProduct  },
-              { key: "customer", label: "Customer", value: filterCustomer, options: customerOptions, onChange: setFilterCustomer },
+              { key: "woId",     label: "WO ID",         value: filterWoId,    options: woIdOptions,    onChange: setFilterWoId    },
+              { key: "orderId",  label: "Order ID",      value: filterOrderId, options: orderIdOptions, onChange: setFilterOrderId },
+              { key: "product",  label: "Product",       value: filterProduct, options: productOptions, onChange: setFilterProduct },
+              { key: "customer", label: "Customer",      value: filterCustomer,options: customerOptions,onChange: setFilterCustomer },
             ].map(({ key, label, value, options, onChange }) => (
               <div key={key} onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); setPopoverTriggerRect(rect); setOpenFilterKey((prev) => prev === key ? null : key); }}>
                 <FilterPill label={label} active={value.length > 0} isOpen={openFilterKey === key} count={value.length} />
               </div>
             ))}
 
-            {openFilterKey === "orderId"  && <FilterPopoverCheckbox title="Order ID" options={orderIdOptions}  value={filterOrderId}  onChange={(v) => { setFilterOrderId(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "product"  && <FilterPopoverCheckbox title="Product"  options={productOptions}  value={filterProduct}  onChange={(v) => { setFilterProduct(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "customer" && <FilterPopoverCheckbox title="Customer" options={customerOptions} value={filterCustomer} onChange={(v) => { setFilterCustomer(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "status"   && <FilterPopoverCheckbox title="Status"   options={statusOptions}   value={filterStatus}   onChange={(v) => { setFilterStatus(v);   setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} searchable={false} />}
+            {openFilterKey === "woId"     && <FilterPopoverCheckbox title="WO ID" options={woIdOptions}     value={filterWoId}     onChange={(v) => { setFilterWoId(v);     setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "orderId"  && <FilterPopoverCheckbox title="Order ID"      options={orderIdOptions}  value={filterOrderId}  onChange={(v) => { setFilterOrderId(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "product"  && <FilterPopoverCheckbox title="Product"       options={productOptions}  value={filterProduct}  onChange={(v) => { setFilterProduct(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "customer" && <FilterPopoverCheckbox title="Customer"      options={customerOptions} value={filterCustomer} onChange={(v) => { setFilterCustomer(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "status"   && <FilterPopoverCheckbox title="Status"        options={statusOptions}   value={filterStatus}   onChange={(v) => { setFilterStatus(v);   setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} searchable={false} />}
 
             {/* Est. Start */}
             <div style={{ position: "relative" }}>
@@ -410,7 +444,6 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
               <FilterPill label="Status" active={filterStatus.length > 0} isOpen={openFilterKey === "status"} count={filterStatus.length} />
             </div>
           </div>
-          <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search WO ID..." width="230px" />
         </div>
 
         {/* Table */}
@@ -423,10 +456,24 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
               <div style={thBase(ORDER_ID_W)}>Order ID</div>
               <div style={thBase(PRODUCT_W)}>Product</div>
               <div style={thBase(CUSTOMER_W)}>Customer</div>
-              <div style={thBase(EST_W)}>Est. Start</div>
+              <div onClick={() => toggleSort("estStart")} style={{ ...thBase(EST_W), cursor: "pointer", userSelect: "none", gap: "6px" }}>
+                Est. Start
+                <ChevronDownIcon
+                  size={14}
+                  color={sortCol === "estStart" ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-tertiary)"}
+                  style={{ transform: sortCol === "estStart" && sortDir === "asc" ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                />
+              </div>
               <div style={thBase(DEMAND_W)}>Demand</div>
               <div style={thBase(NEED_W)}>Need to Buy</div>
-              <div style={{ ...thBase(STATUS_W), position: "sticky", right: ACTION_W, zIndex: 4, background: "var(--neutral-surface-primary)", boxShadow: rightShadow, transition: "box-shadow 0.2s ease" }}>Status</div>
+              <div onClick={() => toggleSort("status")} style={{ ...thBase(STATUS_W), cursor: "pointer", userSelect: "none", gap: "6px", position: "sticky", right: ACTION_W, zIndex: 4, background: "var(--neutral-surface-primary)", boxShadow: rightShadow, transition: "box-shadow 0.2s ease" }}>
+                Status
+                <ChevronDownIcon
+                  size={14}
+                  color={sortCol === "status" ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-tertiary)"}
+                  style={{ transform: sortCol === "status" && sortDir === "asc" ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                />
+              </div>
               <div style={{ ...thBase(ACTION_W, { paddingRight: "24px", justifyContent: "center" }), position: "sticky", right: 0, zIndex: 4, background: "var(--neutral-surface-primary)" }}>Action</div>
             </div>
 
@@ -471,7 +518,7 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
                 </div>
 
                 <div style={{ ...cellBase(NEED_W, { fontWeight: "var(--font-weight-bold)", color: row.needToBuy > 0 ? "var(--status-red-primary)" : "var(--neutral-on-surface-secondary)" }), alignItems: "flex-start", paddingTop: "10px", paddingBottom: "10px" }}>
-                  {row.needToBuy > 0 ? `${row.needToBuy.toLocaleString()} pcs` : "Covered"}
+                  {`${row.needToBuy.toLocaleString()} pcs`}
                 </div>
 
                 {/* Status — sticky right (behind Action) */}

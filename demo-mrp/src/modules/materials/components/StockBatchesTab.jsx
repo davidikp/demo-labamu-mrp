@@ -908,7 +908,7 @@ export const StockBatchesTab = ({
       case "location":
         return [...new Set(allBatches.map(b => b.storageLocation).filter(Boolean))];
       case "status":
-        return [...new Set(allBatches.map(b => b.status).filter(Boolean))];
+        return ["Requested", "Received", "Partially Received", "Delayed", "Disposed"];
       case "vendor":
         return [...new Set(allBatches.map(b => b.vendor).filter(Boolean))];
       case "expiration":
@@ -941,12 +941,23 @@ export const StockBatchesTab = ({
       result = result.filter(b => activeFilters.location.includes(b.storageLocation));
     }
     if (activeFilters.status.length > 0) {
-      result = result.filter(b => activeFilters.status.includes(b.status));
+      result = result.filter(b => {
+        const isPartiallyReceived =
+          b.status === "Received" && b.poRef && b.currentQty > 0 && b.currentQty < b.initialQty;
+        const effectiveStatus = isPartiallyReceived ? "Partially Received" : b.status;
+        return activeFilters.status.includes(effectiveStatus);
+      });
     }
     if (activeFilters.vendor.length > 0) {
       result = result.filter(b => activeFilters.vendor.includes(b.vendor));
     }
     // Note: expiration status filter would require date logic, leaving as placeholder for now or mapping specific labels
+
+    result.sort((a, b) => {
+      const da = a.purchaseDate ? new Date(a.purchaseDate) : new Date(0);
+      const db = b.purchaseDate ? new Date(b.purchaseDate) : new Date(0);
+      return db - da;
+    });
 
     return result;
   }, [materialId, searchQuery, showEmptyBatches, activeFilters, localBatches]);
@@ -1007,7 +1018,7 @@ export const StockBatchesTab = ({
     { label: "Vendor", key: "vendor", width: "160px" },
     { label: "PO Ref", key: "poRef", width: "140px" },
     { label: "Attachments", key: "attachments", width: "240px" },
-    { label: "Status", key: "status", width: "100px" },
+    { label: "Status", key: "status", width: "144px" },
     { label: "Actions", key: "actions", width: "100px", sticky: true }
   ];
 
@@ -1172,7 +1183,7 @@ export const StockBatchesTab = ({
                 
                 return (
                   <div key={col.key} style={{ 
-                    width: isStickyLeft ? "184px" : isStickyRightActions ? "140px" : isStickyRightStatus ? "96px" : col.width, 
+                    width: isStickyLeft ? "184px" : isStickyRightActions ? "140px" : isStickyRightStatus ? "144px" : col.width,
                     padding: isStickyLeft ? "16px 12px 16px 24px" : isStickyRightActions ? "16px 24px 16px 12px" : "16px 12px",
                     fontSize: "var(--text-title-3)",
                     fontWeight: "var(--font-weight-bold)",
@@ -1305,8 +1316,8 @@ export const StockBatchesTab = ({
                   </div>
                   
                   {/* Status (Sticky Right) */}
-                  <div style={{ 
-                    width: "96px", 
+                  <div style={{
+                    width: "144px",
                     padding: "0 12px",
                     position: "sticky",
                     right: "140px",
@@ -1322,15 +1333,26 @@ export const StockBatchesTab = ({
                     boxShadow: scrollShadows.right ? "-4px 0 8px -4px rgba(0,0,0,0.12)" : "none",
                     transition: "box-shadow 0.2s ease"
                   }}>
-                    <StatusBadge variant={
-                      row.status === "Received" ? "green-light" : 
-                      row.status === "Delayed" ? "red" : 
-                      row.status === "Requested" ? "blue-light" : 
-                      row.status === "Disposed" ? "grey-light" :
-                      "grey"
-                    }>
-                      {row.status}
-                    </StatusBadge>
+                    {(() => {
+                      const isPartiallyReceived =
+                        row.status === "Received" &&
+                        row.poRef &&
+                        row.currentQty > 0 &&
+                        row.currentQty < row.initialQty;
+                      const displayStatus = isPartiallyReceived ? "Partially Received" : row.status;
+                      const variant =
+                        isPartiallyReceived ? "blue-light" :
+                        row.status === "Received" ? "green-light" :
+                        row.status === "Delayed" ? "red-light" :
+                        row.status === "Requested" ? "grey-light" :
+                        row.status === "Disposed" ? "grey-light" :
+                        "grey-light";
+                      return (
+                        <StatusBadge variant={variant}>
+                          {displayStatus}
+                        </StatusBadge>
+                      );
+                    })()}
                   </div>
 
                   {/* Actions (Sticky Right) */}

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
-import { AddIcon, Box, Building2, CheckIcon, ChevronDownIcon, ChevronLeftIcon, ChevronUpIcon, CloseIcon, DeleteIcon, DocumentIcon, EditIcon, Info, Minus, Plus } from "../../../components/icons/Icons.jsx";
+import { AddIcon, Box, Building2, CheckIcon, ChevronDownIcon, ChevronLeftIcon, ChevronUpIcon, CloseIcon, DeleteIcon, DocumentIcon, DownloadIcon, EditIcon, Info, Minus, Plus } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
 import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
@@ -18,6 +18,7 @@ import { formatCurrency, formatNumberWithCommas, parseNumberFromCommas } from ".
 import { normalizeProofDocuments, createUploadDocumentRecord, validateUploadFile } from "../../../utils/upload/uploadUtils.js";
 import { MAX_PROOF_UPLOAD_FILES } from "../../../constants/appConstants.js";
 import { buildPoLinkSnapshot } from "../../purchase-order/utils/purchaseOrderDetailUtils.js";
+import { downloadVendorReleasePdf } from "../../purchase-order/utils/vendorReleasePdfExport.js";
 import {
   baseInputBorderColor,
   fieldStyle,
@@ -4388,7 +4389,14 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                           <div
                             style={{
                               height: "100%",
-                              background: "var(--status-green-primary)",
+                              background: (() => {
+                                const pct = Math.min(100, ((vendor.receivedOutput || 0) / (vendor.output || 1)) * 100);
+                                if (pct >= 100) return "var(--status-green-primary)";
+                                if (pct >= 75) return "var(--feature-brand-primary)";
+                                if (pct >= 50) return "var(--status-yellow-primary)";
+                                if (pct >= 25) return "var(--status-orange-primary)";
+                                return "var(--status-red-primary)";
+                              })(),
                               width: `${Math.min(100, (((vendor.receivedOutput || 0) / (vendor.output || 1)) * 100))}%`,
                               transition: "width 0.3s ease",
                               borderRadius: "3px",
@@ -4405,7 +4413,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                         >
                           <div style={{ display: "flex", flexDirection: "column", gap: "2px", flex: 1 }}>
                             <span style={{ fontSize: "10px" }}>Received</span>
-                            <span style={{ color: "var(--status-green-primary)", fontWeight: "var(--font-weight-bold)", fontSize: "11px" }}>{vendor.receivedOutput || 0} pcs</span>
+                            <span style={{ color: (() => { const pct = Math.min(100, ((vendor.receivedOutput || 0) / (vendor.output || 1)) * 100); if (pct >= 100) return "var(--status-green-primary)"; if (pct >= 75) return "var(--feature-brand-primary)"; if (pct >= 50) return "var(--status-yellow-primary)"; if (pct >= 25) return "var(--status-orange-primary)"; return "var(--status-red-primary)"; })(), fontWeight: "var(--font-weight-bold)", fontSize: "11px" }}>{vendor.receivedOutput || 0} pcs</span>
                           </div>
                           <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "center", flex: 1 }}>
                             <span style={{ fontSize: "10px" }}>Remaining</span>
@@ -7264,19 +7272,20 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 <div
                   style={poReferenceTableInnerStyle("100%")}
                 >
-                  <div style={poReferenceTableHeaderRowStyle("120px 120px 80px 1fr 120px 160px")}>
+                  <div style={poReferenceTableHeaderRowStyle(assignmentLogTab === "send" ? "120px 120px 80px 1fr 120px 160px 48px" : "120px 120px 80px 1fr 120px 160px")}>
                     <div style={poReferenceTableHeaderCellStyle()}>Date & Time</div>
                     <div style={poReferenceTableHeaderCellStyle()}>{assignmentLogTab === "send" ? "Release ID" : "Receipt ID"}</div>
                     <div style={poReferenceTableHeaderCellStyle()}>{assignmentLogTab === "send" ? "Release Qty" : "Receipt Qty"}</div>
                     <div style={poReferenceTableHeaderCellStyle()}>Notes</div>
                     <div style={poReferenceTableHeaderCellStyle()}>{assignmentLogTab === "send" ? "Released by" : "Received by"}</div>
                     <div style={poReferenceTableHeaderCellStyle()}>Document</div>
+                    {assignmentLogTab === "send" && <div style={poReferenceTableHeaderCellStyle()}>Export</div>}
                   </div>
-                  
+
                   {(assignmentLogTab === "send" ? receiptHistoryVendor.sendHistory : receiptHistoryVendor.receipts)?.map((r, i, arr) => (
                     <div
                       key={i}
-                      style={poReferenceTableRowStyle("120px 120px 80px 1fr 120px 160px", i === arr.length - 1)}
+                      style={poReferenceTableRowStyle(assignmentLogTab === "send" ? "120px 120px 80px 1fr 120px 160px 48px" : "120px 120px 80px 1fr 120px 160px", i === arr.length - 1)}
                     >
                       <div style={poReferenceTableCellStyle()}>
                         {r.date}{r.time ? ` · ${r.time}` : ""}
@@ -7318,6 +7327,37 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                           }}
                         />
                       </div>
+                      {assignmentLogTab === "send" && (
+                        <div style={poReferenceTableCellStyle({ padding: "12px 0" })}>
+                          <Tooltip content="Export PDF" position="top">
+                            <IconButton
+                              icon={DownloadIcon}
+                              size="small"
+                              color="var(--feature-brand-primary)"
+                              onClick={async () => {
+                                try {
+                                  const vendorInfo = MOCK_VENDORS.find(v => v.name === receiptHistoryVendor.name) || { name: receiptHistoryVendor.name };
+                                  const log = {
+                                    releaseId: r.releaseId || "-",
+                                    date: r.date || "-",
+                                    time: r.time || "",
+                                    sendBy: r.sendBy || r.sentBy || "Natasha Smith",
+                                    assignmentId: receiptHistoryVendor.assignmentId || "-",
+                                    woRef: receiptHistoryVendor.woNumber || "-",
+                                    outsourceSteps: receiptHistoryVendor.assignedSteps || [],
+                                    amount: r.amount,
+                                    note: r.note || r.notes || "",
+                                  };
+                                  await downloadVendorReleasePdf({ log, poNumber: receiptHistoryVendor.poNumber || "-", vendorInfo, company: MOCK_COMPANY, woRoutingStages: [] });
+                                } catch (e) {
+                                  setToastMessage("Failed to export PDF");
+                                  setShowSuccessToast(true);
+                                }
+                              }}
+                            />
+                          </Tooltip>
+                        </div>
+                      )}
                     </div>
                   ))}
                   {!(assignmentLogTab === "send" ? receiptHistoryVendor.sendHistory : receiptHistoryVendor.receipts)?.length ? (

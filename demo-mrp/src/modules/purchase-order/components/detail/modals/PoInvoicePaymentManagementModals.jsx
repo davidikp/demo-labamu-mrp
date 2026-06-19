@@ -313,10 +313,13 @@ const PoInvoicePaymentManagementModals = ({
                 onChange={(e) =>
                   setAddInvoiceFormData({
                     ...addInvoiceFormData,
-                    number: e.target.value,
+                    number: e.target.value.slice(0, 40),
                   })
                 }
                 error={formErrors.number}
+                maxLength={40}
+                headerRight={`${(addInvoiceFormData.number || "").length}/40`}
+                headerRightColor="var(--neutral-on-surface-tertiary)"
               />
 
               <InputField
@@ -1045,6 +1048,7 @@ const PoInvoicePaymentManagementModals = ({
                     { value: "Bank Transfer", label: "Bank Transfer" },
                     { value: "Cash", label: "Cash" },
                     { value: "Giro", label: "Giro" },
+                    { value: "Other", label: "Other" },
                   ]}
                 />
               </FormField>

@@ -114,7 +114,7 @@ const fmtWoStartDate = (str) => {
   return d ? toISO(d) : str;
 };
 
-// ── Est. Start Date popover ────────────────────────────────────────────────────
+// ── Est. Start popover ────────────────────────────────────────────────────
 const StartDatePopover = ({ dateFilterType, setDateFilterType, customDateRange, setCustomDateRange, onClose }) => {
   const ref = useRef(null);
   useEffect(() => {
@@ -126,7 +126,7 @@ const StartDatePopover = ({ dateFilterType, setDateFilterType, customDateRange, 
   return (
     <div ref={ref} style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, width: "300px", background: "var(--neutral-surface-primary)", border: ROW_BORDER, borderRadius: "var(--radius-card)", boxShadow: "var(--elevation-sm)", padding: "16px", display: "flex", flexDirection: "column", gap: "16px", zIndex: 100000 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Est. Start Date</span>
+        <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Est. Start</span>
         <button onClick={() => { setDateFilterType("all"); setCustomDateRange({ start: "", end: "" }); onClose(); }} style={{ background: "none", border: "none", padding: 0, color: "var(--status-red-primary)", cursor: "pointer", fontSize: "var(--text-body)", fontWeight: "var(--font-weight-bold)" }}>Remove Filter</button>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
@@ -144,7 +144,7 @@ const StartDatePopover = ({ dateFilterType, setDateFilterType, customDateRange, 
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export const DemandUrgencyDrawer = ({ isOpen, onClose, filterMode, urgencyDaysInAdvance = 5, onCreatePo }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [woIdFilter, setWoIdFilter] = useState([]);
   const [orderIdFilter, setOrderIdFilter] = useState([]);
   const [materialFilter, setMaterialFilter] = useState([]);
   const [productFilter, setProductFilter] = useState([]);
@@ -152,6 +152,7 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, filterMode, urgencyDaysIn
   const [dateFilterType, setDateFilterType] = useState("all");
   const [customDateRange, setCustomDateRange] = useState({ start: "", end: "" });
   const [showDatePopover, setShowDatePopover] = useState(false);
+  const [sortDir, setSortDir] = useState(null); // null | "asc" | "desc" for estStart
   const [openFilterKey, setOpenFilterKey] = useState(null);
   const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -236,7 +237,8 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, filterMode, urgencyDaysIn
     });
   }, [filterMode, urgencyDaysInAdvance, isUnscheduled]);
 
-  const orderIdOptions = useMemo(() => [...new Set(sourceRows.map((r) => r.orderId).filter(Boolean))].sort().map((v) => ({ value: v, label: v })), [sourceRows]);
+  const woIdOptions     = useMemo(() => [...new Set(sourceRows.map((r) => r.woId).filter(Boolean))].sort().map((v) => ({ value: v, label: v })), [sourceRows]);
+  const orderIdOptions  = useMemo(() => [...new Set(sourceRows.map((r) => r.orderId).filter(Boolean))].sort().map((v) => ({ value: v, label: v })), [sourceRows]);
   const materialOptions = useMemo(() => {
     const seen = new Map();
     sourceRows.forEach((r) => { if (!seen.has(r.materialName)) seen.set(r.materialName, r.sku); });
@@ -258,7 +260,7 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, filterMode, urgencyDaysIn
   const filteredRows = useMemo(() => {
     const now = new Date(); now.setHours(0, 0, 0, 0);
     return sourceRows.filter((row) => {
-      if (searchQuery && !row.woId.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      if (woIdFilter.length > 0 && !woIdFilter.includes(row.woId)) return false;
       if (orderIdFilter.length > 0 && !orderIdFilter.includes(row.orderId)) return false;
       if (materialFilter.length > 0 && !materialFilter.includes(row.materialName)) return false;
       if (productFilter.length > 0 && !productFilter.includes(row.productName)) return false;
@@ -277,10 +279,22 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, filterMode, urgencyDaysIn
       }
       return true;
     });
-  }, [sourceRows, searchQuery, orderIdFilter, materialFilter, productFilter, customerFilter, dateFilterType, customDateRange, isUnscheduled]);
+  }, [sourceRows, woIdFilter, orderIdFilter, materialFilter, productFilter, customerFilter, dateFilterType, customDateRange, isUnscheduled]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
-  const pagedRows  = filteredRows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  const sortedRows = useMemo(() => {
+    if (!sortDir || isUnscheduled) return filteredRows;
+    return [...filteredRows].sort((a, b) => {
+      const da = parseShortDate(a.woStartDate);
+      const db = parseShortDate(b.woStartDate);
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      return sortDir === "asc" ? da - db : db - da;
+    });
+  }, [filteredRows, sortDir, isUnscheduled]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedRows.length / rowsPerPage));
+  const pagedRows  = sortedRows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
   const allPagedSelectable = isUnscheduled ? [] : pagedRows.filter((r) => r.needToBuy > 0);
   const allPagedSelected   = allPagedSelectable.length > 0 && allPagedSelectable.every((r) => selectedIds.includes(r.id));
@@ -297,9 +311,10 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, filterMode, urgencyDaysIn
   };
 
   const handleClose = () => {
-    setSearchQuery(""); setOrderIdFilter([]); setMaterialFilter([]); setProductFilter([]); setCustomerFilter([]);
+    setWoIdFilter([]); setOrderIdFilter([]); setMaterialFilter([]); setProductFilter([]); setCustomerFilter([]);
     setDateFilterType("all"); setCustomDateRange({ start: "", end: "" }); setOpenFilterKey(null); setCurrentPage(1);
     setSelectedIds([]); setPoMenuOpenRowId(null); setIsSelectExistingPoOpen(false); setSelectPoRow(null);
+    setSortDir(null);
     onClose();
   };
 
@@ -387,6 +402,7 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, filterMode, urgencyDaysIn
   const TABLE_MIN_W = isUnscheduled ? TABLE_MIN_W_UNSCHEDULED : TABLE_MIN_W_FULL;
 
   const filterDefs = [
+    { key: "woId",     label: "WO ID",    value: woIdFilter,     options: woIdOptions,     onChange: setWoIdFilter     },
     { key: "orderId",  label: "Order ID", value: orderIdFilter,  options: orderIdOptions,  onChange: setOrderIdFilter  },
     { key: "material", label: "Material", value: materialFilter, options: materialOptions, onChange: setMaterialFilter },
     { key: "customer", label: "Customer", value: customerFilter, options: customerOptions, onChange: setCustomerFilter },
@@ -434,17 +450,16 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, filterMode, urgencyDaysIn
               ) : null
             )}
 
-            {/* Est. Start Date — hidden for unscheduled */}
+            {/* Est. Start — hidden for unscheduled */}
             {!isUnscheduled && (
               <div style={{ position: "relative" }}>
                 <div onClick={() => setShowDatePopover((p) => !p)}>
-                  <FilterPill label="Est. Start Date" active={dateFilterActive} isOpen={showDatePopover} count={dateFilterActive ? 1 : 0} />
+                  <FilterPill label="Est. Start" active={dateFilterActive} isOpen={showDatePopover} count={dateFilterActive ? 1 : 0} />
                 </div>
                 {showDatePopover && <StartDatePopover dateFilterType={dateFilterType} setDateFilterType={(v) => { setDateFilterType(v); setCurrentPage(1); }} customDateRange={customDateRange} setCustomDateRange={setCustomDateRange} onClose={() => setShowDatePopover(false)} />}
               </div>
             )}
           </div>
-          <TableSearchField value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} placeholder="Search WO ID..." width="200px" />
         </div>
 
         {/* Selection action bar — not shown for unscheduled */}
@@ -494,7 +509,16 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, filterMode, urgencyDaysIn
               <div style={{ ...thBase(0), flex: 1, minWidth: `${MATERIAL_MIN_W}px` }}>Material</div>
               <div style={{ ...thBase(0), flex: 1, minWidth: `${PRODUCT_MIN_W}px` }}>Product</div>
               <div style={{ ...thBase(0), flex: 1, minWidth: `${CUSTOMER_MIN_W}px` }}>Customer</div>
-              {!isUnscheduled && <div style={thBase(EST_W)}>Est. Start</div>}
+              {!isUnscheduled && (
+                <div onClick={() => setSortDir(d => d === "asc" ? "desc" : "asc")} style={{ ...thBase(EST_W), cursor: "pointer", userSelect: "none", gap: "6px" }}>
+                  Est. Start
+                  <ChevronDownIcon
+                    size={14}
+                    color={sortDir ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-tertiary)"}
+                    style={{ transform: sortDir === "asc" ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                  />
+                </div>
+              )}
               <div style={thBase(DEMAND_W)}>Demand</div>
               {isUnscheduled && <div style={{ width: "24px", flexShrink: 0 }} />}
               {!isUnscheduled && <div style={thBase(NEED_W)}>Need to Buy</div>}
@@ -556,7 +580,7 @@ export const DemandUrgencyDrawer = ({ isOpen, onClose, filterMode, urgencyDaysIn
 
                   {!isUnscheduled && (
                     <div style={{ ...cellBase(NEED_W, { fontWeight: "var(--font-weight-bold)", color: row.needToBuy > 0 ? "var(--status-red-primary)" : "var(--neutral-on-surface-secondary)" }), alignItems: "flex-start", paddingTop: "10px", paddingBottom: "10px" }}>
-                      {row.needToBuy > 0 ? `${formatNumberWithCommas(row.needToBuy)} pcs` : "Covered"}
+                      {row.needToBuy > 0 ? `${formatNumberWithCommas(row.needToBuy)} pcs` : filterMode === "delayedWo" ? "0" : "Covered"}
                     </div>
                   )}
 

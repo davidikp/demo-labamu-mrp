@@ -3,6 +3,7 @@ import {
   Info,
   ImageAssetIcon,
   HelpCircle,
+  DownloadIcon,
 } from "../../../../components/icons/Icons.jsx";
 import {
   MOCK_WO_TABLE_DATA,
@@ -20,6 +21,10 @@ import {
   focusInputFrame,
   blurInputFrame,
 } from "../../../purchase-order/styles/purchaseOrderInputStyles.js";
+import { MOCK_VENDORS } from "../../../../data/vendors.js";
+import { MOCK_COMPANY } from "../../../../data/company.js";
+import { downloadVendorReleasePdf } from "../../utils/vendorReleasePdfExport.js";
+import { IconButton } from "../../../../components/common/IconButton.jsx";
 import {
   Button,
   StatusBadge,
@@ -447,7 +452,14 @@ const PoReceiptsTab = ({
                             <div
                               style={{
                                 height: "100%",
-                                background: "var(--status-green-primary)",
+                                background: (() => {
+                                  const pct = Math.min(100, ((line.receivedQty || 0) / (line.orderedQty || 1)) * 100);
+                                  if (pct >= 100) return "var(--status-green-primary)";
+                                  if (pct >= 75) return "var(--feature-brand-primary)";
+                                  if (pct >= 50) return "var(--status-yellow-primary)";
+                                  if (pct >= 25) return "var(--status-orange-primary)";
+                                  return "var(--status-red-primary)";
+                                })(),
                                 width: `${Math.min(100, (((line.receivedQty || 0) / (line.orderedQty || 1)) * 100))}%`,
                                 transition: "width 0.3s ease",
                                 borderRadius: "3px",
@@ -464,7 +476,7 @@ const PoReceiptsTab = ({
                           >
                             <div style={{ display: "flex", flexDirection: "column", gap: "2px", flex: 1 }}>
                               <span style={{ fontSize: "10px" }}>Received</span>
-                              <span style={{ color: "var(--status-green-primary)", fontWeight: "var(--font-weight-bold)", fontSize: "11px" }}>{line.receivedQty || 0}</span>
+                              <span style={{ color: (() => { const pct = Math.min(100, ((line.receivedQty || 0) / (line.orderedQty || 1)) * 100); if (pct >= 100) return "var(--status-green-primary)"; if (pct >= 75) return "var(--feature-brand-primary)"; if (pct >= 50) return "var(--status-yellow-primary)"; if (pct >= 25) return "var(--status-orange-primary)"; return "var(--status-red-primary)"; })(), fontWeight: "var(--font-weight-bold)", fontSize: "11px" }}>{line.receivedQty || 0}</span>
                             </div>
                             <div style={{ display: "flex", flexDirection: "column", gap: "2px", alignItems: "center", flex: 1 }}>
                               <span style={{ fontSize: "10px" }}>Remaining</span>
@@ -945,7 +957,7 @@ const PoReceiptsTab = ({
                     {groupedReleaseLogs.length > 0 && (
                       <div
                         style={poReferenceTableHeaderRowStyle(
-                          "1.2fr 1fr 1.2fr 0.9fr 1fr 1fr 1fr 1.5fr 1.5fr",
+                          "1.2fr 1fr 1.2fr 0.9fr 1fr 1fr 1fr 1.5fr 1.5fr 60px",
                           "8px"
                         )}
                       >
@@ -958,6 +970,7 @@ const PoReceiptsTab = ({
                         <div style={poReferenceTableHeaderCellStyle()}>Released by</div>
                         <div style={poReferenceTableHeaderCellStyle()}>Notes</div>
                         <div style={poReferenceTableHeaderCellStyle()}>Document</div>
+                        <div style={poReferenceTableHeaderCellStyle()}>Export</div>
                       </div>
                     )}
                     {groupedReleaseLogs.length > 0 ? (
@@ -965,7 +978,7 @@ const PoReceiptsTab = ({
                         <div
                           key={idx}
                           style={poReferenceTableRowStyle(
-                            "1.2fr 1fr 1.2fr 0.9fr 1fr 1fr 1fr 1.5fr 1.5fr",
+                            "1.2fr 1fr 1.2fr 0.9fr 1fr 1fr 1fr 1.5fr 1.5fr 60px",
                             idx === groupedReleaseLogs.length - 1,
                             { alignItems: "start", gap: "8px" }
                           )}
@@ -1039,6 +1052,33 @@ const PoReceiptsTab = ({
                               documents={normalizeProofDocuments(log.proofDocuments, null)}
                               onDocumentClick={(doc) => showToast(`${doc?.name || "Document"} opened`)}
                             />
+                          </div>
+                          <div style={poReferenceTableCellStyle({ padding: "12px 0" })}>
+                            <Tooltip content="Export PDF" position="top">
+                              <IconButton
+                                icon={DownloadIcon}
+                                size="small"
+                                color="var(--feature-brand-primary)"
+                                onClick={async () => {
+                                  try {
+                                    const woData = MOCK_WO_TABLE_DATA.find(w => w.wo === log.woRef);
+                                    const vendorObj = woData?.vendors?.find(v => v.assignmentId === log.assignmentId);
+                                    const vendorName = vendorObj?.name || "";
+                                    const vendorInfo = MOCK_VENDORS.find(v => v.name === vendorName) || { name: vendorName };
+                                    const poNum = typeof initialData === "string" ? initialData : initialData?.poNumber || "-";
+                                    await downloadVendorReleasePdf({
+                                      log,
+                                      poNumber: poNum,
+                                      vendorInfo,
+                                      company: MOCK_COMPANY,
+                                      woRoutingStages: woData?.routingStages || [],
+                                    });
+                                  } catch (e) {
+                                    showToast("Failed to export PDF");
+                                  }
+                                }}
+                              />
+                            </Tooltip>
                           </div>
                         </div>
                       ))

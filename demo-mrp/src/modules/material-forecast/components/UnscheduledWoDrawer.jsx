@@ -20,7 +20,7 @@ const MATERIAL_MIN_W = 150;
 const PRODUCT_MIN_W  = 150;
 const CUSTOMER_MIN_W = 150;
 
-const TABLE_MIN_W = WO_ID_W + ORDER_ID_W + MATERIAL_MIN_W + PRODUCT_MIN_W + CUSTOMER_MIN_W + DEMAND_W;
+const TABLE_MIN_W = WO_ID_W + ORDER_ID_W + PRODUCT_MIN_W + CUSTOMER_MIN_W + DEMAND_W;
 
 const cellBase = (width, extra = {}) => ({
   width: `${width}px`,
@@ -58,11 +58,11 @@ const LabelValue = ({ label, value }) => (
   </div>
 );
 
-export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData, pageFilters = {} }) => {
   const [filterProduct, setFilterProduct] = useState([]);
   const [filterCustomer, setFilterCustomer] = useState([]);
   const [filterOrderId, setFilterOrderId] = useState([]);
+  const [filterWoId, setFilterWoId] = useState([]);
   const [openFilterKey, setOpenFilterKey] = useState(null);
   const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,6 +82,17 @@ export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData }) => {
     return () => scroller?.removeEventListener("scroll", handleScroll);
   }, [isOpen, materialData]);
 
+  // Sync page-level filters into drawer filter state when drawer opens
+  useEffect(() => {
+    if (isOpen) {
+      setFilterCustomer(pageFilters.customers || []);
+      setFilterOrderId(pageFilters.orderIds   || []);
+      setFilterProduct(pageFilters.products   || []);
+      setFilterWoId(pageFilters.woIds         || []);
+      setCurrentPage(1);
+    }
+  }, [isOpen]);
+
   const allRows = useMemo(() => {
     if (!materialData) return [];
     return MOCK_UNSCHEDULED_WOS[materialData.sku] || [];
@@ -90,23 +101,23 @@ export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData }) => {
   const productOptions = useMemo(() => [...new Set(allRows.map(r => r.productName))].sort().map(v => ({ value: v, label: v, subLabel: MOCK_PRODUCT_SKU_MAP[v] || "" })), [allRows]);
   const customerOptions = useMemo(() => [...new Set(allRows.map(r => r.customer))].sort().map(v => ({ value: v, label: v, subLabel: MOCK_CUSTOMER_PIC_MAP[v] || "" })), [allRows]);
   const orderIdOptions  = useMemo(() => [...new Set(allRows.map(r => r.orderId).filter(Boolean))].sort().map(v => ({ value: v, label: v })), [allRows]);
+  const woIdOptions     = useMemo(() => [...new Set(allRows.map(r => r.woId))].sort().map(v => ({ value: v, label: v })), [allRows]);
 
   const filteredRows = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
     return allRows.filter(r => {
-      if (q && !r.woId.toLowerCase().includes(q) && !r.productName.toLowerCase().includes(q) && !r.customer.toLowerCase().includes(q)) return false;
       if (filterProduct.length > 0  && !filterProduct.includes(r.productName)) return false;
       if (filterCustomer.length > 0 && !filterCustomer.includes(r.customer))   return false;
       if (filterOrderId.length > 0  && !filterOrderId.includes(r.orderId))     return false;
+      if (filterWoId.length > 0     && !filterWoId.includes(r.woId))           return false;
       return true;
     });
-  }, [allRows, searchQuery, filterProduct, filterCustomer, filterOrderId]);
+  }, [allRows, filterProduct, filterCustomer, filterOrderId, filterWoId]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
   const pagedRows  = filteredRows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
   const handleClose = () => {
-    setSearchQuery(""); setFilterProduct([]); setFilterCustomer([]); setFilterOrderId([]);
+    setFilterProduct([]); setFilterCustomer([]); setFilterOrderId([]); setFilterWoId([]);
     setOpenFilterKey(null); setCurrentPage(1); onClose();
   };
 
@@ -147,22 +158,23 @@ export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData }) => {
         </div>
 
         {/* Filter bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "0 24px 12px", flexShrink: 0, borderBottom: ROW_BORDER }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "0 24px 12px", flexShrink: 0, borderBottom: ROW_BORDER }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             {[
-              { key: "orderId",  label: "Order ID", value: filterOrderId,  options: orderIdOptions,  onChange: setFilterOrderId  },
-              { key: "product",  label: "Product",  value: filterProduct,  options: productOptions,  onChange: setFilterProduct  },
-              { key: "customer", label: "Customer", value: filterCustomer, options: customerOptions, onChange: setFilterCustomer },
+              { key: "woId",     label: "WO ID",         value: filterWoId,    options: woIdOptions,    onChange: setFilterWoId    },
+              { key: "orderId",  label: "Order ID",      value: filterOrderId, options: orderIdOptions, onChange: setFilterOrderId },
+              { key: "product",  label: "Product",       value: filterProduct, options: productOptions, onChange: setFilterProduct },
+              { key: "customer", label: "Customer",      value: filterCustomer,options: customerOptions,onChange: setFilterCustomer },
             ].map(({ key, label, value, options, onChange }) => (
               <div key={key} onClick={e => { const rect = e.currentTarget.getBoundingClientRect(); setPopoverTriggerRect(rect); setOpenFilterKey(prev => prev === key ? null : key); }}>
                 <FilterPill label={label} active={value.length > 0} isOpen={openFilterKey === key} count={value.length} />
               </div>
             ))}
-            {openFilterKey === "orderId"  && <FilterPopoverCheckbox title="Order ID" options={orderIdOptions}  value={filterOrderId}  onChange={setFilterOrderId}  onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "product"  && <FilterPopoverCheckbox title="Product"  options={productOptions}  value={filterProduct}  onChange={setFilterProduct}  onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "customer" && <FilterPopoverCheckbox title="Customer" options={customerOptions} value={filterCustomer} onChange={setFilterCustomer} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "woId"     && <FilterPopoverCheckbox title="WO ID" options={woIdOptions}     value={filterWoId}     onChange={setFilterWoId}     onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "orderId"  && <FilterPopoverCheckbox title="Order ID"      options={orderIdOptions}  value={filterOrderId}  onChange={setFilterOrderId}  onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "product"  && <FilterPopoverCheckbox title="Product"       options={productOptions}  value={filterProduct}  onChange={setFilterProduct}  onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "customer" && <FilterPopoverCheckbox title="Customer"      options={customerOptions} value={filterCustomer} onChange={setFilterCustomer} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
           </div>
-          <TableSearchField value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }} placeholder="Search WO ID..." width="230px" />
         </div>
 
         {/* Table — same flex-row as MaterialBreakdownDrawer */}
@@ -173,7 +185,6 @@ export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData }) => {
             <div style={{ display: "flex", borderBottom: ROW_BORDER, position: "sticky", top: 0, zIndex: 3, background: "var(--neutral-surface-primary)" }}>
               <div style={{ ...thBase(WO_ID_W, { paddingLeft: "24px" }), position: "sticky", left: 0, zIndex: 4, background: "var(--neutral-surface-primary)", boxShadow: leftShadow, transition: "box-shadow 0.2s ease" }}>WO ID</div>
               <div style={thBase(ORDER_ID_W)}>Order ID</div>
-              <div style={{ ...thBase(0), flex: 1, minWidth: `${MATERIAL_MIN_W}px` }}>Material</div>
               <div style={{ ...thBase(0), flex: 1, minWidth: `${PRODUCT_MIN_W}px` }}>Product</div>
               <div style={{ ...thBase(0), flex: 1, minWidth: `${CUSTOMER_MIN_W}px` }}>Customer</div>
               <div style={thBase(DEMAND_W, { paddingRight: "24px" })}>Demand</div>
@@ -198,7 +209,7 @@ export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData }) => {
                 </div>
 
                 {/* Product + SKU secondary clickable */}
-                <div style={{ ...cellBase(PRODUCT_W), flexDirection: "column", alignItems: "flex-start", gap: "2px", paddingTop: "10px", paddingBottom: "10px" }}>
+                <div style={{ flex: 1, minWidth: `${PRODUCT_MIN_W}px`, boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", padding: "10px 12px", fontSize: "var(--text-title-3)" }}>
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>
                     {row.productName}
                   </span>
@@ -210,7 +221,7 @@ export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData }) => {
                 </div>
 
                 {/* Customer + PIC secondary */}
-                <div style={{ ...cellBase(CUSTOMER_W), flexDirection: "column", alignItems: "flex-start", gap: "2px", paddingTop: "10px", paddingBottom: "10px" }}>
+                <div style={{ flex: 1, minWidth: `${CUSTOMER_MIN_W}px`, boxSizing: "border-box", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "2px", padding: "10px 12px", fontSize: "var(--text-title-3)" }}>
                   <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", width: "100%", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>
                     {row.customer}
                   </span>

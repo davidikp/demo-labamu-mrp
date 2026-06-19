@@ -41,8 +41,12 @@ const getWeekDates = (weekOffset) => {
   });
 };
 
+const getMonthDates = (monthIndex, year) => {
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  return Array.from({ length: daysInMonth }, (_, i) => new Date(year, monthIndex, i + 1));
+};
+
 const computeDailyData = (demand, endStock, workOrders, purchaseOrders) => {
-  // Build daily demand map from WOs (keyed by day offset)
   const dailyDemand = Array(7).fill(0);
   if (workOrders && workOrders.length > 0) {
     workOrders.forEach(wo => {
@@ -56,7 +60,6 @@ const computeDailyData = (demand, endStock, workOrders, purchaseOrders) => {
     for (let i = 0; i < 7; i++) dailyDemand[i] = daily + (i === 0 ? rem : 0);
   }
 
-  // Build daily incoming stock map: PO arriving on day X adds its qty on day X+1
   const dailyIncoming = Array(7).fill(0);
   if (purchaseOrders && purchaseOrders.length > 0) {
     purchaseOrders.forEach(po => {
@@ -76,10 +79,32 @@ const computeDailyData = (demand, endStock, workOrders, purchaseOrders) => {
   });
 };
 
+const computeMonthDailyData = (demand, endStock, workOrders, daysInMonth) => {
+  const dailyDemand = Array(daysInMonth).fill(0);
+  if (workOrders && workOrders.length > 0) {
+    workOrders.forEach(wo => {
+      const d = (wo._dayOfMonth || 1) - 1; // 0-indexed
+      if (d >= 0 && d < daysInMonth) dailyDemand[d] += (wo.qty || 0);
+    });
+  } else {
+    const total = parseInt(demand, 10) || 0;
+    const daily = Math.floor(total / daysInMonth);
+    const rem = total % daysInMonth;
+    for (let i = 0; i < daysInMonth; i++) dailyDemand[i] = daily + (i === 0 ? rem : 0);
+  }
+  const woTotal = dailyDemand.reduce((s, d) => s + d, 0);
+  let stock = (parseInt(endStock, 10) || 0) + woTotal;
+  return Array.from({ length: daysInMonth }, (_, i) => {
+    stock -= dailyDemand[i];
+    return { demand: dailyDemand[i], stock };
+  });
+};
+
 // ── Layout constants ───────────────────────────────────────────────────────────
 
 const LABEL_W = 230;
 const DATE_W = 108;
+const MONTH_DATE_W = 90;
 
 // ── Design-system link style (matches WorkOrderDetailPage PO value links) ─────
 
@@ -316,40 +341,234 @@ const BatchSubRow = ({ batch }) => (
   </div>
 );
 
+// ── Month-view rows ────────────────────────────────────────────────────────────
+
+// Right-side scroll shadow to indicate horizontal scrollability.
+const monthLabelShadow = (scrolled) => scrolled
+  ? "4px 0 8px -4px rgba(0,0,0,0.12)"
+  : "none";
+
+const MONTH_LABEL_STICKY = { position: "sticky", left: 0, zIndex: 3, background: "var(--neutral-surface-primary)" };
+
+const MonthHeaderRow = ({ dates, leftShadow }) => {
+  // Group consecutive dates by ISO week number
+  const weekGroups = [];
+  dates.forEach((d) => {
+    const wn = getISOWeekNumber(d);
+    const last = weekGroups[weekGroups.length - 1];
+    if (last && last.weekNum === wn) {
+      last.count += 1;
+    } else {
+      weekGroups.push({ weekNum: wn, count: 1 });
+    }
+  });
+
+  return (
+    <div style={{ background: "var(--neutral-surface-primary)", position: "sticky", top: 0, zIndex: 4 }}>
+      {/* Week group row */}
+      <div style={{ display: "flex", borderBottom: ROW_BORDER }}>
+        <div style={{ width: LABEL_W, flexShrink: 0, borderRight: ROW_BORDER, minHeight: "30px", boxSizing: "border-box", ...MONTH_LABEL_STICKY, zIndex: 5, boxShadow: leftShadow, transition: "box-shadow 0.2s ease" }} />
+        {weekGroups.map((wg, wi) => (
+          <div key={wg.weekNum} style={{
+            width: wg.count * MONTH_DATE_W, flexShrink: 0,
+            borderRight: wi === weekGroups.length - 1 ? "none" : ROW_BORDER,
+            minHeight: "30px", display: "flex", alignItems: "center", justifyContent: "center",
+            boxSizing: "border-box",
+            background: "var(--neutral-surface-primary)",
+          }}>
+            <span style={{ fontSize: "var(--text-body)", fontWeight: "var(--font-weight-semi-bold)", color: "var(--neutral-on-surface-secondary)", whiteSpace: "nowrap" }}>
+              Week {wg.weekNum}
+            </span>
+          </div>
+        ))}
+      </div>
+      {/* Day header row */}
+      <div style={{ display: "flex", borderBottom: ROW_BORDER }}>
+        <div style={{ width: LABEL_W, flexShrink: 0, borderRight: ROW_BORDER, minHeight: "49px", boxSizing: "border-box", ...MONTH_LABEL_STICKY, zIndex: 5, boxShadow: leftShadow, transition: "box-shadow 0.2s ease" }} />
+        {dates.map((d, i) => (
+          <div key={i} style={{ width: MONTH_DATE_W, flexShrink: 0, borderRight: i === dates.length - 1 ? "none" : ROW_BORDER, minHeight: "49px", padding: "0 4px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxSizing: "border-box" }}>
+            <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", whiteSpace: "nowrap" }}>
+              {DAYS[d.getDay()]}, {MONTHS[d.getMonth()]} {d.getDate()}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const MonthDemandRow = ({ dailyData, totalDemand, expanded, onToggle, leftShadow }) => (
+  <div style={{ display: "flex", borderBottom: ROW_BORDER, background: "var(--neutral-surface-primary)", minHeight: "64px" }}>
+    <div style={{ ...labelCellStyle(), minHeight: "64px", alignSelf: "stretch", ...MONTH_LABEL_STICKY, boxShadow: leftShadow, transition: "box-shadow 0.2s ease" }}>
+      <ChevronBtn expanded={expanded} onClick={onToggle} />
+      <div>
+        <div style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Demand</div>
+        <div style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", marginTop: "2px" }}>Total: {formatNumberWithCommas(totalDemand)}</div>
+      </div>
+    </div>
+    {dailyData.map((row, i) => (
+      <div key={i} style={{ width: MONTH_DATE_W, flexShrink: 0, borderRight: i === dailyData.length - 1 ? "none" : ROW_BORDER, minHeight: "64px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", boxSizing: "border-box" }}>
+        {row.demand > 0 ? formatNumberWithCommas(row.demand) : <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>0</span>}
+      </div>
+    ))}
+  </div>
+);
+
+const MonthWoSubRow = ({ wo, daysInMonth, leftShadow }) => (
+  <div style={{ display: "flex", borderBottom: ROW_BORDER, background: "var(--neutral-surface-primary)", minHeight: "64px" }}>
+    <div style={{ ...labelCellStyle("44px"), minHeight: "64px", alignSelf: "stretch", alignItems: "flex-start", paddingTop: "12px", paddingBottom: "12px", ...MONTH_LABEL_STICKY, boxShadow: leftShadow, transition: "box-shadow 0.2s ease" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+        <span style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-semi-bold)", color: "var(--neutral-on-surface-primary)" }}>{wo.productName}</span>
+        <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>{wo.customerName}</span>
+        <LinkText href={`/work-order/${wo.id}`}>{wo.id}</LinkText>
+      </div>
+    </div>
+    {Array.from({ length: daysInMonth }, (_, i) => (
+      <div key={i} style={{ width: MONTH_DATE_W, flexShrink: 0, borderRight: i === daysInMonth - 1 ? "none" : ROW_BORDER, minHeight: "64px", display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box" }}>
+        {wo._dayOfMonth === i + 1 && (
+          <Tag bg={wo.isSlipped ? "var(--status-red-container)" : "var(--status-green-container)"} color={wo.isSlipped ? "var(--status-red-primary)" : "var(--status-green-primary)"}>
+            <div>{wo.isSlipped ? "Carried Over" : wo.isStarted ? "Started" : "Est. Start"}</div>
+            <div>{wo.qty} pcs</div>
+          </Tag>
+        )}
+      </div>
+    ))}
+  </div>
+);
+
+const MonthStockRow = ({ dailyData, initialStock, expanded, onToggle, leftShadow }) => (
+  <div style={{ display: "flex", borderBottom: ROW_BORDER, background: "var(--neutral-surface-primary)", minHeight: "64px" }}>
+    <div style={{ ...labelCellStyle(), minHeight: "64px", alignSelf: "stretch", ...MONTH_LABEL_STICKY, boxShadow: leftShadow, transition: "box-shadow 0.2s ease" }}>
+      <ChevronBtn expanded={expanded} onClick={onToggle} />
+      <div>
+        <div style={{ fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Stock</div>
+        <div style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", marginTop: "2px" }}>Initial: {formatNumberWithCommas(initialStock)}</div>
+      </div>
+    </div>
+    {dailyData.map((row, i) => (
+      <div key={i} style={{ width: MONTH_DATE_W, flexShrink: 0, borderRight: i === dailyData.length - 1 ? "none" : ROW_BORDER, minHeight: "64px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--text-title-3)", fontWeight: "var(--font-weight-bold)", color: row.stock < 0 ? "var(--status-red-primary)" : "var(--status-green-primary)", boxSizing: "border-box" }}>
+        {formatNumberWithCommas(row.stock)}
+      </div>
+    ))}
+  </div>
+);
+
+const MonthBatchSubRow = ({ batch, daysInMonth, leftShadow }) => (
+  <div style={{ display: "flex", borderBottom: ROW_BORDER, background: "var(--neutral-surface-primary)", minHeight: "64px" }}>
+    <div style={{ ...labelCellStyle("44px"), minHeight: "64px", alignSelf: "stretch", alignItems: "flex-start", paddingTop: "12px", paddingBottom: "12px", ...MONTH_LABEL_STICKY, boxShadow: leftShadow, transition: "box-shadow 0.2s ease" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+        <LinkText href={`/batch/${batch.batchId}`}>{batch.batchId}</LinkText>
+        {batch.totalStock != null && (
+          <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>
+            Initial: {batch.totalStock} pcs
+            {(!batch.consumptions || batch.consumptions.length === 0) && !batch.poId && (
+              <span style={{ color: "var(--neutral-on-surface-tertiary)", fontStyle: "italic" }}> · No WO assigned</span>
+            )}
+          </span>
+        )}
+        {batch.poId && (
+          <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>
+            +{batch.poQty} from <LinkText href={`/purchase-order/${batch.poId}`}>{batch.poId}</LinkText>
+          </span>
+        )}
+      </div>
+    </div>
+    {Array.from({ length: daysInMonth }, (_, i) => {
+      const dayNum = i + 1;
+      const consumed = (batch.consumptions || []).filter(c => c._dayOfMonth === dayNum);
+      const isArrival = batch._arrivalDayOfMonth === dayNum;
+      return (
+        <div key={i} style={{ width: MONTH_DATE_W, flexShrink: 0, borderRight: i === daysInMonth - 1 ? "none" : ROW_BORDER, minHeight: "64px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "3px", boxSizing: "border-box" }}>
+          {isArrival && (
+            <Tag bg="var(--status-green-container)" color="var(--status-green-primary)">
+              <div>Est. Arrival</div>
+              {batch.poQty != null && <div>{batch.poQty} pcs</div>}
+            </Tag>
+          )}
+          {consumed.map((c, ci) => (
+            <Tag key={ci} bg="#FFF3E0" color="var(--status-orange-primary)">
+              <div>{c.qty} pcs</div>
+              <div>{c.woId}</div>
+            </Tag>
+          ))}
+        </div>
+      );
+    })}
+  </div>
+);
+
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, onSelectExistingPo, selectedCell, urgencyDaysInAdvance = 5 }) => {
+export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, onSelectExistingPo, selectedCell, urgencyDaysInAdvance = 5, timelineView = "week", pageFilters = {} }) => {
   const [demandExpanded, setDemandExpanded] = useState(false);
   const [stockExpanded, setStockExpanded] = useState(false);
   const [poMenuOpen, setPoMenuOpen] = useState(false);
   const [poMenuPos, setPoMenuPos] = useState({ bottom: null, top: null, left: 0 });
+  const monthScrollRef = useRef(null);
+  const [monthScrolled, setMonthScrolled] = useState(false);
+
+  const handleMonthScroll = () => {
+    if (monthScrollRef.current) {
+      setMonthScrolled(monthScrollRef.current.scrollLeft > 0);
+    }
+  };
 
   useEffect(() => {
     setDemandExpanded(false);
     setStockExpanded(false);
+    setMonthScrolled(false);
   }, [selectedCell?.sku, selectedCell?.weekOffset]);
 
   if (!isOpen || !selectedCell) return null;
 
+  const isMonthView = timelineView === "month";
   const isMaterialDetail = selectedCell.week === "Material Detail";
+
+  // Month view variables
+  const monthIndex = selectedCell._monthIndex ?? 0;
+  const monthYear = selectedCell._year ?? new Date().getFullYear();
+  const monthDates = isMonthView ? getMonthDates(monthIndex, monthYear) : null;
+  const daysInMonth = monthDates ? monthDates.length : 0;
+  const monthLastDay = daysInMonth;
+  const fmtIso = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const monthRangeLabel = isMonthView
+    ? `${monthYear}-${String(monthIndex + 1).padStart(2, "0")}-01 – ${monthYear}-${String(monthIndex + 1).padStart(2, "0")}-${String(monthLastDay).padStart(2, "0")}`
+    : null;
+
+  // Week view variables
   const dates = getWeekDates(selectedCell.weekOffset);
   const weekNumber = getISOWeekNumber(dates[0]);
   const year = dates[0].getFullYear();
-  const rangeLabel = `${fmtShort(dates[0])} – ${fmtShort(dates[6])}, ${year}`;
+  const rangeLabel = `${fmtIso(dates[0])} – ${fmtIso(dates[6])}`;
 
-  const workOrders = selectedCell.workOrders || [];
+  const allWorkOrders = selectedCell.workOrders || [];
+  const workOrders = allWorkOrders.filter(wo => {
+    const pgOrderIds  = pageFilters.orderIds  || [];
+    const pgCustomers = pageFilters.customers || [];
+    const pgProducts  = pageFilters.products  || [];
+    const pgWoIds     = pageFilters.woIds     || [];
+    if (pgOrderIds.length  > 0 && !pgOrderIds.includes(wo.orderId))      return false;
+    if (pgCustomers.length > 0 && !pgCustomers.includes(wo.customerName)) return false;
+    if (pgProducts.length  > 0 && !pgProducts.includes(wo.productName))   return false;
+    if (pgWoIds.length     > 0 && !pgWoIds.includes(wo.id))               return false;
+    return true;
+  });
   const batches = selectedCell.batches || [];
   const purchaseOrders = selectedCell.purchaseOrders || [];
 
-  const weeklyDemand = workOrders.length > 0
+  const totalDemand = workOrders.length > 0
     ? workOrders.reduce((s, wo) => s + (wo.qty || 0), 0)
     : (parseInt(selectedCell.demand, 10) || 0);
   const endStock = parseInt(selectedCell.endStock, 10) || 0;
-  const initialStock = endStock + weeklyDemand;
-  const dailyData = computeDailyData(selectedCell.demand, selectedCell.endStock, workOrders, purchaseOrders);
+  const initialStock = endStock + totalDemand;
+
+  const dailyData = isMonthView
+    ? computeMonthDailyData(selectedCell.demand, selectedCell.endStock, workOrders, daysInMonth)
+    : computeDailyData(selectedCell.demand, selectedCell.endStock, workOrders, purchaseOrders);
 
   const woIdsWithBatch = new Set(batches.flatMap(b => (b.consumptions || []).map(c => c.woId)));
-  // Sum covered qty per WO across all batch consumptions
   const woCoveredQty = {};
   batches.forEach(b => (b.consumptions || []).forEach(c => {
     woCoveredQty[c.woId] = (woCoveredQty[c.woId] || 0) + c.qty;
@@ -357,7 +576,7 @@ export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, onSelectEx
   const stockSubRows = batches;
 
   const hasNegativeStock = endStock < 0 || dailyData.some(r => r.stock < 0);
-  const tableMinWidth = LABEL_W + 7 * DATE_W;
+  const tableMinWidth = isMonthView ? LABEL_W + daysInMonth * MONTH_DATE_W : LABEL_W + 7 * DATE_W;
 
   const procStatus = MOCK_PROCUREMENT_STATUS[selectedCell.sku];
   const isFirstNegWeek = procStatus && selectedCell.weekOffset === procStatus.firstNegativeWeekOffset;
@@ -366,6 +585,8 @@ export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, onSelectEx
   const showUrgentAlert   = isUrgentToBuy && procStatus.status === "urgent";
   const showThisWeekAlert = isUrgentToBuy && procStatus.status === "this_week";
   const showConsequenceAlert = showOverdueAlert || showUrgentAlert || showThisWeekAlert;
+
+  const leftShadow = isMonthView ? monthLabelShadow(monthScrolled) : "none";
 
   return (
     <div
@@ -411,8 +632,11 @@ export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, onSelectEx
               label="Material SKU"
               value={<LinkText href={`/materials/${selectedCell.sku}`}>{selectedCell.sku}</LinkText>}
             />
-            <LabelValue label="Week" value={`W${weekNumber}`} />
-            <LabelValue label="Date Range" value={rangeLabel} />
+            {isMonthView
+              ? <LabelValue label="Month" value={selectedCell.week} />
+              : <LabelValue label="Week" value={`W${weekNumber}`} />
+            }
+            <LabelValue label="Date Range" value={isMonthView ? monthRangeLabel : rangeLabel} />
           </div>
         </div>
 
@@ -445,15 +669,15 @@ export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, onSelectEx
           );
         })()}
 
-        {/* Scrollable table area — date header sticky at top: 0 of this container */}
-        <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "0 24px 24px" }}>
-          {!isMaterialDetail && (
+        {/* Scrollable table area — week view */}
+        {!isMaterialDetail && !isMonthView && (
+          <div style={{ flex: 1, minHeight: 0, overflow: "auto", padding: "0 24px 24px" }}>
             <div style={{ minWidth: `${tableMinWidth}px` }}>
               <HeaderRow dates={dates} />
 
               <DemandRow
                 dailyData={dailyData}
-                weeklyDemand={weeklyDemand}
+                weeklyDemand={totalDemand}
                 expanded={demandExpanded}
                 onToggle={() => setDemandExpanded(v => !v)}
               />
@@ -473,14 +697,54 @@ export const MaterialForecastDrawer = ({ isOpen, onClose, onCreatePo, onSelectEx
                 <BatchSubRow key={batch.batchId} batch={batch} />
               ))}
             </div>
-          )}
+          </div>
+        )}
 
-          {isMaterialDetail && (
-            <div style={{ padding: "24px", display: "flex", flex: 1, alignItems: "center", justifyContent: "center", color: "var(--neutral-on-surface-secondary)" }}>
-              Detail view for specific material will be defined later.
+        {/* Scrollable table area — month view
+            Outer div clips at 24px from drawer edge; inner div owns overflow-x so the
+            sticky label column's left:0 coincides with that clip boundary, preventing
+            date-column borders from bleeding into the left padding gap. */}
+        {!isMaterialDetail && isMonthView && (
+          <div style={{ flex: 1, minHeight: 0, overflow: "hidden", paddingLeft: "24px", display: "flex", flexDirection: "column" }}>
+            <div
+              ref={monthScrollRef}
+              onScroll={handleMonthScroll}
+              style={{ flex: 1, minHeight: 0, overflow: "auto", paddingRight: "24px", paddingBottom: "24px" }}
+            >
+              <div style={{ minWidth: `${tableMinWidth}px` }}>
+                <MonthHeaderRow dates={monthDates} leftShadow={leftShadow} />
+
+                <MonthDemandRow
+                  dailyData={dailyData}
+                  totalDemand={totalDemand}
+                  expanded={demandExpanded}
+                  onToggle={() => setDemandExpanded(v => !v)}
+                  leftShadow={leftShadow}
+                />
+                {demandExpanded && workOrders.map((wo) => (
+                  <MonthWoSubRow key={wo.id} wo={wo} daysInMonth={daysInMonth} leftShadow={leftShadow} />
+                ))}
+
+                <MonthStockRow
+                  dailyData={dailyData}
+                  initialStock={initialStock}
+                  expanded={stockExpanded}
+                  onToggle={() => setStockExpanded(v => !v)}
+                  leftShadow={leftShadow}
+                />
+                {stockExpanded && stockSubRows.map((batch) => (
+                  <MonthBatchSubRow key={batch.batchId} batch={batch} daysInMonth={daysInMonth} leftShadow={leftShadow} />
+                ))}
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {isMaterialDetail && (
+          <div style={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--neutral-on-surface-secondary)" }}>
+            Detail view for specific material will be defined later.
+          </div>
+        )}
 
         {/* Footer */}
         <div style={{ padding: "16px 24px", borderTop: ROW_BORDER, flexShrink: 0, position: "relative" }}>

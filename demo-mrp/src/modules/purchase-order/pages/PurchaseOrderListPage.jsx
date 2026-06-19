@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
-import { AddIcon, ChevronDownIcon, Settings } from "../../../components/icons/Icons.jsx";
+import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { AddIcon, ChevronDownIcon, Info, Settings } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
 import { FilterPill } from "../../../components/common/FilterPill.jsx";
@@ -29,6 +30,53 @@ const computePaymentStatus = (invoices, payments) => {
   if (anyOverdue) return "Overdue";
   if (anyPartial) return "Partially Paid";
   return "Unpaid";
+};
+
+const PoTitleTooltip = () => {
+  const [visible, setVisible] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const ref = useRef(null);
+
+  const updateCoords = () => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setCoords({ top: rect.bottom + 6, left: rect.left + rect.width / 2 });
+    }
+  };
+
+  return (
+    <div
+      ref={ref}
+      style={{ display: "inline-flex", alignItems: "center", cursor: "default" }}
+      onMouseEnter={() => { updateCoords(); setVisible(true); }}
+      onMouseLeave={() => setVisible(false)}
+    >
+      <Info size={16} color="var(--neutral-on-surface-tertiary)" strokeWidth={2} />
+      {visible && typeof document !== "undefined" &&
+        createPortal(
+          <div style={{
+            position: "fixed",
+            top: coords.top,
+            left: coords.left,
+            transform: "translateX(-50%)",
+            background: "var(--neutral-on-surface-primary)",
+            color: "#fff",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            fontSize: "12px",
+            lineHeight: "1.5",
+            maxWidth: "320px",
+            zIndex: 9999,
+            pointerEvents: "none",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.18)",
+          }}>
+            Manage purchase orders sent to your vendors. Use this page to create, approve, and track purchase orders.
+          </div>,
+          document.body
+        )
+      }
+    </div>
+  );
 };
 
 export const PurchaseOrderListPage = ({ onNavigate, t }) => {
@@ -208,15 +256,18 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
           alignItems: "center",
         }}
       >
-        <h1
-          style={{
-            margin: "0",
-            fontSize: "var(--text-big-title)",
-            fontWeight: "var(--font-weight-bold)",
-          }}
-        >
-          {t("purchase_order.title")}
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <h1
+            style={{
+              margin: "0",
+              fontSize: "var(--text-big-title)",
+              fontWeight: "var(--font-weight-bold)",
+            }}
+          >
+            {t("purchase_order.title")}
+          </h1>
+          <PoTitleTooltip />
+        </div>
         <div style={{ display: "flex", gap: "12px" }}>
           <Button variant="outlined" leftIcon={Settings} onClick={() => onNavigate("settings")}>
             {t("purchase_order.settings")}

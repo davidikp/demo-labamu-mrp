@@ -69,6 +69,7 @@ const mtl001WorkOrders = [
   [
     {
       id: "WO-2490",
+      orderId: "SO-3200",
       productName: "Bracket Frame X9",
       customerName: "PT Maju Jaya",
       estimatedStartDayOffset: TODAY_DAY_OFFSET,
@@ -77,35 +78,35 @@ const mtl001WorkOrders = [
       slippedDays: 5,
       originalEstimatedStartDate: getSlippedOriginalDate(5),
     },
-    { id: "WO-2401", productName: "Frame Assembly Alpha", customerName: "PT Maju Jaya", estimatedStartDayOffset: 1, qty: 200, isStarted: true },
-    { id: "WO-2402", productName: "Cabinet Unit B", customerName: "CV Sinar Abadi", estimatedStartDayOffset: 3, qty: 300 },
-    { id: "WO-2400", productName: "Prototype Frame X", customerName: "PT Demo Nusantara", estimatedStartDayOffset: 5, qty: 50 },
+    { id: "WO-2401", orderId: "SO-3202", productName: "Frame Assembly Alpha", customerName: "PT Maju Jaya", estimatedStartDayOffset: 1, qty: 200, isStarted: true },
+    { id: "WO-2402", orderId: "SO-3203", productName: "Cabinet Unit B", customerName: "CV Sinar Abadi", estimatedStartDayOffset: 3, qty: 300 },
+    { id: "WO-2400", orderId: "SO-3201", productName: "Prototype Frame X", customerName: "PT Demo Nusantara", estimatedStartDayOffset: 5, qty: 50 },
   ],
   // W1 — sum 600
   [
-    { id: "WO-2403", productName: "Panel Structure C", customerName: "PT Karya Utama", estimatedStartDayOffset: 0, qty: 350 },
-    { id: "WO-2404", productName: "Frame Assembly Beta", customerName: "PT Maju Jaya", estimatedStartDayOffset: 4, qty: 250 },
+    { id: "WO-2403", orderId: "SO-3204", productName: "Panel Structure C", customerName: "PT Karya Utama", estimatedStartDayOffset: 0, qty: 350 },
+    { id: "WO-2404", orderId: "SO-3205", productName: "Frame Assembly Beta", customerName: "PT Maju Jaya", estimatedStartDayOffset: 4, qty: 250 },
   ],
   // W2 — sum 200
-  [{ id: "WO-2405", productName: "Cabinet Unit D", customerName: "CV Bintang Mas", estimatedStartDayOffset: 2, qty: 200 }],
+  [{ id: "WO-2405", orderId: "SO-3206", productName: "Cabinet Unit D", customerName: "CV Bintang Mas", estimatedStartDayOffset: 2, qty: 200 }],
   // W3 — sum 300
-  [{ id: "WO-2406", productName: "Frame Assembly Gamma", customerName: "PT Karya Utama", estimatedStartDayOffset: 1, qty: 300 }],
+  [{ id: "WO-2406", orderId: "SO-3201", productName: "Frame Assembly Gamma", customerName: "PT Karya Utama", estimatedStartDayOffset: 1, qty: 300 }],
   // W4 — demand 0
   [],
   // W5 — sum 100
-  [{ id: "WO-2420", productName: "Steel Frame Unit E", customerName: "PT Maju Jaya", estimatedStartDayOffset: 2, qty: 100 }],
+  [{ id: "WO-2420", orderId: "SO-3207", productName: "Steel Frame Unit E", customerName: "PT Maju Jaya", estimatedStartDayOffset: 2, qty: 100 }],
   // W6 — sum 200
-  [{ id: "WO-2421", productName: "Frame Panel F", customerName: "CV Sinar Abadi", estimatedStartDayOffset: 1, qty: 200 }],
+  [{ id: "WO-2421", orderId: "SO-3208", productName: "Frame Panel F", customerName: "CV Sinar Abadi", estimatedStartDayOffset: 1, qty: 200 }],
   // W7 — sum 50
-  [{ id: "WO-2422", productName: "Connector Block G", customerName: "PT Karya Utama", estimatedStartDayOffset: 4, qty: 50 }],
+  [{ id: "WO-2422", orderId: "SO-3209", productName: "Connector Block G", customerName: "PT Karya Utama", estimatedStartDayOffset: 4, qty: 50 }],
   // W8 — sum 100
-  [{ id: "WO-2423", productName: "Frame Assembly H", customerName: "PT Maju Jaya", estimatedStartDayOffset: 0, qty: 100 }],
+  [{ id: "WO-2423", orderId: "SO-3210", productName: "Frame Assembly H", customerName: "PT Maju Jaya", estimatedStartDayOffset: 0, qty: 100 }],
   // W9 — sum 200
-  [{ id: "WO-2424", productName: "Cabinet Unit J", customerName: "CV Sinar Abadi", estimatedStartDayOffset: 3, qty: 200 }],
+  [{ id: "WO-2424", orderId: "SO-3211", productName: "Cabinet Unit J", customerName: "CV Sinar Abadi", estimatedStartDayOffset: 3, qty: 200 }],
   // W10 — sum 150
-  [{ id: "WO-2425", productName: "Panel Structure K", customerName: "PT Karya Utama", estimatedStartDayOffset: 2, qty: 150 }],
+  [{ id: "WO-2425", orderId: "SO-3212", productName: "Panel Structure K", customerName: "PT Karya Utama", estimatedStartDayOffset: 2, qty: 150 }],
   // W11 — sum 50
-  [{ id: "WO-2426", productName: "Frame Unit L", customerName: "PT Maju Jaya", estimatedStartDayOffset: 5, qty: 50 }],
+  [{ id: "WO-2426", orderId: "SO-3213", productName: "Frame Unit L", customerName: "PT Maju Jaya", estimatedStartDayOffset: 5, qty: 50 }],
 ];
 
 const mtl001Batches = [
@@ -316,10 +317,30 @@ const mtl003PurchaseOrders = [
 const mtl003EndStocks = [2000, 1500, 500, 300, 0, -400, -600, -1100, -1200, -1400, -1400, -1500];
 
 // ── Simple material generator for additional rows ──────────────────────────────
+
+// Auto-generates one batch per week so Stock rows are expandable in the drawer
+const generateSimpleBatches = (sku, demands, endStocks, wosByWeek) => {
+  const skuNum = sku.replace('MTL-', '');
+  return demands.map((demand, i) => {
+    const initialStock = (endStocks[i] || 0) + demand;
+    if (initialStock <= 0) return [];
+    const wos = wosByWeek[i] || [];
+    return [{
+      batchId: `BATCH-${skuNum}W${i}`,
+      totalStock: initialStock,
+      consumptions: wos.map(wo => ({
+        dayOffset: wo.estimatedStartDayOffset || 0,
+        qty: wo.qty,
+        woId: wo.id,
+      })),
+    }];
+  });
+};
+
 const makeSimpleMaterial = (materialName, sku, onHandStock, incomingPoStock, unscheduled, demands, endStocks, wosByWeek) =>
   ({
     materialName, sku, onHandStock, incomingPoStock, unscheduled,
-    timeline: generateTimeline(demands, endStocks, wosByWeek, wosByWeek.map(() => []), null),
+    timeline: generateTimeline(demands, endStocks, wosByWeek, generateSimpleBatches(sku, demands, endStocks, wosByWeek), null),
   });
 
 // MTL-004: Copper Wire 2.5mm

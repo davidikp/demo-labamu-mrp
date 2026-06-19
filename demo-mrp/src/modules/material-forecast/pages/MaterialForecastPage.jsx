@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { CloseIcon, ChevronLeft } from "../../../components/icons/Icons.jsx";
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
@@ -233,7 +233,7 @@ import { MaterialsToBuyDrawer } from "../components/MaterialsToBuyDrawer.jsx";
 import { formatNumberWithCommas } from "../../../utils/format/formatUtils.js";
 import { UnscheduledWoDrawer } from "../components/UnscheduledWoDrawer.jsx";
 import { Button } from "../../../components/common/Button.jsx";
-import { Settings } from "../../../components/icons/Icons.jsx";
+import { Settings, ChevronDownIcon } from "../../../components/icons/Icons.jsx";
 import {
   MOCK_MATERIAL_FORECAST_DATA,
   MOCK_PROCUREMENT_STATUS,
@@ -242,6 +242,18 @@ import {
   MOCK_DEMAND_URGENCY_ROWS,
   MOCK_UNSCHEDULED_WO_ROWS,
 } from "../mock/materialForecastMocks.js";
+
+const MONTH_NAMES_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const getMondayOfWeekOffset = (weekOffset) => {
+  const today = new Date();
+  const day = today.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diff + weekOffset * 7);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+};
 
 export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPlanningSettings }) => {
   const urgencyDaysInAdvance = materialPlanningSettings?.urgencyDaysInAdvance ?? 5;
@@ -257,7 +269,7 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
   const [unscheduledMaterial, setUnscheduledMaterial] = useState(null);
   const [materialsToBuyOpen, setMaterialsToBuyOpen] = useState(false);
 
-  const [filterMaterialName, setFilterMaterialName] = useState("");
+  const [filterMaterial, setFilterMaterial] = useState([]);
   const [filterOrderId, setFilterOrderId] = useState([]);
   const [filterCustomer, setFilterCustomer] = useState([]);
   const [filterProduct, setFilterProduct] = useState([]);
@@ -268,6 +280,12 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
 
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [materialSortDir, setMaterialSortDir] = useState("asc");
+  const [timelineView, setTimelineView] = useState("week"); // "week" | "month"
+
+  const tableScrollRef = useRef(null);
+  const [monthColWidth, setMonthColWidth] = useState(200);
+  const [tableScrolled, setTableScrolled] = useState(false);
 
   // ── Dynamic counters ───────────────────────────────────────────────────────
   const counters = useMemo(() => {
@@ -345,6 +363,98 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
   const allTimelineColumns = MOCK_MATERIAL_FORECAST_DATA[0]?.timeline.map(tw => tw.week) || [];
   const timelineColumns = allTimelineColumns.slice(0, forecastWeeks);
 
+  const monthColumns = useMemo(() => {
+    const seen = new Map();
+    for (let i = 0; i < forecastWeeks; i++) {
+      const monday = getMondayOfWeekOffset(i);
+      const month = monday.getMonth();
+      const year = monday.getFullYear();
+      const key = `${year}-${month}`;
+      if (!seen.has(key)) {
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        seen.set(key, {
+          key,
+          label: MONTH_NAMES_SHORT[month],
+          month,
+          year,
+          dateRange: `${MONTH_NAMES_SHORT[month]} 1 - ${MONTH_NAMES_SHORT[month]} ${lastDay}`,
+          weekOffsets: [],
+        });
+      }
+      seen.get(key).weekOffsets.push(i);
+    }
+    return [...seen.values()];
+  }, [forecastWeeks]);
+
+  useEffect(() => {
+    const el = tableScrollRef.current;
+    if (!el) return;
+    const handleScroll = () => setTableScrolled(el.scrollLeft > 0);
+    el.addEventListener("scroll", handleScroll);
+    handleScroll();
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (timelineView !== "month" || !tableScrollRef.current) return;
+    const STICKY_W = 500;
+    const MIN_COL_W = 160;
+    const cols = monthColumns.length || 1;
+    const compute = () => {
+      const available = tableScrollRef.current?.clientWidth - STICKY_W;
+      setMonthColWidth(Math.max(MIN_COL_W, Math.floor(available / cols)));
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(tableScrollRef.current);
+    return () => ro.disconnect();
+  }, [timelineView, monthColumns.length]);
+
+  const getMonthlyTimeline = (rowTimeline) =>
+    monthColumns.map(mc => {
+      const weeks = mc.weekOffsets.map(wo => rowTimeline[wo]).filter(Boolean);
+      const lastWeek = weeks[weeks.length - 1];
+      const enrichedWorkOrders = mc.weekOffsets.flatMap(wOffset => {
+        const week = rowTimeline[wOffset];
+        if (!week) return [];
+        const monday = getMondayOfWeekOffset(wOffset);
+        return (week.workOrders || []).map(wo => {
+          const woDate = new Date(monday);
+          woDate.setDate(monday.getDate() + (wo.estimatedStartDayOffset || 0));
+          return { ...wo, _dayOfMonth: woDate.getDate(), _month: woDate.getMonth(), _year: woDate.getFullYear() };
+        });
+      });
+      return {
+        ...mc,
+        demand: weeks.reduce((s, w) => s + (w.demand || 0), 0),
+        endStock: lastWeek?.endStock ?? 0,
+        workOrders: enrichedWorkOrders,
+        batches: mc.weekOffsets.flatMap(wOffset => {
+          const week = rowTimeline[wOffset];
+          if (!week) return [];
+          const monday = getMondayOfWeekOffset(wOffset);
+          const dayOfMonth = (offset) => {
+            if (offset == null) return null;
+            const d = new Date(monday); d.setDate(monday.getDate() + offset); return d.getDate();
+          };
+          return (week.batches || []).map(b => ({
+            ...b,
+            _arrivalDayOfMonth: dayOfMonth(b.poEstimatedArrivalDayOffset),
+            consumptions: (b.consumptions || []).map(c => ({
+              ...c, _dayOfMonth: dayOfMonth(c.dayOffset),
+            })),
+          }));
+        }),
+        purchaseOrders: weeks.flatMap(w => w.purchaseOrders || []),
+        weekOffsets: mc.weekOffsets,
+      };
+    });
+
+  const materialOptions = useMemo(() =>
+    MOCK_MATERIAL_FORECAST_DATA.map(r => ({ value: r.materialName, label: r.materialName, subLabel: r.sku }))
+      .sort((a, b) => a.label.localeCompare(b.label))
+  , []);
+
   const orderIdOptions = useMemo(() => {
     const ids = new Set(MOCK_MATERIAL_FORECAST_DATA.flatMap(r => r.timeline.flatMap(tw => tw.workOrders.map(wo => wo.orderId).filter(Boolean))));
     return [...ids].sort().map(v => ({ value: v, label: v }));
@@ -366,9 +476,8 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
   }, []);
 
   const filteredData = useMemo(() => {
-    const nameQ = filterMaterialName.trim().toLowerCase();
     return MOCK_MATERIAL_FORECAST_DATA.filter(row => {
-      if (nameQ && !row.materialName.toLowerCase().includes(nameQ) && !row.sku.toLowerCase().includes(nameQ)) return false;
+      if (filterMaterial.length > 0 && !filterMaterial.includes(row.materialName)) return false;
       const allWos = row.timeline.flatMap(tw => tw.workOrders);
       if (filterOrderId.length > 0 && !allWos.some(wo => filterOrderId.includes(wo.orderId))) return false;
       if (filterCustomer.length > 0 && !allWos.some(wo => filterCustomer.includes(wo.customerName))) return false;
@@ -376,19 +485,34 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
       if (filterWoId.length > 0 && !allWos.some(wo => filterWoId.includes(wo.id))) return false;
       return true;
     });
-  }, [filterMaterialName, filterOrderId, filterCustomer, filterProduct, filterWoId]);
+  }, [filterMaterial, filterOrderId, filterCustomer, filterProduct, filterWoId]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
-  const pagedData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  const sortedData = useMemo(() => {
+    if (!materialSortDir) return filteredData;
+    return [...filteredData].sort((a, b) => {
+      const cmp = a.materialName.localeCompare(b.materialName);
+      return materialSortDir === "asc" ? cmp : -cmp;
+    });
+  }, [filteredData, materialSortDir]);
 
-  const planningRangeOptions = [
-    { value: 4,  label: "Next 4 Weeks" },
-    { value: 8,  label: "Next 8 Weeks" },
-    { value: 12, label: "Next 12 Weeks" },
-    { value: 24, label: "Next 24 Weeks" },
-  ];
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / rowsPerPage));
+  const pagedData = sortedData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
-  const hasActiveFilters = filterOrderId.length > 0 || filterCustomer.length > 0 || filterProduct.length > 0 || filterWoId.length > 0;
+  const planningRangeOptions = timelineView === "week"
+    ? [
+        { value: 4,  label: "Next 4 Weeks" },
+        { value: 8,  label: "Next 8 Weeks" },
+        { value: 12, label: "Next 12 Weeks" },
+        { value: 24, label: "Next 24 Weeks" },
+      ]
+    : [
+        { value: 4,  label: "Next 1 Month" },
+        { value: 8,  label: "Next 2 Months" },
+        { value: 12, label: "Next 3 Months" },
+        { value: 24, label: "Next 6 Months" },
+      ];
+
+  const hasActiveFilters = filterMaterial.length > 0 || filterOrderId.length > 0 || filterCustomer.length > 0 || filterProduct.length > 0 || filterWoId.length > 0;
 
   return (
     <div
@@ -459,12 +583,13 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
           justifyContent: "space-between",
           gap: "12px",
           padding: "16px 24px",
-          borderBottom: hasActiveFilters ? "none" : "1px solid var(--neutral-line-separator-1)",
+          borderBottom: "1px solid var(--neutral-line-separator-1)",
           flexShrink: 0,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", position: "relative" }}>
             {[
-              { key: "woId",    label: "Work Order ID", value: filterWoId,    options: woIdOptions,    onChange: (v) => { setFilterWoId(v);    setCurrentPage(1); } },
+              { key: "material",label: "Material",      value: filterMaterial,options: materialOptions, onChange: (v) => { setFilterMaterial(v);setCurrentPage(1); } },
+              { key: "woId",    label: "WO ID",         value: filterWoId,    options: woIdOptions,    onChange: (v) => { setFilterWoId(v);    setCurrentPage(1); } },
               { key: "orderId", label: "Order ID",      value: filterOrderId, options: orderIdOptions, onChange: (v) => { setFilterOrderId(v); setCurrentPage(1); } },
               { key: "customer",label: "Customer",      value: filterCustomer,options: customerOptions, onChange: (v) => { setFilterCustomer(v);setCurrentPage(1); } },
               { key: "product", label: "Product",       value: filterProduct, options: productOptions, onChange: (v) => { setFilterProduct(v); setCurrentPage(1); } },
@@ -488,7 +613,8 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
               />
             </div>
 
-            {openFilterKey === "woId" && <FilterPopoverCheckbox title="Work Order ID" options={woIdOptions} value={filterWoId} onChange={(v) => { setFilterWoId(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "material" && <FilterPopoverCheckbox title="Material" options={materialOptions} value={filterMaterial} onChange={(v) => { setFilterMaterial(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            {openFilterKey === "woId" && <FilterPopoverCheckbox title="WO ID" options={woIdOptions} value={filterWoId} onChange={(v) => { setFilterWoId(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
             {openFilterKey === "orderId" && <FilterPopoverCheckbox title="Order ID" options={orderIdOptions} value={filterOrderId} onChange={(v) => { setFilterOrderId(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
             {openFilterKey === "customer" && <FilterPopoverCheckbox title="Customer" options={customerOptions} value={filterCustomer} onChange={(v) => { setFilterCustomer(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
             {openFilterKey === "product" && <FilterPopoverCheckbox title="Product" options={productOptions} value={filterProduct} onChange={(v) => { setFilterProduct(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
@@ -510,42 +636,39 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
               </>
             )}
           </div>
-          <TableSearchField
-            value={filterMaterialName}
-            onChange={(e) => { setFilterMaterialName(e.target.value); setCurrentPage(1); }}
-            placeholder="Search material name or SKU..."
-            width="260px"
-          />
-        </div>
 
-        {/* Active filter pills */}
-        {hasActiveFilters && (
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "8px 24px 12px",
-            flexWrap: "wrap",
-            borderBottom: "1px solid var(--neutral-line-separator-1)",
-            flexShrink: 0,
-          }}>
-            <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>Active filters:</span>
-            {filterOrderId.map(id => (
-              <FilterPill key={`oid-${id}`} label={id} active={true} onRemove={() => setFilterOrderId(prev => prev.filter(x => x !== id))} />
-            ))}
-            {filterCustomer.map(c => (
-              <FilterPill key={`cust-${c}`} label={c} active={true} onRemove={() => setFilterCustomer(prev => prev.filter(x => x !== c))} />
-            ))}
-            {filterProduct.map(p => (
-              <FilterPill key={`prod-${p}`} label={p} active={true} onRemove={() => setFilterProduct(prev => prev.filter(x => x !== p))} />
-            ))}
-            {filterWoId.map(id => (
-              <FilterPill key={`wo-${id}`} label={id} active={true} onRemove={() => setFilterWoId(prev => prev.filter(x => x !== id))} />
+          {/* Week / Month view switcher */}
+          <div style={{ display: "flex", alignItems: "center", border: "1px solid var(--neutral-line-separator-1)", borderRadius: "8px", overflow: "hidden", flexShrink: 0 }}>
+            {["week", "month"].map((view) => (
+              <button
+                key={view}
+                onClick={() => {
+                  if (view !== timelineView) {
+                    setTimelineView(view);
+                    setForecastWeeks(12);
+                  }
+                }}
+                style={{
+                  padding: "6px 14px",
+                  fontSize: "var(--text-title-3)",
+                  fontWeight: view === timelineView ? "var(--font-weight-semi-bold)" : "var(--font-weight-regular)",
+                  color: view === timelineView ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-secondary)",
+                  background: view === timelineView ? "var(--feature-brand-container)" : "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "background 0.15s, color 0.15s",
+                  textTransform: "capitalize",
+                }}
+              >
+                {view}
+              </button>
             ))}
           </div>
-        )}
+        </div>
 
-        <div style={{ overflowX: "auto", overflowY: "auto", flex: 1, position: "relative" }}>
+
+
+        <div ref={tableScrollRef} onScroll={() => setTableScrolled(tableScrollRef.current?.scrollLeft > 0)} style={{ overflowX: "auto", overflowY: "auto", flex: 1, position: "relative" }}>
           <div style={{ minWidth: "max-content", display: "flex", flexDirection: "column" }}>
             {/* Table Header */}
             <div
@@ -558,23 +681,41 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
                 zIndex: 20,
               }}
             >
-              <div style={{ width: "240px", padding: "16px 12px 16px 24px", fontWeight: "var(--font-weight-bold)", fontSize: "var(--text-title-3)", position: "sticky", left: 0, background: "var(--neutral-surface-primary)", borderRight: "1px solid var(--neutral-line-separator-1)", zIndex: 21, color: "var(--neutral-on-surface-primary)" }}>
+              <div
+                onClick={() => setMaterialSortDir(d => d === "asc" ? "desc" : "asc")}
+                style={{ width: "240px", padding: "16px 12px 16px 24px", fontWeight: "var(--font-weight-bold)", fontSize: "var(--text-title-3)", position: "sticky", left: 0, background: "var(--neutral-surface-primary)", borderRight: "1px solid var(--neutral-line-separator-1)", zIndex: 21, color: "var(--neutral-on-surface-primary)", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", userSelect: "none" }}
+              >
                 Material
+                <ChevronDownIcon
+                  size={14}
+                  color={materialSortDir ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-tertiary)"}
+                  style={{ transform: materialSortDir === "asc" ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                />
               </div>
               <div style={{ width: "140px", padding: "16px 12px", fontWeight: "var(--font-weight-bold)", fontSize: "var(--text-title-3)", position: "sticky", left: "240px", background: "var(--neutral-surface-primary)", borderRight: "1px solid var(--neutral-line-separator-1)", zIndex: 21, color: "var(--neutral-on-surface-primary)" }}>
                 On-Hand Stock
               </div>
-              <div style={{ width: "120px", padding: "16px 12px", fontWeight: "var(--font-weight-bold)", fontSize: "var(--text-title-3)", position: "sticky", left: "380px", background: "var(--neutral-surface-primary)", borderRight: "2px solid var(--neutral-line-separator-2)", zIndex: 21, color: "var(--neutral-on-surface-primary)" }}>
+              <div style={{ width: "120px", padding: "16px 12px", fontWeight: "var(--font-weight-bold)", fontSize: "var(--text-title-3)", position: "sticky", left: "380px", background: "var(--neutral-surface-primary)", borderRight: "2px solid var(--neutral-line-separator-2)", zIndex: 21, color: "var(--neutral-on-surface-primary)", boxShadow: tableScrolled ? "4px 0 8px -4px rgba(0,0,0,0.12)" : "none", transition: "box-shadow 0.2s ease" }}>
                 Unscheduled
               </div>
-              {timelineColumns.map((col, idx) => (
-                <div key={idx} style={{ width: "180px", padding: "16px", fontWeight: "var(--font-weight-bold)", fontSize: "var(--text-title-3)", textAlign: "center", borderRight: "1px solid var(--neutral-line-separator-1)", color: "var(--neutral-on-surface-primary)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                    <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{col.split(' ')[0]}</div>
-                    <div style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-tertiary)", fontWeight: "var(--font-weight-regular)", marginLeft: "8px" }}>{col.substring(col.indexOf('(')).replace(/[()]/g, '')}</div>
-                  </div>
-                </div>
-              ))}
+              {timelineView === "week"
+                ? timelineColumns.map((col, idx) => (
+                    <div key={idx} style={{ width: "180px", padding: "16px", fontWeight: "var(--font-weight-bold)", fontSize: "var(--text-title-3)", textAlign: "center", borderRight: "1px solid var(--neutral-line-separator-1)", color: "var(--neutral-on-surface-primary)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                        <div style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{col.split(' ')[0]}</div>
+                        <div style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-tertiary)", fontWeight: "var(--font-weight-regular)", marginLeft: "8px" }}>{col.substring(col.indexOf('(')).replace(/[()]/g, '')}</div>
+                      </div>
+                    </div>
+                  ))
+                : monthColumns.map((mc) => (
+                    <div key={mc.key} style={{ width: monthColWidth, flexShrink: 0, padding: "16px", fontWeight: "var(--font-weight-bold)", fontSize: "var(--text-title-3)", borderRight: "1px solid var(--neutral-line-separator-1)", color: "var(--neutral-on-surface-primary)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                        <div style={{ whiteSpace: "nowrap" }}>{mc.label}</div>
+                        <div style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-tertiary)", fontWeight: "var(--font-weight-regular)", marginLeft: "8px" }}>{mc.dateRange}</div>
+                      </div>
+                    </div>
+                  ))
+              }
             </div>
 
             {/* Table Body */}
@@ -603,49 +744,111 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
                   onClick={() => { if (row.unscheduled > 0) { setUnscheduledMaterial(row); setUnscheduledDrawerOpen(true); } }}
                   onMouseEnter={(e) => { if (row.unscheduled > 0) e.currentTarget.style.background = "var(--neutral-surface-grey-lighter)"; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = "var(--neutral-surface-primary)"; }}
-                  style={{ width: "120px", padding: "16px 12px", position: "sticky", left: "380px", background: "var(--neutral-surface-primary)", borderRight: "2px solid var(--neutral-line-separator-2)", zIndex: 10, display: "flex", alignItems: "center", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", cursor: row.unscheduled > 0 ? "pointer" : "default", transition: "background 0.2s ease" }}
+                  style={{ width: "120px", padding: "16px 12px", position: "sticky", left: "380px", background: "var(--neutral-surface-primary)", borderRight: "2px solid var(--neutral-line-separator-2)", zIndex: 10, display: "flex", alignItems: "center", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)", cursor: row.unscheduled > 0 ? "pointer" : "default", transition: "background 0.2s ease, box-shadow 0.2s ease", boxShadow: tableScrolled ? "4px 0 8px -4px rgba(0,0,0,0.12)" : "none" }}
                 >
                   {formatNumberWithCommas(row.unscheduled)}
                 </div>
-                {row.timeline.slice(0, forecastWeeks).map((tData, tIdx) => {
-                  const procStatus = MOCK_PROCUREMENT_STATUS[row.sku];
-                  const slippedWos = tData.workOrders.filter(wo => wo.isSlipped);
-                  const isFirstNegWeek = procStatus && tData.weekOffset === procStatus.firstNegativeWeekOffset;
-                  const isUrgentToBuy = isFirstNegWeek && procStatus.status !== "ok" && procStatus.daysUntilDemand <= urgencyDaysInAdvance;
-
-                  return (
-                    <div
-                      key={tIdx}
-                      onClick={() => { setSelectedCell({ materialName: row.materialName, sku: row.sku, ...tData }); setIsDrawerOpen(true); }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--neutral-surface-grey-lighter)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = "var(--neutral-surface-primary)"; }}
-                      style={{ width: "180px", padding: "12px 16px", borderRight: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column", justifyContent: "center", gap: "4px", cursor: "pointer", transition: "background 0.2s ease", background: "var(--neutral-surface-primary)" }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-body)" }}>
-                        <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>Demand</span>
-                        <span style={{ fontWeight: "var(--font-weight-semi-bold)", color: "var(--neutral-on-surface-primary)" }}>{formatNumberWithCommas(tData.demand)}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-body)" }}>
-                        <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>End Stock</span>
-                        <span style={{ fontWeight: "var(--font-weight-bold)", color: tData.endStock < 0 ? "var(--status-red-primary)" : "var(--status-green-primary)" }}>{formatNumberWithCommas(tData.endStock)}</span>
-                      </div>
-                      {slippedWos.length > 0 && (
-                        <div style={{ marginTop: "2px" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 6px", borderRadius: "4px", background: "#F3F4F6", color: "#525252", fontSize: "10px", fontWeight: "700", whiteSpace: "nowrap" }}>
-                            {slippedWos.length} WO(s) delayed
-                          </span>
+                {timelineView === "week"
+                  ? row.timeline.slice(0, forecastWeeks).map((tData, tIdx) => {
+                      const procStatus = MOCK_PROCUREMENT_STATUS[row.sku];
+                      const slippedWos = tData.workOrders.filter(wo => wo.isSlipped);
+                      const isFirstNegWeek = procStatus && tData.weekOffset === procStatus.firstNegativeWeekOffset;
+                      const isUrgentToBuy = isFirstNegWeek && procStatus.status !== "ok" && procStatus.daysUntilDemand <= urgencyDaysInAdvance;
+                      const displayDemand = hasActiveFilters
+                        ? tData.workOrders.filter(wo => {
+                            if (filterOrderId.length > 0 && !filterOrderId.includes(wo.orderId)) return false;
+                            if (filterCustomer.length > 0 && !filterCustomer.includes(wo.customerName)) return false;
+                            if (filterProduct.length > 0 && !filterProduct.includes(wo.productName)) return false;
+                            if (filterWoId.length > 0 && !filterWoId.includes(wo.id)) return false;
+                            return true;
+                          }).reduce((s, wo) => s + (wo.qty || 0), 0)
+                        : tData.demand;
+                      return (
+                        <div
+                          key={tIdx}
+                          onClick={() => { setSelectedCell({ materialName: row.materialName, sku: row.sku, ...tData }); setIsDrawerOpen(true); }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--neutral-surface-grey-lighter)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "var(--neutral-surface-primary)"; }}
+                          style={{ width: "180px", padding: "12px 16px", borderRight: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column", justifyContent: "center", gap: "4px", cursor: "pointer", transition: "background 0.2s ease", background: "var(--neutral-surface-primary)" }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-body)" }}>
+                            <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>Demand</span>
+                            <span style={{ fontWeight: "var(--font-weight-semi-bold)", color: "var(--neutral-on-surface-primary)" }}>{formatNumberWithCommas(displayDemand)}</span>
+                          </div>
+                          {!hasActiveFilters && (
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-body)" }}>
+                              <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>End Stock</span>
+                              <span style={{ fontWeight: "var(--font-weight-bold)", color: tData.endStock < 0 ? "var(--status-red-primary)" : "var(--status-green-primary)" }}>{formatNumberWithCommas(tData.endStock)}</span>
+                            </div>
+                          )}
+                          {slippedWos.length > 0 && (
+                            <div style={{ marginTop: "2px" }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 6px", borderRadius: "4px", background: "#F3F4F6", color: "#525252", fontSize: "10px", fontWeight: "700", whiteSpace: "nowrap" }}>
+                                {slippedWos.length} WO(s) delayed
+                              </span>
+                            </div>
+                          )}
+                          {isUrgentToBuy && (
+                            <div style={{ marginTop: "2px" }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 6px", borderRadius: "4px", background: "var(--status-red-container)", color: "var(--status-red-primary)", fontSize: "10px", fontWeight: "700", whiteSpace: "nowrap" }}>
+                                Urgent to Buy
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {isUrgentToBuy && (
-                        <div style={{ marginTop: "2px" }}>
-                          <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 6px", borderRadius: "4px", background: "var(--status-red-container)", color: "var(--status-red-primary)", fontSize: "10px", fontWeight: "700", whiteSpace: "nowrap" }}>
-                            Urgent to Buy
-                          </span>
+                      );
+                    })
+                  : getMonthlyTimeline(row.timeline).map((mData, mIdx) => {
+                      const procStatus = MOCK_PROCUREMENT_STATUS[row.sku];
+                      const slippedWos = mData.workOrders.filter(wo => wo.isSlipped);
+                      const isUrgentToBuyMonth = procStatus && procStatus.status !== "ok" &&
+                        procStatus.daysUntilDemand <= urgencyDaysInAdvance &&
+                        mData.weekOffsets.includes(procStatus.firstNegativeWeekOffset);
+                      const displayDemand = hasActiveFilters
+                        ? mData.workOrders.filter(wo => {
+                            if (filterOrderId.length > 0 && !filterOrderId.includes(wo.orderId)) return false;
+                            if (filterCustomer.length > 0 && !filterCustomer.includes(wo.customerName)) return false;
+                            if (filterProduct.length > 0 && !filterProduct.includes(wo.productName)) return false;
+                            if (filterWoId.length > 0 && !filterWoId.includes(wo.id)) return false;
+                            return true;
+                          }).reduce((s, wo) => s + (wo.qty || 0), 0)
+                        : mData.demand;
+                      return (
+                        <div
+                          key={mData.key}
+                          onClick={() => { setSelectedCell({ materialName: row.materialName, sku: row.sku, week: `${mData.label} ${mData.year}`, _monthIndex: mData.month, _year: mData.year, weekOffset: mData.weekOffsets[0], demand: mData.demand, endStock: mData.endStock, workOrders: mData.workOrders, batches: mData.batches, purchaseOrders: mData.purchaseOrders }); setIsDrawerOpen(true); }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--neutral-surface-grey-lighter)"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "var(--neutral-surface-primary)"; }}
+                          style={{ width: monthColWidth, flexShrink: 0, padding: "12px 16px", borderRight: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column", justifyContent: "center", gap: "4px", cursor: "pointer", transition: "background 0.2s ease", background: "var(--neutral-surface-primary)" }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-body)" }}>
+                            <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>Demand</span>
+                            <span style={{ fontWeight: "var(--font-weight-semi-bold)", color: "var(--neutral-on-surface-primary)" }}>{formatNumberWithCommas(displayDemand)}</span>
+                          </div>
+                          {!hasActiveFilters && (
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--text-body)" }}>
+                              <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>End Stock</span>
+                              <span style={{ fontWeight: "var(--font-weight-bold)", color: mData.endStock < 0 ? "var(--status-red-primary)" : "var(--status-green-primary)" }}>{formatNumberWithCommas(mData.endStock)}</span>
+                            </div>
+                          )}
+                          {slippedWos.length > 0 && (
+                            <div style={{ marginTop: "2px" }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 6px", borderRadius: "4px", background: "#F3F4F6", color: "#525252", fontSize: "10px", fontWeight: "700", whiteSpace: "nowrap" }}>
+                                {slippedWos.length} WO(s) delayed
+                              </span>
+                            </div>
+                          )}
+                          {isUrgentToBuyMonth && (
+                            <div style={{ marginTop: "2px" }}>
+                              <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 6px", borderRadius: "4px", background: "var(--status-red-container)", color: "var(--status-red-primary)", fontSize: "10px", fontWeight: "700", whiteSpace: "nowrap" }}>
+                                Urgent to Buy
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })
+                }
               </div>
             ))}
           </div>
@@ -667,6 +870,7 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
         isOpen={unscheduledDrawerOpen}
         onClose={() => { setUnscheduledDrawerOpen(false); setUnscheduledMaterial(null); }}
         materialData={unscheduledMaterial}
+        pageFilters={{ orderIds: filterOrderId, customers: filterCustomer, products: filterProduct, woIds: filterWoId }}
       />
 
       <DemandUrgencyDrawer
@@ -690,6 +894,7 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
         materialData={selectedMaterial}
         onCreatePo={handleBreakdownCreatePo}
         urgencyDaysInAdvance={urgencyDaysInAdvance}
+        pageFilters={{ orderIds: filterOrderId, customers: filterCustomer, products: filterProduct, woIds: filterWoId }}
       />
 
       <MaterialForecastDrawer
@@ -699,6 +904,8 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
         onSelectExistingPo={handleForecastSelectExistingPo}
         selectedCell={selectedCell}
         urgencyDaysInAdvance={urgencyDaysInAdvance}
+        timelineView={timelineView}
+        pageFilters={{ orderIds: filterOrderId, customers: filterCustomer, products: filterProduct, woIds: filterWoId }}
       />
 
       <SelectExistingPoDrawer

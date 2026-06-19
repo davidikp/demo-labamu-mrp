@@ -72,7 +72,7 @@ const linkStyle = {
 };
 
 export const MaterialsToBuyDrawer = ({ isOpen, onClose, urgencyDaysInAdvance = 5, onCreatePo }) => {
-  const [searchQuery, setSearchQuery]     = useState("");
+  const [materialFilter, setMaterialFilter] = useState([]);
   const [woIdFilter, setWoIdFilter]       = useState([]);
   const [orderIdFilter, setOrderIdFilter] = useState([]);
   const [estStartFilter, setEstStartFilter] = useState([]);
@@ -81,6 +81,7 @@ export const MaterialsToBuyDrawer = ({ isOpen, onClose, urgencyDaysInAdvance = 5
   const [currentPage, setCurrentPage]     = useState(1);
   const [rowsPerPage, setRowsPerPage]     = useState(10);
   const [selectedIds, setSelectedIds]     = useState([]);
+  const [estStartSortDir, setEstStartSortDir] = useState(null); // null | "asc" | "desc"
 
   const [poMenuOpenRowId, setPoMenuOpenRowId] = useState(null);
   const [poMenuPos, setPoMenuPos]             = useState({ top: null, bottom: null, right: 0 });
@@ -150,23 +151,39 @@ export const MaterialsToBuyDrawer = ({ isOpen, onClose, urgencyDaysInAdvance = 5
     []
   );
 
+  const materialOptions = useMemo(() => {
+    const seen = new Map();
+    allRows.forEach(r => { if (!seen.has(r.materialName)) seen.set(r.materialName, r.sku); });
+    return [...seen.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([name, sku]) => ({ value: name, label: name, subLabel: sku }));
+  }, [allRows]);
   const woIdOptions     = useMemo(() => [...new Set(allRows.map(r => r.woId))].sort().map(v => ({ value: v, label: v })), [allRows]);
   const orderIdOptions  = useMemo(() => [...new Set(allRows.map(r => r.orderId))].sort().map(v => ({ value: v, label: v })), [allRows]);
   const estStartOptions = useMemo(() => [...new Set(allRows.map(r => fmtDate(r.woStartDate)).filter(s => s !== "—"))].sort().map(v => ({ value: v, label: v })), [allRows]);
 
   const filteredRows = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
     return allRows.filter(r => {
-      if (q && !r.materialName.toLowerCase().includes(q) && !r.sku.toLowerCase().includes(q) && !r.woId.toLowerCase().includes(q)) return false;
+      if (materialFilter.length > 0 && !materialFilter.includes(r.materialName))        return false;
       if (woIdFilter.length > 0     && !woIdFilter.includes(r.woId))                    return false;
       if (orderIdFilter.length > 0  && !orderIdFilter.includes(r.orderId))              return false;
       if (estStartFilter.length > 0 && !estStartFilter.includes(fmtDate(r.woStartDate))) return false;
       return true;
     });
-  }, [allRows, searchQuery, woIdFilter, orderIdFilter, estStartFilter]);
+  }, [allRows, materialFilter, woIdFilter, orderIdFilter, estStartFilter]);
 
-  const totalPages       = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
-  const pagedRows        = filteredRows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  const sortedRows = useMemo(() => {
+    if (!estStartSortDir) return filteredRows;
+    return [...filteredRows].sort((a, b) => {
+      const da = parseShortDate(a.woStartDate);
+      const db = parseShortDate(b.woStartDate);
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      return estStartSortDir === "asc" ? da - db : db - da;
+    });
+  }, [filteredRows, estStartSortDir]);
+
+  const totalPages       = Math.max(1, Math.ceil(sortedRows.length / rowsPerPage));
+  const pagedRows        = sortedRows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
   const allPagedSelectable = pagedRows;
   const allPagedSelected   = allPagedSelectable.length > 0 && allPagedSelectable.every(r => selectedIds.includes(r.id));
   const somePagedSelected  = allPagedSelectable.some(r => selectedIds.includes(r.id));
@@ -245,11 +262,12 @@ export const MaterialsToBuyDrawer = ({ isOpen, onClose, urgencyDaysInAdvance = 5
   }, [selectedExistingPoNumber]);
 
   const handleClose = () => {
-    setSearchQuery(""); setWoIdFilter([]); setOrderIdFilter([]); setEstStartFilter([]);
+    setMaterialFilter([]); setWoIdFilter([]); setOrderIdFilter([]); setEstStartFilter([]);
     setOpenFilterKey(null); setCurrentPage(1); setSelectedIds([]);
     setPoMenuOpenRowId(null); setBulkMenuOpen(false);
     setIsSelectExistingPoOpen(false); setSelectPoRow(null);
     setSelectedVendorName(""); setSelectedExistingPoNumber("");
+    setEstStartSortDir(null);
     onClose();
   };
 
@@ -257,6 +275,7 @@ export const MaterialsToBuyDrawer = ({ isOpen, onClose, urgencyDaysInAdvance = 5
   const rightShadow = scrollShadows.right ? "-4px 0 8px -4px rgba(0,0,0,0.12)" : "none";
 
   const filterDefs = [
+    { key: "material", label: "Material",  value: materialFilter, options: materialOptions, onChange: setMaterialFilter },
     { key: "woId",     label: "WO ID",     value: woIdFilter,     options: woIdOptions,     onChange: setWoIdFilter     },
     { key: "orderId",  label: "Order ID",  value: orderIdFilter,  options: orderIdOptions,  onChange: setOrderIdFilter  },
     { key: "estStart", label: "Est. Start", value: estStartFilter, options: estStartOptions, onChange: setEstStartFilter },
@@ -280,8 +299,8 @@ export const MaterialsToBuyDrawer = ({ isOpen, onClose, urgencyDaysInAdvance = 5
           <IconButton icon={CloseIcon} onClick={handleClose} size="small" color="var(--neutral-on-surface-primary)" />
         </div>
 
-        {/* Filter + Search bar */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", padding: "16px 24px 12px", borderBottom: ROW_BORDER, flexShrink: 0 }}>
+        {/* Filter bar */}
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px 24px 12px", borderBottom: ROW_BORDER, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             {filterDefs.map(({ key, label, value, options, onChange }) => (
               <div key={key} onClick={e => { const rect = e.currentTarget.getBoundingClientRect(); setPopoverTriggerRect(rect); setOpenFilterKey(prev => prev === key ? null : key); }}>
@@ -294,12 +313,6 @@ export const MaterialsToBuyDrawer = ({ isOpen, onClose, urgencyDaysInAdvance = 5
               ) : null
             )}
           </div>
-          <TableSearchField
-            value={searchQuery}
-            onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-            placeholder="Search material name or SKU..."
-            width="240px"
-          />
         </div>
 
         {/* Bulk action bar */}
@@ -343,7 +356,14 @@ export const MaterialsToBuyDrawer = ({ isOpen, onClose, urgencyDaysInAdvance = 5
               <div style={{ ...thBase(0, { paddingLeft: "8px" }), flex: 1, minWidth: `${MATERIAL_MIN_W}px` }}>Material</div>
               <div style={thBase(WO_ID_W)}>WO ID</div>
               <div style={thBase(ORDER_ID_W)}>Order ID</div>
-              <div style={thBase(EST_W)}>Est. Start</div>
+              <div onClick={() => setEstStartSortDir(d => d === "asc" ? "desc" : "asc")} style={{ ...thBase(EST_W), cursor: "pointer", userSelect: "none", gap: "6px" }}>
+                Est. Start
+                <ChevronDownIcon
+                  size={14}
+                  color={estStartSortDir ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-tertiary)"}
+                  style={{ transform: estStartSortDir === "asc" ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                />
+              </div>
               <div style={thBase(NEED_W)}>Need to Buy</div>
               <div style={{ ...thBase(ACTION_W, { paddingRight: "24px", justifyContent: "center" }), position: "sticky", right: 0, zIndex: 4, background: "var(--neutral-surface-primary)", boxShadow: rightShadow, transition: "box-shadow 0.2s ease" }}>Action</div>
             </div>

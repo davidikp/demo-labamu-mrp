@@ -92,5 +92,23 @@ export const MOCK_STOCK_BATCHES = [
     attachments: [],
     status: "Received",
     poRef: null
+  },
+  {
+    id: "batch-006",
+    materialId: "mat-002",
+    batchNo: "BN-202603-006",
+    initialQty: 100,
+    currentQty: 40,
+    reservedQty: 0,
+    costPerUnit: 120000,
+    purchaseDate: "2026-03-20",
+    expiryDate: "2027-03-20",
+    expectedDate: "2026-03-25",
+    receivedDate: "2026-03-25",
+    storageLocation: "Warehouse B",
+    vendor: "PT Mitra Sejahtera",
+    attachments: [],
+    status: "Received",
+    poRef: "PO-202603-0001"
   }
 ];

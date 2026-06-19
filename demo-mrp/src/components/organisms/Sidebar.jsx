@@ -18,6 +18,7 @@ import {
   WorkOrderIcon,
   DashboardIcon,
 } from "../icons/Icons.jsx";
+import { TableSearchField } from "../table/TableSearchField.jsx";
 import { LANGUAGE_OPTIONS } from "../../constants/appConstants.js";
 
 const baseInputBorderColor = "#e9e9e9";
@@ -77,16 +78,6 @@ const Sidebar = ({
       ],
     },
     {
-      icon: ProcurementIcon,
-      id: "procurement",
-      label: t("sidebar.procurement"),
-      hasChildren: true,
-      children: [
-        { id: "purchase_order", label: t("sidebar.purchase_order") },
-        { id: "material_forecast", label: t("sidebar.material_forecast") },
-      ],
-    },
-    {
       icon: ManufacturingIcon,
       id: "manufacturing",
       label: t("sidebar.manufacturing"),
@@ -95,6 +86,16 @@ const Sidebar = ({
         { id: "bill_of_materials", label: t("sidebar.bill_of_materials") },
         { id: "routing", label: t("sidebar.routing") },
         { id: "work_order", label: t("sidebar.work_order") },
+      ],
+    },
+    {
+      icon: ProcurementIcon,
+      id: "procurement",
+      label: t("sidebar.procurement"),
+      hasChildren: true,
+      children: [
+        { id: "purchase_order", label: t("sidebar.purchase_order") },
+        { id: "material_forecast", label: t("sidebar.material_forecast") },
       ],
     },
     {
@@ -151,6 +152,7 @@ const Sidebar = ({
   const [hoveredMenuItemId, setHoveredMenuItemId] = useState(null);
   const [hoveredItemRect, setHoveredItemRect] = useState(null);
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
+  const [menuSearch, setMenuSearch] = useState("");
   const languageMenuRef = useRef(null);
 
   const toggleMenu = (id) => {
@@ -226,6 +228,18 @@ const Sidebar = ({
         )}
       </div>
 
+      {!isCollapsed && (
+        <div style={{ padding: "10px 16px 0 16px", flexShrink: 0 }}>
+          <TableSearchField
+            value={menuSearch}
+            onChange={(e) => setMenuSearch(e.target.value)}
+            placeholder="Search menu..."
+            width="100%"
+            minWidth="0"
+          />
+        </div>
+      )}
+
       <div
         style={{
           flex: "1 1 auto",
@@ -236,14 +250,23 @@ const Sidebar = ({
           overflowX: "hidden",
         }}
       >
-        {menuItems.map((item) => {
+        {menuItems.filter((item) => {
+          if (!menuSearch.trim()) return true;
+          const q = menuSearch.toLowerCase();
+          const labelMatch = item.label.toLowerCase().includes(q);
+          const childMatch = item.children?.some(c => c.label.toLowerCase().includes(q));
+          return labelMatch || childMatch;
+        }).map((item) => {
           const hasChildRows = !!item.children?.length;
           const isChildSelected = item.children?.some(
             (child) => activeModule === child.id || (activeModule === "analytics" && child.id === `analytics_${viewState?.view}`)
           );
           const isParentSelected = activeModule === item.id || isChildSelected;
+          const isSearchExpanded = menuSearch.trim()
+            ? item.children?.some(c => c.label.toLowerCase().includes(menuSearch.toLowerCase()))
+            : false;
           const isExpanded = hasChildRows
-            ? expandedMenus.includes(item.id)
+            ? (expandedMenus.includes(item.id) || isSearchExpanded)
             : false;
           const rowColor = isParentSelected
             ? "var(--feature-brand-primary)"
@@ -394,7 +417,7 @@ const Sidebar = ({
                     padding: "0 16px 16px 16px",
                   }}
                 >
-                  {item.children.map((child) => {
+                  {item.children.filter(c => !menuSearch.trim() || c.label.toLowerCase().includes(menuSearch.toLowerCase())).map((child) => {
                     const isChildActive = activeModule === child.id || (activeModule === "analytics" && child.id === `analytics_${viewState.view}`);
                     return (
                       <button

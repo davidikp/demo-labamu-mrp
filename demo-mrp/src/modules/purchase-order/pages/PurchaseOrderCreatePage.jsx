@@ -4116,7 +4116,13 @@ export const PurchaseOrderCreatePage = ({
                           manualCode: targetLine?.code || "",
                           manualDesc: targetLine?.desc || "",
                           manualQty: "",
-                          manualPrice: targetLine?.price ? String(targetLine.price) : "",
+                              manualPrice: (() => {
+                            if (!selectedVendorRecord) return "";
+                            const vp = selectedVendorRecord?.vendorPrices?.find(
+                              (vpr) => vpr.materialCode === targetLine?.code
+                            );
+                            return vp ? String(vp.latestPrice) : "";
+                          })(),
                         });
                         setProductModalImages(
                           targetLine?.image
@@ -4281,6 +4287,15 @@ export const PurchaseOrderCreatePage = ({
                             {productModalFieldErrors.manualPrice}
                           </span>
                         ) : null}
+                        {selectedVendorRecord && productModalForm.selectedMaterialLineId ? (() => {
+                          const selMat = availableMaterialLines.find(l => l.id === productModalForm.selectedMaterialLineId);
+                          const vp = selectedVendorRecord.vendorPrices?.find(vpr => vpr.materialCode === selMat?.code);
+                          return (
+                            <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>
+                              {selectedVendorRecord.name}'s latest price for this material: {vp ? formatCurrency(vp.latestPrice, currency) : "-"}
+                            </span>
+                          );
+                        })() : null}
                       </div>
                       <div style={{ gridColumn: "1 / -1" }}>
                         <InputField
