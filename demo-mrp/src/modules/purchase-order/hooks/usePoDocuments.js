@@ -323,10 +323,14 @@ export const usePoDocuments = ({
   const updateDocumentFilterMenuPosition = useCallback(() => {
     if (documentFilterTriggerRef.current) {
       const rect = documentFilterTriggerRef.current.getBoundingClientRect();
+      const estimatedHeight = 360;
+      const openAbove =
+        window.innerHeight - rect.bottom < estimatedHeight + 16 &&
+        rect.top > estimatedHeight + 16;
       setDocumentFilterMenuPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        placement: "bottom",
+        top: openAbove ? rect.top - 8 : rect.bottom + 8,
+        left: rect.left,
+        placement: openAbove ? "top" : "bottom",
       });
     }
   }, []);
@@ -334,8 +338,8 @@ export const usePoDocuments = ({
   const openDocumentActionMenu = useCallback((event, docId) => {
     const rect = event.currentTarget.getBoundingClientRect();
     setDocumentMenuPosition({
-      top: rect.bottom + window.scrollY,
-      left: rect.right - 200 + window.scrollX,
+      top: rect.bottom + 6,
+      left: rect.right - 200,
       placement: "bottom",
     });
     setOpenDocumentMenuId(docId);

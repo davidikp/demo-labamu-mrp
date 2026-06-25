@@ -662,12 +662,12 @@ const PoInvoicePaymentTab = ({
                         </div>
                       </div>
 
-                      <div>
+                      <div style={{ display: "flex", justifyContent: "flex-start", minWidth: 0 }}>
                         <StatusBadge variant={aging.variant}>
                           {aging.text}
                         </StatusBadge>
                       </div>
-                      <div>
+                      <div style={{ display: "flex", justifyContent: "flex-start", minWidth: 0 }}>
                         <StatusBadge variant={status.variant}>
                           {status.text}
                         </StatusBadge>

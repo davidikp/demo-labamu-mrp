@@ -20,6 +20,18 @@ import { formatCurrency, formatNumberWithCommas } from "../../../utils/format/fo
 import { DonutChart } from "../components/DonutChart";
 import { StatusBadge } from "../../../components/common/StatusBadge";
 import { Button } from "../../../components/common/Button";
+import { Tooltip } from "../../../components/common/Tooltip";
+
+const InfoTooltip = ({ content }) => (
+  <Tooltip content={content}>
+    <span
+      onClick={(e) => e.stopPropagation()}
+      style={{ display: "inline-flex", alignItems: "center", cursor: "help" }}
+    >
+      <Info size={14} color="var(--neutral-on-surface-tertiary)" />
+    </span>
+  </Tooltip>
+);
 
 const RadialBarChart = ({ items, totalValue, centerLabel, centerValue, size = 180 }) => {
   const center = size / 2;
@@ -77,7 +89,7 @@ const RadialBarChart = ({ items, totalValue, centerLabel, centerValue, size = 18
   );
 };
 
-const SummaryCard = ({ label, icon: Icon, onClick }) => (
+const SummaryCard = ({ label, icon: Icon, onClick, tooltip }) => (
   <div 
     onClick={onClick}
     style={{
@@ -119,13 +131,14 @@ const SummaryCard = ({ label, icon: Icon, onClick }) => (
     </div>
     
     <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
-      <span style={{ 
-        fontSize: "14px", 
-        color: "var(--neutral-on-surface-primary)", 
-        fontWeight: "var(--font-weight-bold)" 
+      <span style={{
+        fontSize: "14px",
+        color: "var(--neutral-on-surface-primary)",
+        fontWeight: "var(--font-weight-bold)"
       }}>
         {label}
       </span>
+      {tooltip && <InfoTooltip content={tooltip} />}
     </div>
 
     {onClick && (
@@ -134,18 +147,22 @@ const SummaryCard = ({ label, icon: Icon, onClick }) => (
   </div>
 );
 
-const SectionHeader = ({ title }) => (
-  <div style={{ 
-    padding: "16px 24px", 
+const SectionHeader = ({ title, tooltip }) => (
+  <div style={{
+    padding: "16px 24px",
     borderBottom: "1px solid var(--neutral-line-separator-1)",
     marginBottom: "24px",
     marginLeft: "-24px",
     marginRight: "-24px",
-    marginTop: "-24px"
+    marginTop: "-24px",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px"
   }}>
     <h3 style={{ fontSize: "16px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", margin: 0 }}>
       {title}
     </h3>
+    {tooltip && <InfoTooltip content={tooltip} />}
   </div>
 );
 
@@ -246,26 +263,26 @@ const ProcurementAPReportPage = ({ onNavigate }) => {
 
   const donutData = [
     { label: "Not Due", value: metrics.agingBuckets.notDue, color: "var(--feature-brand-primary)" },
-    { label: "Late 1-30", value: metrics.agingBuckets.late1_30, color: "var(--status-yellow-primary)" },
-    { label: "Late 31-60", value: metrics.agingBuckets.late31_60, color: "var(--status-orange-primary)" },
-    { label: "Late 61-90", value: metrics.agingBuckets.late61_90, color: "#E05252" },
-    { label: "90+", value: metrics.agingBuckets.late90Plus, color: "var(--status-red-primary)" },
+    { label: "Late 1-30 days", value: metrics.agingBuckets.late1_30, color: "var(--status-yellow-primary)" },
+    { label: "Late 31-60 days", value: metrics.agingBuckets.late31_60, color: "var(--status-orange-primary)" },
+    { label: "Late 61-90 days", value: metrics.agingBuckets.late61_90, color: "#E05252" },
+    { label: "Late 90+ days", value: metrics.agingBuckets.late90Plus, color: "var(--status-red-primary)" },
   ].filter(d => d.value > 0);
 
   // Operational Attention logic
   const operationalIssues = useMemo(() => {
     return [
-      { label: "PO with no invoice yet", count: MOCK_REPORT_POS.filter(po => po.invoices.length === 0 && po.status === "Issued").length },
-      { label: "PO partially invoiced", count: MOCK_REPORT_POS.filter(po => {
+      { label: "PO with No Invoice Yet", count: MOCK_REPORT_POS.filter(po => po.invoices.length === 0 && po.status === "Issued").length },
+      { label: "PO Partially Invoiced", count: MOCK_REPORT_POS.filter(po => {
         const invoicedAmount = po.invoices.reduce((s, i) => s + i.amount, 0);
         return invoicedAmount > 0 && invoicedAmount < po.amount;
       }).length },
-      { label: "PO fully invoiced but not fully paid", count: MOCK_REPORT_POS.filter(po => {
+      { label: "PO Fully Invoiced But Not Fully Paid", count: MOCK_REPORT_POS.filter(po => {
         const invoicedAmount = po.invoices.reduce((s, i) => s + i.amount, 0);
         const paidAmount = po.invoices.reduce((s, i) => s + i.payments.reduce((sp, p) => sp + p.amount, 0), 0);
         return invoicedAmount >= po.amount && paidAmount < invoicedAmount;
       }).length },
-      { label: "PO revised after issue", count: MOCK_REPORT_POS.filter(po => po.status === "Revised").length },
+      { label: "PO Revised After Issue", count: MOCK_REPORT_POS.filter(po => po.status === "Revised").length },
     ];
   }, []);
 
@@ -280,7 +297,7 @@ const ProcurementAPReportPage = ({ onNavigate }) => {
       padding: "32px"
     }}>
       {/* Header */}
-      <div style={{ marginBottom: "32px" }}>
+      <div style={{ marginBottom: "32px", display: "flex", alignItems: "center", gap: "10px" }}>
         <h1
           style={{
             margin: "0",
@@ -291,31 +308,35 @@ const ProcurementAPReportPage = ({ onNavigate }) => {
         >
           Procurement & AP Report
         </h1>
+        <InfoTooltip content="Analytics are calculated from purchase orders with Issued and Completed status." />
       </div>
 
       {/* Top Summary Cards */}
       <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
-        <SummaryCard 
-          label="Purchase Order" 
+        <SummaryCard
+          label="Purchase Order"
           icon={ShoppingCart}
           onClick={() => onNavigate("analytics_po_report")}
+          tooltip="Tracks your purchase orders, including invoicing progress and vendor payments."
         />
-        <SummaryCard 
-          label="Vendor Liability" 
+        <SummaryCard
+          label="Vendor Liability"
           icon={Building2}
           onClick={() => onNavigate("analytics_vendor_liability_report")}
+          tooltip="Shows the total amount owed to vendors from outstanding invoices."
         />
-        <SummaryCard 
-          label="AP Aging" 
+        <SummaryCard
+          label="Accounts Payable Aging"
           icon={Calendar}
           onClick={() => onNavigate("analytics_ap_aging_report")}
+          tooltip="Shows how long vendor payments have been outstanding, grouped by due date range."
         />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
         {/* Procurement Overview */}
         <div style={{ background: "var(--neutral-surface-primary)", borderRadius: "16px", padding: "24px", border: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column" }}>
-          <SectionHeader title="Procurement Overview" />
+          <SectionHeader title="Procurement Overview" tooltip="Shows the total purchase order value, invoiced amount, and payments made to vendors." />
           
           <div style={{ display: "flex", alignItems: "center", gap: "40px", flex: 1 }}>
             <RadialBarChart 
@@ -369,15 +390,15 @@ const ProcurementAPReportPage = ({ onNavigate }) => {
 
         {/* Vendor Liability Aging */}
         <div style={{ background: "var(--neutral-surface-primary)", borderRadius: "16px", padding: "24px", border: "1px solid var(--neutral-line-separator-1)", display: "flex", flexDirection: "column" }}>
-          <SectionHeader title="Vendor Liability Aging" />
+          <SectionHeader title="Vendor Liability Aging" tooltip="Breaks down outstanding vendor payments based on how long they have been overdue." />
           <div style={{ display: "flex", alignItems: "center", gap: "40px", flex: 1 }}>
             <DonutChart 
               data={[
                 { label: "Not Due", value: metrics.agingBuckets.notDue, color: "var(--feature-brand-primary)" },
-                { label: "Late 1-30", value: metrics.agingBuckets.late1_30, color: "var(--status-yellow-primary)" },
-                { label: "Late 31-60", value: metrics.agingBuckets.late31_60, color: "var(--status-orange-primary)" },
-                { label: "Late 61-90", value: metrics.agingBuckets.late61_90, color: "#F06292" }, // Pink
-                { label: "90+", value: metrics.agingBuckets.late90Plus, color: "var(--status-red-primary)" },
+                { label: "Late 1-30 days", value: metrics.agingBuckets.late1_30, color: "var(--status-yellow-primary)" },
+                { label: "Late 31-60 days", value: metrics.agingBuckets.late31_60, color: "var(--status-orange-primary)" },
+                { label: "Late 61-90 days", value: metrics.agingBuckets.late61_90, color: "#F06292" }, // Pink
+                { label: "Late 90+ days", value: metrics.agingBuckets.late90Plus, color: "var(--status-red-primary)" },
               ]} 
               total={metrics.outstandingAp || 1} 
               centerLabel="Total Outstanding"
@@ -400,10 +421,10 @@ const ProcurementAPReportPage = ({ onNavigate }) => {
               </div>
               {[
                 { label: "Not Due", color: "var(--feature-brand-primary)", value: metrics.agingBuckets.notDue },
-                { label: "Late 1-30", color: "var(--status-yellow-primary)", value: metrics.agingBuckets.late1_30 },
-                { label: "Late 31-60", color: "var(--status-orange-primary)", value: metrics.agingBuckets.late31_60 },
-                { label: "Late 61-90", color: "#F06292", value: metrics.agingBuckets.late61_90 },
-                { label: "90+", color: "var(--status-red-primary)", value: metrics.agingBuckets.late90Plus },
+                { label: "Late 1-30 days", color: "var(--status-yellow-primary)", value: metrics.agingBuckets.late1_30 },
+                { label: "Late 31-60 days", color: "var(--status-orange-primary)", value: metrics.agingBuckets.late31_60 },
+                { label: "Late 61-90 days", color: "#F06292", value: metrics.agingBuckets.late61_90 },
+                { label: "Late 90+ days", color: "var(--status-red-primary)", value: metrics.agingBuckets.late90Plus },
               ].map((item, idx) => (
                 <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "13px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -421,7 +442,7 @@ const ProcurementAPReportPage = ({ onNavigate }) => {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
         {/* Operational Attention */}
         <div style={{ background: "var(--neutral-surface-primary)", borderRadius: "16px", padding: "24px", border: "1px solid var(--neutral-line-separator-1)" }}>
-          <SectionHeader title="Operational Attention" />
+          <SectionHeader title="Operational Attention" tooltip="Highlights purchase orders that may need follow-up, such as uninvoiced, partially invoiced, or unpaid orders." />
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {operationalIssues.map((issue, idx) => (
               <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -440,13 +461,13 @@ const ProcurementAPReportPage = ({ onNavigate }) => {
 
         {/* Finance Insights */}
         <div style={{ background: "var(--neutral-surface-primary)", borderRadius: "16px", padding: "24px", border: "1px solid var(--neutral-line-separator-1)" }}>
-          <SectionHeader title="Finance Insights" />
+          <SectionHeader title="Finance Insights" tooltip="Summarizes key vendor payment metrics, including overdue exposure and upcoming due invoices." />
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             {[
-              { label: "Total outstanding liability", value: formatCurrency(metrics.outstandingAp, currency) },
-              { label: "Overdue percentage", value: `${metrics.overduePercentage.toFixed(1)}%`, isAlert: metrics.overduePercentage > 0 },
-              { label: "Largest vendor exposure", value: metrics.largestVendor[0] },
-              { label: "Upcoming due invoices (7 days)", value: metrics.invoicesDueSoonCount },
+              { label: "Total Outstanding Liability", value: formatCurrency(metrics.outstandingAp, currency) },
+              { label: "Overdue Percentage", value: `${metrics.overduePercentage.toFixed(2)}%`, isAlert: metrics.overduePercentage > 0 },
+              { label: "Largest Vendor Exposure", value: metrics.largestVendor[0] },
+              { label: "Upcoming Due Invoices (7 days)", value: metrics.invoicesDueSoonCount },
             ].map((item, idx) => (
               <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: "14px", color: "var(--neutral-on-surface-secondary)" }}>{item.label}</span>

@@ -124,7 +124,7 @@ const APAgingReportPage = ({ onNavigate, t }) => {
   const currency = "IDR";
   const [agingBucketFilter, setAgingBucketFilter] = useState([]);
   const [vendorFilter, setVendorFilter] = useState([]);
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState([]);
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
@@ -152,18 +152,18 @@ const APAgingReportPage = ({ onNavigate, t }) => {
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
         let agingBucket = "Not Due";
-        if (diffDays > 90) agingBucket = "Late 90+";
-        else if (diffDays > 60) agingBucket = "Late 61-90";
-        else if (diffDays > 30) agingBucket = "Late 31-60";
-        else if (diffDays > 0) agingBucket = "Late 1-30";
+        if (diffDays > 90) agingBucket = "Late 90+ days";
+        else if (diffDays > 60) agingBucket = "Late 61-90 days";
+        else if (diffDays > 30) agingBucket = "Late 31-60 days";
+        else if (diffDays > 0) agingBucket = "Late 1-30 days";
 
         let status = "Open";
         if (paidAmount >= inv.amount) {
           status = "Paid";
-        } else if (diffDays > 0) {
-          status = "Overdue";
         } else if (paidAmount > 0) {
           status = "Partially Paid";
+        } else if (diffDays > 0) {
+          status = "Overdue";
         }
 
         list.push({
@@ -189,8 +189,8 @@ const APAgingReportPage = ({ onNavigate, t }) => {
       const matchesVendor = vendorFilter.length === 0 || vendorFilter.includes(inv.vendorName);
       
       let matchesStatus = true;
-      if (paymentStatusFilter.length > 0) {
-        matchesStatus = paymentStatusFilter.includes(inv.status);
+      if (invoiceStatusFilter.length > 0) {
+        matchesStatus = invoiceStatusFilter.includes(inv.status);
       }
 
       const matchesSearch = inv.number.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -199,7 +199,7 @@ const APAgingReportPage = ({ onNavigate, t }) => {
 
       return matchesAging && matchesVendor && matchesStatus && matchesSearch;
     });
-  }, [allInvoices, agingBucketFilter, vendorFilter, paymentStatusFilter, searchQuery]);
+  }, [allInvoices, agingBucketFilter, vendorFilter, invoiceStatusFilter, searchQuery]);
 
   // Sorting logic
   const sortedData = useMemo(() => {
@@ -227,20 +227,20 @@ const APAgingReportPage = ({ onNavigate, t }) => {
     });
   }, [filteredData, sortConfig]);
 
-  // Summary Metrics (based on ALL unpaid/partial invoices)
+  // Summary Metrics (reflect the filters applied to the table)
   const summary = useMemo(() => {
-    return allInvoices.reduce((acc, curr) => {
+    return filteredData.reduce((acc, curr) => {
       if (curr.status === "Paid") return acc;
-      
+
       if (curr.agingBucket === "Not Due") acc.notDue += curr.outstanding;
-      else if (curr.agingBucket === "Late 1-30") acc.late1_30 += curr.outstanding;
-      else if (curr.agingBucket === "Late 31-60") acc.late31_60 += curr.outstanding;
-      else if (curr.agingBucket === "Late 61-90") acc.late61_90 += curr.outstanding;
-      else if (curr.agingBucket === "Late 90+") acc.late90Plus += curr.outstanding;
-      
+      else if (curr.agingBucket === "Late 1-30 days") acc.late1_30 += curr.outstanding;
+      else if (curr.agingBucket === "Late 31-60 days") acc.late31_60 += curr.outstanding;
+      else if (curr.agingBucket === "Late 61-90 days") acc.late61_90 += curr.outstanding;
+      else if (curr.agingBucket === "Late 90+ days") acc.late90Plus += curr.outstanding;
+
       return acc;
     }, { notDue: 0, late1_30: 0, late31_60: 0, late61_90: 0, late90Plus: 0 });
-  }, [allInvoices]);
+  }, [filteredData]);
 
   // Pagination
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
@@ -295,7 +295,7 @@ const APAgingReportPage = ({ onNavigate, t }) => {
             fontWeight: "var(--font-weight-bold)",
             color: "var(--neutral-on-surface-primary)"
           }}>
-            AP Aging (Payables Due)
+            Accounts Payable Aging Report
           </h1>
         </div>
         
@@ -313,18 +313,18 @@ const APAgingReportPage = ({ onNavigate, t }) => {
             Procurement & AP Report
           </span>
           <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>/</span>
-          <span style={{ color: "var(--neutral-on-surface-secondary)" }}>AP Aging</span>
+          <span style={{ color: "var(--neutral-on-surface-secondary)" }}>Accounts Payable Aging Report</span>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "24px", flexShrink: 0 }}>
         {[
           { label: "Not Due", value: summary.notDue, icon: <CheckCircleIcon /> },
-          { label: "Late 1–30", value: summary.late1_30, icon: <Calendar /> },
-          { label: "Late 31–60", value: summary.late31_60, icon: <Calendar /> },
-          { label: "Late 61–90", value: summary.late61_90, icon: <Calendar /> },
-          { label: "Late 90+", value: summary.late90Plus, icon: <Info />, isCritical: true },
+          { label: "Late 1-30 days", value: summary.late1_30, icon: <Calendar /> },
+          { label: "Late 31-60 days", value: summary.late31_60, icon: <Calendar /> },
+          { label: "Late 61-90 days", value: summary.late61_90, icon: <Calendar /> },
+          { label: "Late 90+ days", value: summary.late90Plus, icon: <Info />, isCritical: true },
         ].map((card, idx) => (
           <div 
             key={idx}
@@ -371,20 +371,20 @@ const APAgingReportPage = ({ onNavigate, t }) => {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        minHeight: 0,
+        minHeight: 0
       }}>
         {/* Filters Header */}
-        <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)", flexShrink: 0 }}>
+        <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <MultiSelectDropdown 
               placeholder="Aging Bucket"
               value={agingBucketFilter}
               options={[
                 { value: "Not Due", label: "Not Due" },
-                { value: "Late 1-30", label: "Late 1-30" },
-                { value: "Late 31-60", label: "Late 31-60" },
-                { value: "Late 61-90", label: "Late 61-90" },
-                { value: "Late 90+", label: "Late 90+" }
+                { value: "Late 1-30 days", label: "Late 1-30 days" },
+                { value: "Late 31-60 days", label: "Late 31-60 days" },
+                { value: "Late 61-90 days", label: "Late 61-90 days" },
+                { value: "Late 90+ days", label: "Late 90+ days" }
               ]}
               onChange={(val) => { setAgingBucketFilter(val); setCurrentPage(1); }}
             />
@@ -396,15 +396,15 @@ const APAgingReportPage = ({ onNavigate, t }) => {
               onChange={(val) => { setVendorFilter(val); setCurrentPage(1); }}
             />
             <MultiSelectDropdown 
-              placeholder="Invoice Status"
-              value={paymentStatusFilter}
+              placeholder="Status"
+              value={invoiceStatusFilter}
               options={[
                 { value: "Open", label: "Open" },
                 { value: "Overdue", label: "Overdue" },
                 { value: "Partially Paid", label: "Partially Paid" },
                 { value: "Paid", label: "Paid" }
               ]}
-              onChange={(val) => { setPaymentStatusFilter(val); setCurrentPage(1); }}
+              onChange={(val) => { setInvoiceStatusFilter(val); setCurrentPage(1); }}
             />
           </div>
 
@@ -420,15 +420,15 @@ const APAgingReportPage = ({ onNavigate, t }) => {
 
         {/* Table Content */}
         <div style={{ 
-          flex: 1, 
+          maxHeight: "calc(100vh - 412px)", 
           overflow: "auto", 
           width: "100%" 
         }}>
-          <div style={{ 
-            minWidth: "1050px", 
-            width: "100%", 
-            display: "flex", 
-            flexDirection: "column" 
+          <div style={{
+            minWidth: "1050px",
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
           }}>
             {/* Header Row */}
             <div style={{ 
@@ -437,7 +437,7 @@ const APAgingReportPage = ({ onNavigate, t }) => {
               borderBottom: "1px solid var(--neutral-line-separator-1)",
               position: "sticky",
               top: 0,
-              zIndex: 20,
+              zIndex: 20
             }}>
             {tableColumns.map((col, idx) => (
               <div 
@@ -480,19 +480,19 @@ const APAgingReportPage = ({ onNavigate, t }) => {
                 )}
               </div>
             ))}
-          </div>
+            </div>
 
-          {/* Rows */}
-          <div style={{ 
-            display: "flex", 
-            flexDirection: "column",
-            flex: paginatedData.length === 0 ? 1 : "0 0 auto",
-          }}>
+            {/* Rows */}
+            <div style={{ 
+              display: "flex", 
+              flexDirection: "column",
+              flex: paginatedData.length === 0 ? 1 : "0 0 auto"
+            }}>
             {paginatedData.length > 0 ? paginatedData.map((inv, idx) => {
-              let statusVariant = "grey-light";
+              let statusVariant = "red-light";
               if (inv.status === "Paid") statusVariant = "green-light";
               if (inv.status === "Partially Paid") statusVariant = "blue-light";
-              if (inv.status === "Overdue") statusVariant = "red-light";
+              if (inv.status === "Open") statusVariant = "grey-light";
 
               const isOverdue = inv.overdueDays > 0 && inv.status !== "Paid";
 
@@ -533,7 +533,7 @@ const APAgingReportPage = ({ onNavigate, t }) => {
                   <div style={cellStyle({ flex: `${tableColumns[3].flex} 1 0%` })}>{inv.invoiceDate}</div>
                   <div style={cellStyle({ flex: `${tableColumns[4].flex} 1 0%`, color: isOverdue ? "var(--status-red-primary)" : "var(--neutral-on-surface-primary)", fontWeight: isOverdue ? "700" : "400", flexDirection: "column", alignItems: "flex-start", justifyContent: "center" })}>
                     <div>{inv.dueDate}</div>
-                    {isOverdue && <div style={{ fontSize: "11px", fontWeight: "600" }}>({inv.overdueDays}d overdue)</div>}
+                    {isOverdue && <div style={{ fontSize: "11px", fontWeight: "600" }}>{`(${inv.overdueDays}d overdue)`}</div>}
                   </div>
                   <div style={cellStyle({ flex: `${tableColumns[5].flex} 1 0%` })}>{formatCurrency(inv.amount, currency)}</div>
                   <div style={cellStyle({ flex: `${tableColumns[6].flex} 1 0%` })}>{formatCurrency(inv.paidAmount, currency)}</div>
@@ -542,9 +542,9 @@ const APAgingReportPage = ({ onNavigate, t }) => {
                   <div style={cellStyle({ flex: `${tableColumns[9].flex} 1 0%` })}>
                     <StatusBadge variant={
                       inv.agingBucket === "Not Due" ? "grey-light" : 
-                      inv.agingBucket === "Late 1-30" ? "blue-light" :
-                      inv.agingBucket === "Late 31-60" ? "yellow-light" :
-                      inv.agingBucket === "Late 61-90" ? "orange-light" :
+                      inv.agingBucket === "Late 1-30 days" ? "blue-light" :
+                      inv.agingBucket === "Late 31-60 days" ? "yellow-light" :
+                      inv.agingBucket === "Late 61-90 days" ? "orange-light" :
                       "red-light"
                     }>
                       {inv.agingBucket}
@@ -557,11 +557,11 @@ const APAgingReportPage = ({ onNavigate, t }) => {
                 No invoices found for the selected criteria.
               </div>
             )}
-            </div>
           </div>
         </div>
+      </div>
 
-        {/* Pagination Footer */}
+      {/* Pagination Footer */}
         <TablePaginationFooter
           totalRows={sortedData.length}
           rowsPerPage={rowsPerPage}

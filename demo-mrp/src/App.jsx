@@ -27,6 +27,8 @@ import { NotificationSettingsPage } from "./modules/administration/pages/Notific
 import { MaterialsListPage } from "./modules/materials/pages/MaterialsListPage.jsx";
 import { MaterialDetailPage } from "./modules/materials/pages/MaterialDetailPage.jsx";
 import { MaterialManagePage } from "./modules/materials/pages/MaterialManagePage.jsx";
+import { MaterialRequestListPage } from "./modules/material-request/pages/MaterialRequestListPage.jsx";
+import { MaterialRequestDetailPage } from "./modules/material-request/pages/MaterialRequestDetailPage.jsx";
 import { MaterialForecastPage } from "./modules/material-forecast/pages/MaterialForecastPage.jsx";
 import { MaterialForecastEmptyPage } from "./modules/material-forecast/pages/MaterialForecastEmptyPage.jsx";
 import { IncomingPOPage } from "./modules/material-forecast/pages/IncomingPOPage.jsx";
@@ -148,7 +150,7 @@ const TRANSLATIONS = {
       inventory_report: "Laporan Inventaris",
       sales_funnel_report: "Laporan Sales Funnel",
       work_order_monitoring: "Monitoring Perintah Kerja",
-      procurement_ap_report: "Laporan Pengadaan & AP",
+      procurement_ap_report: "Laporan Pengadaan & Utang Usaha",
     },
     role: {
       owner: "Pemilik",
@@ -180,6 +182,7 @@ const MODULE_TO_ROUTE = {
   purchase_order: "purchase-order",
   orders: "orders",
   materials: "materials",
+  material_request: "material-request",
   analytics: "analytics",
   administration: "administration",
   user_management: "user-management",
@@ -812,6 +815,21 @@ const ModuleRenderer = ({
         onSaveNotificationSettings={(settings) =>
           setNotificationSettings(settings)
         }
+      />
+    );
+  }
+  if (activeModule === "material_request") {
+    if (viewState.view === "list") {
+      return <MaterialRequestListPage onNavigate={onNavigate} t={t} />;
+    }
+    return (
+      <MaterialRequestDetailPage
+        key={viewState.data?.id || id || "material-request-detail"}
+        onNavigate={onNavigate}
+        isSidebarCollapsed={isSidebarCollapsed}
+        initialData={viewState.data}
+        requestId={id}
+        showSnackbar={showPoSnackbar}
       />
     );
   }

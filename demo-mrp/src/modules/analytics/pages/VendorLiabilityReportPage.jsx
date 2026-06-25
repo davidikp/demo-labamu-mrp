@@ -109,13 +109,13 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
   }, [filteredData, sortConfig]);
 
   const tableColumns = [
-    { label: "Vendor", flex: "1.8", sortKey: "name" },
+    { label: "Vendor", flex: "1.8", sortKey: "name", sortable: true },
     { label: "Not Due", flex: "1.2", sortKey: "notDue" },
-    { label: "Late 1-30", flex: "1.2", sortKey: "late1_30" },
-    { label: "Late 31-60", flex: "1.2", sortKey: "late31_60" },
-    { label: "Late 61-90", flex: "1.2", sortKey: "late61_90" },
-    { label: "Late 90+", flex: "1.2", sortKey: "late90Plus" },
-    { label: "Total Outstanding", flex: "1.4", sortKey: "total" },
+    { label: "Late 1-30 days", flex: "1.2", sortKey: "late1_30" },
+    { label: "Late 31-60 days", flex: "1.2", sortKey: "late31_60" },
+    { label: "Late 61-90 days", flex: "1.2", sortKey: "late61_90" },
+    { label: "Late 90+ days", flex: "1.2", sortKey: "late90Plus" },
+    { label: "Total Outstanding", flex: "1.4", sortKey: "total", sortable: true },
   ];
 
   const handleSort = (key) => {
@@ -128,9 +128,9 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
   const totalPages = Math.ceil(sortedData.length / rowsPerPage);
   const paginatedData = sortedData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
-  // Summary Metrics
+  // Summary Metrics (reflect the filters applied to the table)
   const summary = useMemo(() => {
-    return vendorLiabilities.reduce((acc, curr) => ({
+    return filteredData.reduce((acc, curr) => ({
       total: acc.total + curr.total,
       notDue: acc.notDue + curr.notDue,
       late1_30: acc.late1_30 + curr.late1_30,
@@ -138,7 +138,7 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
       late61_90: acc.late61_90 + curr.late61_90,
       late90Plus: acc.late90Plus + curr.late90Plus,
     }), { total: 0, notDue: 0, late1_30: 0, late31_60: 0, late61_90: 0, late90Plus: 0 });
-  }, [vendorLiabilities]);
+  }, [filteredData]);
 
   const handleExport = () => {
     alert(`Exporting ${sortedData.length} vendors liability report...`);
@@ -199,14 +199,14 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
       </div>
 
       {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px", flexShrink: 0 }}>
         {[
           { label: "Total Outstanding", value: summary.total, icon: <TrendingUp /> },
           { label: "Not Due", value: summary.notDue, icon: <CheckCircleIcon /> },
-          { label: "Late 1–30", value: summary.late1_30, icon: <Calendar /> },
-          { label: "Late 31–60", value: summary.late31_60, icon: <Calendar /> },
-          { label: "Late 61–90", value: summary.late61_90, icon: <Calendar /> },
-          { label: "Late 90+", value: summary.late90Plus, icon: <Info /> },
+          { label: "Late 1-30 days", value: summary.late1_30, icon: <Calendar /> },
+          { label: "Late 31-60 days", value: summary.late31_60, icon: <Calendar /> },
+          { label: "Late 61-90 days", value: summary.late61_90, icon: <Calendar /> },
+          { label: "Late 90+ days", value: summary.late90Plus, icon: <Info /> },
         ].map((card, idx) => (
           <div 
             key={idx}
@@ -253,10 +253,10 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        minHeight: 0,
+        minHeight: 0
       }}>
         {/* Filters Header */}
-        <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)", flexShrink: 0 }}>
+        <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <MultiSelectDropdown 
               searchable={true}
@@ -271,15 +271,15 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
 
         {/* Table Content */}
         <div style={{ 
-          flex: 1, 
+          maxHeight: "calc(100vh - 412px)", 
           overflow: "auto", 
           width: "100%" 
         }}>
-          <div style={{ 
-            minWidth: "1050px", 
-            width: "100%", 
-            display: "flex", 
-            flexDirection: "column" 
+          <div style={{
+            minWidth: "1050px",
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
           }}>
             {/* Header Row */}
             <div style={{ 
@@ -288,40 +288,44 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
               borderBottom: "1px solid var(--neutral-line-separator-1)",
               position: "sticky",
               top: 0,
-              zIndex: 20,
+              zIndex: 20
             }}>
             {tableColumns.map((col, idx) => (
-              <div 
-                key={idx} 
-                style={{ 
-                  flex: col.flex, 
+              <div
+                key={idx}
+                style={{
+                  flex: col.flex,
                   ...cellStyle({ fontWeight: "var(--font-weight-bold)" }),
-                  cursor: "pointer",
+                  cursor: col.sortable ? "pointer" : "default",
                   userSelect: "none"
                 }}
-                onClick={() => handleSort(col.sortKey)}
+                onClick={() => col.sortable && handleSort(col.sortKey)}
               >
-                <span style={{ 
-                  fontSize: "var(--text-title-3)", 
-                  fontWeight: "var(--font-weight-bold)", 
+                <span style={{
+                  fontSize: "var(--text-title-3)",
+                  fontWeight: "var(--font-weight-bold)",
                   color: "var(--neutral-on-surface-primary)",
                   marginRight: "4px"
                 }}>
                   {col.label}
                 </span>
-                {sortConfig.key === col.sortKey && (
-                  sortConfig.direction === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />
+                {col.sortable && (
+                  <span style={{ display: "inline-flex", opacity: sortConfig.key === col.sortKey ? 1 : 0.3 }}>
+                    {sortConfig.key === col.sortKey && sortConfig.direction === "asc"
+                      ? <ChevronUp size={14} />
+                      : <ChevronDown size={14} />}
+                  </span>
                 )}
               </div>
             ))}
-          </div>
+            </div>
 
-          {/* Rows */}
-          <div style={{ 
-            display: "flex", 
-            flexDirection: "column",
-            flex: paginatedData.length === 0 ? 1 : "0 0 auto",
-          }}>
+            {/* Rows */}
+            <div style={{ 
+              display: "flex", 
+              flexDirection: "column",
+              flex: paginatedData.length === 0 ? 1 : "0 0 auto"
+            }}>
             {paginatedData.length > 0 ? paginatedData.map((v, idx) => (
               <div 
                 key={idx} 
@@ -346,11 +350,11 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
                 No vendor liabilities found for the selected criteria.
               </div>
             )}
-            </div>
           </div>
         </div>
+      </div>
 
-        {/* Pagination Footer */}
+      {/* Pagination Footer */}
         <TablePaginationFooter
           totalRows={sortedData.length}
           rowsPerPage={rowsPerPage}

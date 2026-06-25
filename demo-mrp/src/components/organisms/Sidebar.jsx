@@ -41,6 +41,29 @@ const Sidebar = ({
       hasChildren: false,
     },
     {
+      icon: ResourcesIcon,
+      id: "resources",
+      label: t("sidebar.resources"),
+      hasChildren: true,
+      children: [
+        { id: "materials", label: t("sidebar.materials") },
+        { id: "vendors", label: t("sidebar.vendors") },
+        { id: "customers", label: t("sidebar.customers") },
+        { id: "material_request", label: t("sidebar.material_request") },
+      ],
+    },
+    {
+      icon: ManufacturingIcon,
+      id: "manufacturing",
+      label: t("sidebar.manufacturing"),
+      hasChildren: true,
+      children: [
+        { id: "bill_of_materials", label: t("sidebar.bill_of_materials") },
+        { id: "routing", label: t("sidebar.routing") },
+        { id: "work_order", label: t("sidebar.work_order") },
+      ],
+    },
+    {
       icon: ProductIcon,
       id: "product",
       label: t("sidebar.product"),
@@ -63,29 +86,6 @@ const Sidebar = ({
         { id: "quotes", label: t("sidebar.quotes") },
         { id: "orders", label: t("sidebar.orders") },
         { id: "invoices", label: t("sidebar.invoices") },
-      ],
-    },
-    {
-      icon: ResourcesIcon,
-      id: "resources",
-      label: t("sidebar.resources"),
-      hasChildren: true,
-      children: [
-        { id: "materials", label: t("sidebar.materials") },
-        { id: "vendors", label: t("sidebar.vendors") },
-        { id: "customers", label: t("sidebar.customers") },
-        { id: "material_request", label: t("sidebar.material_request") },
-      ],
-    },
-    {
-      icon: ManufacturingIcon,
-      id: "manufacturing",
-      label: t("sidebar.manufacturing"),
-      hasChildren: true,
-      children: [
-        { id: "bill_of_materials", label: t("sidebar.bill_of_materials") },
-        { id: "routing", label: t("sidebar.routing") },
-        { id: "work_order", label: t("sidebar.work_order") },
       ],
     },
     {
@@ -426,8 +426,8 @@ const Sidebar = ({
                         className="sidebar-flyout-item"
                         onClick={() => onModuleChange(child.id)}
                         style={{
-                          height: "40px",
-                          padding: "0 16px 0 56px",
+                          minHeight: "40px",
+                          padding: "8px 16px 8px 56px",
                           margin: 0,
                           border: "none",
                           borderRadius: "14px",

@@ -54,6 +54,57 @@ export const addWoActivityLog = (woNumber, title, desc = undefined) => {
   }, ...activityLogsCache[woNumber]];
 };
 
+// --- Request Material flow constants ---
+const INITIAL_BOM_MATERIALS = [
+  { id: 1, type: "BOM", name: "Wooden Plank", sku: "WOD-023UDISJJDS", requiredQty: 50, requestedQty: 0, receivedQty: 0, unit: "pcs" },
+  { id: 2, type: "BOM", name: "Paint", sku: "PAI-WIQIFQJFJSA", requiredQty: 5, requestedQty: 0, receivedQty: 0, unit: "liter" },
+  { id: 3, type: "BOM", name: "Nail", sku: "NAI-9AIF0U092F", requiredQty: 10, requestedQty: 0, receivedQty: 0, unit: "box" },
+];
+
+// Catalog of materials available for Non-BOM requests (outside the work order BOM)
+const NON_BOM_CATALOG = [
+  { name: "Screw", sku: "SCR-100200300", unit: "box" },
+  { name: "Glue", sku: "GLU-400500600", unit: "tube" },
+  { name: "Varnish", sku: "VAR-700800900", unit: "liter" },
+  { name: "Sandpaper", sku: "SND-110220330", unit: "sheet" },
+];
+
+const NON_BOM_CATEGORY_OPTIONS = [
+  { value: "R&D / Trial run", label: "R&D / Trial run", description: "Testing a new material or process not yet in the standard BOM" },
+  { value: "Design change", label: "Design change", description: "Product design was updated and needs a new material" },
+  { value: "Material replacement", label: "Material replacement", description: "Original BOM material is unavailable, using a substitute" },
+  { value: "Extra finishing", label: "Extra finishing", description: "An additional finishing step was added (e.g. coating, sanding, polishing)" },
+  { value: "Production consumable", label: "Production consumable", description: "Item needed to support the production process (e.g. adhesive, abrasive)" },
+  { value: "Packaging change", label: "Packaging change", description: "Packaging material changed by buyer or logistics team" },
+  { value: "Other", label: "Other" },
+];
+
+const EXCEEDING_REASON_OPTIONS = [
+  { value: "Material wastage", label: "Material wastage", description: "Some material will be lost during cutting, shaping, or processing" },
+  { value: "Quality testing", label: "Quality testing", description: "Extra needed for testing or inspection samples" },
+  { value: "Safety buffer", label: "Safety buffer", description: "Keeping extra in case of shortage or delay" },
+  { value: "Rework", label: "Rework", description: "Extra needed in case some pieces need to be redone" },
+  { value: "Buyer change request", label: "Buyer change request", description: "Customer changed the requirement and needs more material" },
+  { value: "Machine setup", label: "Machine setup", description: "Material used during machine calibration before production starts" },
+  { value: "Other", label: "Other" },
+];
+
+const INITIAL_REQUEST_HISTORY = [
+  { id: "REQ0129031", date: "12/02/2025; 15:00", by: "Anna Jones William Jonat...", status: "New Request" },
+  { id: "REQ0129030", date: "10/02/2025; 15:00", by: "Richard Mille", status: "Preparing" },
+  { id: "REQ0129029", date: "08/02/2025; 15:00", by: "Abigail Husni", status: "Transferring" },
+  { id: "REQ0129028", date: "08/02/2025; 15:00", by: "Zoe Adams", status: "Completed" },
+  { id: "REQ0129027", date: "08/02/2025; 15:00", by: "Zoe Adams", status: "Canceled" },
+];
+
+const REQUEST_STATUS_VARIANT = {
+  "New Request": "blue",
+  Preparing: "yellow",
+  Transferring: "orange",
+  Completed: "green",
+  Canceled: "red",
+};
+
 const SearchableVendorSelect = ({
   label,
   required = false,
@@ -716,6 +767,179 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
 
   const [readyStartDate, setReadyStartDate] = useState("");
   const [readyEndDate, setReadyEndDate] = useState("");
+
+  // --- Request Material flow state ---
+  const [materials, setMaterials] = useState(INITIAL_BOM_MATERIALS);
+  const [requestHistory, setRequestHistory] = useState(INITIAL_REQUEST_HISTORY);
+  const [hasSubmittedRequest, setHasSubmittedRequest] = useState(false);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [requestDraft, setRequestDraft] = useState([]);
+  const [requestErrors, setRequestErrors] = useState({});
+  const draftIdRef = useRef(1);
+
+  const makeDraftRow = (overrides = {}) => ({
+    rowId: draftIdRef.current++,
+    type: "BOM",
+    materialName: "",
+    qty: "",
+    exceedingCategory: "",
+    exceedingReason: "",
+    category: "",
+    reason: "",
+    ...overrides,
+  });
+
+  const remainingForMaterial = (name) => {
+    const m = materials.find((mat) => mat.type === "BOM" && mat.name === name);
+    if (!m) return null;
+    return m.requiredQty - m.requestedQty - m.receivedQty;
+  };
+
+  const unitForDraftRow = (row) => {
+    if (row.type === "BOM") {
+      const m = materials.find((mat) => mat.name === row.materialName);
+      return m ? m.unit : "";
+    }
+    const c = NON_BOM_CATALOG.find((item) => item.name === row.materialName);
+    return c ? c.unit : "";
+  };
+
+  const buildRemainingBomDraft = () =>
+    materials
+      .filter(
+        (m) => m.type === "BOM" && m.requiredQty - m.requestedQty - m.receivedQty > 0
+      )
+      .map((m) =>
+        makeDraftRow({
+          type: "BOM",
+          materialName: m.name,
+          qty: String(m.requiredQty - m.requestedQty - m.receivedQty),
+        })
+      );
+
+  const shortageMaterials = materials.filter(
+    (m) => m.type === "BOM" && m.requiredQty - m.requestedQty - m.receivedQty > 0
+  );
+
+  const openRequestModal = (prefillRemaining = false) => {
+    const draft = prefillRemaining ? buildRemainingBomDraft() : [];
+    setRequestDraft(draft.length ? draft : [makeDraftRow()]);
+    setRequestErrors({});
+    setIsHistoryModalOpen(false);
+    setIsRequestModalOpen(true);
+  };
+
+  const applyRemainingBom = () => {
+    const draft = buildRemainingBomDraft();
+    setRequestDraft(draft.length ? draft : [makeDraftRow()]);
+    setRequestErrors({});
+  };
+
+  const updateDraftRow = (rowId, changes) => {
+    setRequestDraft((rows) =>
+      rows.map((r) => (r.rowId === rowId ? { ...r, ...changes } : r))
+    );
+  };
+
+  const addDraftRow = () =>
+    setRequestDraft((rows) => [...rows, makeDraftRow()]);
+
+  const removeDraftRow = (rowId) =>
+    setRequestDraft((rows) => rows.filter((r) => r.rowId !== rowId));
+
+  const nextRequestId = () => {
+    const latest = requestHistory[0]?.id || "REQ0000000";
+    const num = parseInt(latest.replace(/\D/g, ""), 10) || 0;
+    return `REQ${String(num + 1).padStart(7, "0")}`;
+  };
+
+  const formatRequestTimestamp = () => {
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${dd}/${mm}/${yyyy}; ${hh}:${min}`;
+  };
+
+  const validateRequestDraft = () => {
+    const errors = {};
+    requestDraft.forEach((row) => {
+      const qtyNum = parseFloat(row.qty);
+      if (!row.materialName) errors[`${row.rowId}-material`] = "Field cannot be empty";
+      if (row.qty === "" || isNaN(qtyNum) || qtyNum <= 0)
+        errors[`${row.rowId}-qty`] = "Field cannot be empty";
+      if (row.type === "BOM") {
+        const remaining = remainingForMaterial(row.materialName);
+        if (remaining != null && qtyNum > remaining) {
+          if (!row.exceedingCategory)
+            errors[`${row.rowId}-exceedingCategory`] = "Field cannot be empty";
+          if (!row.exceedingReason.trim())
+            errors[`${row.rowId}-exceeding`] = "Field cannot be empty";
+        }
+      } else {
+        if (!row.category) errors[`${row.rowId}-category`] = "Field cannot be empty";
+        if (!row.reason.trim()) errors[`${row.rowId}-reason`] = "Field cannot be empty";
+      }
+    });
+    return errors;
+  };
+
+  const submitRequest = () => {
+    const errors = validateRequestDraft();
+    if (Object.keys(errors).length > 0) {
+      setRequestErrors(errors);
+      return;
+    }
+
+    setMaterials((prev) => {
+      let next = [...prev];
+      requestDraft.forEach((row) => {
+        const qtyNum = parseFloat(row.qty) || 0;
+        const idx = next.findIndex(
+          (m) => m.type === row.type && m.name === row.materialName
+        );
+        if (idx >= 0) {
+          next[idx] = {
+            ...next[idx],
+            requestedQty: next[idx].requestedQty + qtyNum,
+          };
+        } else if (row.type === "Non-BOM") {
+          const cat = NON_BOM_CATALOG.find((c) => c.name === row.materialName);
+          next.push({
+            id: next.length ? Math.max(...next.map((m) => m.id)) + 1 : 1,
+            type: "Non-BOM",
+            name: row.materialName,
+            sku: cat ? cat.sku : "",
+            requiredQty: null,
+            requestedQty: qtyNum,
+            receivedQty: 0,
+            unit: cat ? cat.unit : "",
+          });
+        }
+      });
+      return next;
+    });
+
+    setRequestHistory((prev) => [
+      {
+        id: nextRequestId(),
+        date: formatRequestTimestamp(),
+        by: "Natasha Smith",
+        status: "New Request",
+      },
+      ...prev,
+    ]);
+
+    setHasSubmittedRequest(true);
+    setIsRequestModalOpen(false);
+    setRequestDraft([]);
+    setRequestErrors({});
+    setToastMessage("Material successfully requested");
+    setShowSuccessToast(true);
+  };
 
   useEffect(() => {
     if (showSuccessToast) {
@@ -2713,6 +2937,611 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         </div>
       ) : null}
 
+      {/* Request Material drawer */}
+      {isRequestModalOpen ? (
+        <div
+          className="ds-modal-overlay"
+          style={{
+            "--ds-modal-z-index": 5000,
+            justifyContent: "flex-end",
+            alignItems: "stretch",
+            padding: 0,
+          }}
+          onClick={() => setIsRequestModalOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "560px",
+              maxWidth: "100%",
+              height: "100%",
+              background: "var(--neutral-surface-primary)",
+              display: "flex",
+              flexDirection: "column",
+              boxShadow: "var(--elevation-lg)",
+            }}
+          >
+            {/* Drawer header */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "20px 24px",
+                borderBottom: "1px solid var(--neutral-line-separator-1)",
+                flexShrink: 0,
+              }}
+            >
+              <h2 className="ds-modal-title" style={{ margin: 0 }}>
+                Request Material
+              </h2>
+              <IconButton
+                icon={CloseIcon}
+                size="small"
+                onClick={() => setIsRequestModalOpen(false)}
+                color="var(--neutral-on-surface-primary)"
+              />
+            </div>
+
+            {/* Drawer body */}
+            <div
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                padding: "24px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "20px",
+              }}
+            >
+          {/* Quick Add banner */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "16px",
+              padding: "16px",
+              borderRadius: "var(--radius-medium)",
+              background: "var(--feature-brand-container-lighter)",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div
+                style={{
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "var(--radius-small)",
+                  background: "var(--feature-brand-container-darker)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"
+                    fill="#005DE0"
+                  />
+                </svg>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                <span
+                  style={{
+                    fontSize: "var(--text-title-2)",
+                    fontWeight: "var(--font-weight-bold)",
+                  }}
+                >
+                  Quick Add Required Materials
+                </span>
+                <span
+                  style={{
+                    fontSize: "var(--text-title-3)",
+                    color: "var(--neutral-on-surface-secondary)",
+                  }}
+                >
+                  This will replace current selections with all required
+                </span>
+              </div>
+            </div>
+            <Button variant="outlined" onClick={applyRemainingBom}>
+              Apply Remaining BOM
+            </Button>
+          </div>
+
+          {/* Draft rows */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                paddingTop: "8px",
+                paddingBottom: "8px",
+                borderBottom: "1px solid var(--neutral-line-separator-1)",
+                fontWeight: "var(--font-weight-bold)",
+                fontSize: "var(--text-title-3)",
+                position: "sticky",
+                top: "-24px",
+                background: "var(--neutral-surface-primary)",
+                zIndex: 1,
+              }}
+            >
+              <div style={{ width: "150px", flexShrink: 0 }}>Type</div>
+              <div style={{ flex: "1.4" }}>Material</div>
+              <div style={{ flex: "1" }}>Quantity</div>
+              <div style={{ width: "40px" }} />
+            </div>
+
+            {requestDraft.map((row, rowIndex) => {
+              const remaining = remainingForMaterial(row.materialName);
+              const qtyNum = parseFloat(row.qty);
+              const isExceeding =
+                row.type === "BOM" &&
+                remaining != null &&
+                !isNaN(qtyNum) &&
+                qtyNum > remaining;
+              const materialOptions =
+                row.type === "BOM"
+                  ? materials
+                      .filter((m) => m.type === "BOM")
+                      .map((m) => m.name)
+                  : NON_BOM_CATALOG.map((c) => c.name);
+              const unit = unitForDraftRow(row);
+              const err = (key) => requestErrors[`${row.rowId}-${key}`];
+              const errStyle = {
+                color: "var(--status-red-primary)",
+                fontSize: "12px",
+                marginTop: "4px",
+                display: "block",
+              };
+              const reqLabelStyle = { fontSize: "var(--text-title-3)" };
+              return (
+                <div
+                  key={row.rowId}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "12px",
+                    paddingBottom: "16px",
+                    borderBottom:
+                      rowIndex < requestDraft.length - 1
+                        ? "1px solid var(--neutral-line-separator-1)"
+                        : "none",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                    <div style={{ width: "150px", flexShrink: 0 }}>
+                      <DropdownSelect
+                        value={row.type}
+                        options={["BOM", "Non-BOM"]}
+                        onChange={(val) =>
+                          updateDraftRow(row.rowId, {
+                            type: val,
+                            materialName: "",
+                            qty: "",
+                            exceedingCategory: "",
+                            exceedingReason: "",
+                            category: "",
+                            reason: "",
+                          })
+                        }
+                      />
+                    </div>
+                    <div style={{ flex: "1.4" }}>
+                      <DropdownSelect
+                        value={row.materialName}
+                        options={materialOptions}
+                        placeholder="Select Material"
+                        hasError={!!err("material")}
+                        onChange={(val) =>
+                          updateDraftRow(row.rowId, { materialName: val })
+                        }
+                      />
+                      {err("material") && <span style={errStyle}>{err("material")}</span>}
+                    </div>
+                    <div style={{ flex: "1" }}>
+                      <div style={{ position: "relative" }}>
+                        <input
+                          type="number"
+                          min="0"
+                          value={row.qty}
+                          placeholder="0"
+                          onChange={(e) =>
+                            updateDraftRow(row.rowId, { qty: e.target.value })
+                          }
+                          style={{
+                            height: "46px",
+                            width: "100%",
+                            padding: unit ? "0 52px 0 16px" : "0 16px",
+                            borderRadius: "var(--radius-small)",
+                            border: `1px solid ${
+                              err("qty")
+                                ? "var(--status-red-primary)"
+                                : "var(--neutral-line-separator-1)"
+                            }`,
+                            fontSize: "var(--text-title-3)",
+                            boxSizing: "border-box",
+                          }}
+                        />
+                        {unit ? (
+                          <span
+                            style={{
+                              position: "absolute",
+                              right: "12px",
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              color: "var(--neutral-on-surface-tertiary)",
+                              fontSize: "var(--text-title-3)",
+                              pointerEvents: "none",
+                            }}
+                          >
+                            {unit}
+                          </span>
+                        ) : null}
+                      </div>
+                      {err("qty") && <span style={errStyle}>{err("qty")}</span>}
+                      {row.type === "BOM" && remaining != null && row.materialName ? (
+                        <span
+                          style={{
+                            fontSize: "12px",
+                            color: "var(--neutral-on-surface-tertiary)",
+                            marginTop: "4px",
+                            display: "block",
+                          }}
+                        >
+                          Remaining: {remaining} {unit}
+                        </span>
+                      ) : null}
+                    </div>
+                    <div style={{ width: "40px", paddingTop: "4px" }}>
+                      <IconButton
+                        icon={DeleteIcon}
+                        disabled={requestDraft.length === 1}
+                        onClick={() => removeDraftRow(row.rowId)}
+                        color="var(--status-red-primary)"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Exceeding reason (BOM) */}
+                  {isExceeding ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "12px",
+                        padding: "16px",
+                        borderRadius: "var(--radius-medium)",
+                        background: "var(--neutral-surface-grey-lighter)",
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <span style={reqLabelStyle}>
+                          <span style={{ color: "var(--status-red-primary)" }}>*</span>
+                          Exceeding Reason
+                        </span>
+                        <DropdownSelect
+                          value={row.exceedingCategory}
+                          options={EXCEEDING_REASON_OPTIONS}
+                          placeholder="Select Exceeding Reason"
+                          hasError={!!err("exceedingCategory")}
+                          onChange={(val) =>
+                            updateDraftRow(row.rowId, { exceedingCategory: val })
+                          }
+                          renderOption={(option, selected) => (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "2px", textAlign: "left" }}>
+                              <span
+                                style={{
+                                  fontSize: "var(--text-title-3)",
+                                  fontWeight: selected ? "var(--font-weight-bold)" : "var(--font-weight-regular)",
+                                  color: selected ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-primary)",
+                                }}
+                              >
+                                {option.label}
+                              </span>
+                              {option.description && (
+                                <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", lineHeight: 1.5 }}>
+                                  {option.description}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        />
+                        {err("exceedingCategory") && <span style={errStyle}>{err("exceedingCategory")}</span>}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <span style={reqLabelStyle}>
+                            <span style={{ color: "var(--status-red-primary)" }}>*</span>
+                            Notes
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: "var(--neutral-on-surface-tertiary)",
+                            }}
+                          >
+                            {row.exceedingReason.length}/400
+                          </span>
+                        </div>
+                        <textarea
+                          value={row.exceedingReason}
+                          maxLength={400}
+                          placeholder="Explain why the requested quantity exceeds the remaining BOM quantity"
+                          onChange={(e) =>
+                            updateDraftRow(row.rowId, { exceedingReason: e.target.value })
+                          }
+                          style={{
+                            minHeight: "80px",
+                            padding: "12px 16px",
+                            width: "100%",
+                            boxSizing: "border-box",
+                            resize: "vertical",
+                            borderRadius: "var(--radius-small)",
+                            background: "var(--neutral-surface-primary)",
+                            border: `1px solid ${
+                              err("exceeding")
+                                ? "var(--status-red-primary)"
+                                : "var(--neutral-line-separator-1)"
+                            }`,
+                            fontSize: "var(--text-title-3)",
+                            fontFamily: "inherit",
+                          }}
+                        />
+                        {err("exceeding") && <span style={errStyle}>{err("exceeding")}</span>}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Justification (Non-BOM) */}
+                  {row.type === "Non-BOM" ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "12px",
+                        padding: "16px",
+                        borderRadius: "var(--radius-medium)",
+                        background: "var(--neutral-surface-grey-lighter)",
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <span style={reqLabelStyle}>
+                          <span style={{ color: "var(--status-red-primary)" }}>*</span>
+                          Request Reason
+                        </span>
+                        <DropdownSelect
+                          value={row.category}
+                          options={NON_BOM_CATEGORY_OPTIONS}
+                          placeholder="Select Request Reason"
+                          hasError={!!err("category")}
+                          onChange={(val) =>
+                            updateDraftRow(row.rowId, { category: val })
+                          }
+                          renderOption={(option, selected) => (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "2px", textAlign: "left" }}>
+                              <span
+                                style={{
+                                  fontSize: "var(--text-title-3)",
+                                  fontWeight: selected ? "var(--font-weight-bold)" : "var(--font-weight-regular)",
+                                  color: selected ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-primary)",
+                                }}
+                              >
+                                {option.label}
+                              </span>
+                              {option.description && (
+                                <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", lineHeight: 1.5 }}>
+                                  {option.description}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        />
+                        {err("category") && <span style={errStyle}>{err("category")}</span>}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <span style={reqLabelStyle}>
+                            <span style={{ color: "var(--status-red-primary)" }}>*</span>
+                            Notes
+                          </span>
+                          <span
+                            style={{
+                              fontSize: "12px",
+                              color: "var(--neutral-on-surface-tertiary)",
+                            }}
+                          >
+                            {row.reason.length}/400
+                          </span>
+                        </div>
+                        <textarea
+                          value={row.reason}
+                          maxLength={400}
+                          placeholder="Explain why this material is needed outside the BOM"
+                          onChange={(e) =>
+                            updateDraftRow(row.rowId, { reason: e.target.value })
+                          }
+                          style={{
+                            minHeight: "80px",
+                            padding: "12px 16px",
+                            width: "100%",
+                            boxSizing: "border-box",
+                            resize: "vertical",
+                            borderRadius: "var(--radius-small)",
+                            background: "var(--neutral-surface-primary)",
+                            border: `1px solid ${
+                              err("reason")
+                                ? "var(--status-red-primary)"
+                                : "var(--neutral-line-separator-1)"
+                            }`,
+                            fontSize: "var(--text-title-3)",
+                            fontFamily: "inherit",
+                          }}
+                        />
+                        {err("reason") && <span style={errStyle}>{err("reason")}</span>}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+
+            <div>
+              <Button variant="tertiary" leftIcon={AddIcon} onClick={addDraftRow}>
+                Add Material
+              </Button>
+            </div>
+          </div>
+            </div>
+
+            {/* Drawer footer */}
+            <div
+              style={{
+                padding: "16px 24px",
+                borderTop: "1px solid var(--neutral-line-separator-1)",
+                flexShrink: 0,
+              }}
+            >
+              <Button
+                variant="filled"
+                size="large"
+                style={{ width: "100%" }}
+                onClick={submitRequest}
+              >
+                Submit Request
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Request Material History modal */}
+      <GeneralModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        title="Request Material History"
+        width="720px"
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+          {shortageMaterials.length > 0 ? (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "16px",
+                padding: "16px",
+                borderRadius: "var(--radius-medium)",
+                background: "#FFEDD5",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <Info color="var(--status-orange-primary)" />
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                  <span
+                    style={{
+                      fontSize: "var(--text-title-2)",
+                      fontWeight: "var(--font-weight-bold)",
+                    }}
+                  >
+                    {shortageMaterials.length} Materials Shortage
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "var(--text-title-3)",
+                      color: "var(--neutral-on-surface-secondary)",
+                    }}
+                  >
+                    You have {shortageMaterials.length} shortage materials from{" "}
+                    {requestHistory[0]?.id || ""}
+                  </span>
+                </div>
+              </div>
+              <Button variant="outlined" onClick={() => openRequestModal(true)}>
+                Request Shortage
+              </Button>
+            </div>
+          ) : null}
+
+          <div
+            style={{
+              border: "1px solid var(--neutral-line-separator-1)",
+              borderRadius: "var(--radius-medium)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                padding: "12px 16px",
+                borderBottom: "1px solid var(--neutral-line-separator-1)",
+                fontWeight: "var(--font-weight-bold)",
+                fontSize: "var(--text-title-3)",
+              }}
+            >
+              <div style={{ flex: "1" }}>Request ID</div>
+              <div style={{ flex: "1" }}>Requested Date</div>
+              <div style={{ flex: "1" }}>Requested By</div>
+              <div style={{ flex: "0.7" }}>Status</div>
+            </div>
+            {requestHistory.map((req) => (
+              <div
+                key={req.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "16px",
+                  borderBottom: "1px solid var(--neutral-line-separator-1)",
+                  fontSize: "var(--text-title-3)",
+                }}
+              >
+                <div
+                  style={{
+                    flex: "1",
+                    color: "var(--feature-brand-primary)",
+                    fontWeight: "var(--font-weight-bold)",
+                  }}
+                >
+                  {req.id}
+                </div>
+                <div style={{ flex: "1" }}>{req.date}</div>
+                <div
+                  style={{
+                    flex: "1",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    paddingRight: "8px",
+                  }}
+                >
+                  {req.by}
+                </div>
+                <div style={{ flex: "0.7" }}>
+                  <StatusBadge
+                    variant={REQUEST_STATUS_VARIANT[req.status] || "grey"}
+                  >
+                    {req.status}
+                  </StatusBadge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </GeneralModal>
+
       <div
         style={{
           padding: "24px",
@@ -3014,7 +3843,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                     fontWeight: "var(--font-weight-bold)",
                   }}
                 >
-                  Bill of Material
+                  Materials
                 </span>
                 <StatusBadge variant="blue-light">Material Request</StatusBadge>
               </div>
@@ -3024,13 +3853,27 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   color: "var(--neutral-on-surface-secondary)",
                 }}
               >
-                {initialData?.product || "Wooden Chair"} Classic Model BOM
+                BOM Name: {initialData?.product || "Wooden Chair"} Classic Model BOM
               </span>
             </div>
             {woStatus !== "not_started" && !isCanceled ? (
-              <Button variant="outlined" leftIcon={AddIcon}>
-                Request Material
-              </Button>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                {hasSubmittedRequest ? (
+                  <Button
+                    variant="tertiary"
+                    onClick={() => setIsHistoryModalOpen(true)}
+                  >
+                    View Request History
+                  </Button>
+                ) : null}
+                <Button
+                  variant="outlined"
+                  leftIcon={AddIcon}
+                  onClick={() => openRequestModal(false)}
+                >
+                  Request Material
+                </Button>
+              </div>
             ) : null}
           </div>
 
@@ -3045,39 +3888,17 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
               }}
             >
               <div style={{ width: "40px" }}>No</div>
+              <div style={{ flex: "1" }}>Type</div>
               <div style={{ flex: "1.5" }}>Material</div>
               <div style={{ flex: "1" }}>Required Qty</div>
               <div style={{ flex: "1" }}>Requested Qty</div>
               <div style={{ flex: "1" }}>Received Qty</div>
             </div>
-            {[
-              {
-                id: 1,
-                name: "Wooden Plank",
-                sku: "WOD-023UDISJJDS",
-                req: "50 pcs",
-                reqst: "0 pcs",
-                rec: "0 pcs",
-              },
-              {
-                id: 2,
-                name: "Paint",
-                sku: "PAI-WIQIFQJFJSA",
-                req: "5 liter",
-                reqst: "0 liter",
-                rec: "0 liter",
-              },
-              {
-                id: 3,
-                name: "Nail",
-                sku: "NAI-9AIF0U092F",
-                req: "10 box",
-                reqst: "0 box",
-                rec: "0 box",
-              },
-            ].map((row, i) => (
+            {materials.map((row, i) => {
+              const isBom = row.type === "BOM";
+              return (
               <div
-                key={i}
+                key={row.id}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -3086,7 +3907,12 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   fontSize: "var(--text-title-3)",
                 }}
               >
-                <div style={{ width: "40px" }}>{row.id}</div>
+                <div style={{ width: "40px" }}>{i + 1}</div>
+                <div style={{ flex: "1" }}>
+                  <StatusBadge variant={isBom ? "blue-light" : "grey-light"}>
+                    {row.type}
+                  </StatusBadge>
+                </div>
                 <div
                   style={{
                     flex: "1.5",
@@ -3095,21 +3921,26 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                     gap: "4px",
                   }}
                 >
-                  <span>{row.name}</span>
+                  <span style={{ fontWeight: "var(--font-weight-bold)" }}>
+                    {row.name}
+                  </span>
                   <span
                     style={{
-                      fontSize: "var(--text-desc)",
+                      fontSize: "14px",
                       color: "var(--neutral-on-surface-tertiary)",
                     }}
                   >
                     {row.sku}
                   </span>
                 </div>
-                <div style={{ flex: "1" }}>{row.req}</div>
-                <div style={{ flex: "1" }}>{row.reqst}</div>
-                <div style={{ flex: "1" }}>{row.rec}</div>
+                <div style={{ flex: "1" }}>
+                  {isBom ? `${row.requiredQty} ${row.unit}` : "—"}
+                </div>
+                <div style={{ flex: "1" }}>{`${row.requestedQty} ${row.unit}`}</div>
+                <div style={{ flex: "1" }}>{`${row.receivedQty} ${row.unit}`}</div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
 
