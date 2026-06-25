@@ -3085,8 +3085,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 row.type === "BOM"
                   ? materials
                       .filter((m) => m.type === "BOM")
-                      .map((m) => m.name)
-                  : NON_BOM_CATALOG.map((c) => c.name);
+                      .map((m) => ({ value: m.name, label: m.name, sku: m.sku }))
+                  : NON_BOM_CATALOG.map((c) => ({ value: c.name, label: c.name, sku: c.sku }));
               const unit = unitForDraftRow(row);
               const err = (key) => requestErrors[`${row.rowId}-${key}`];
               const errStyle = {
@@ -3133,10 +3133,30 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                         value={row.materialName}
                         options={materialOptions}
                         placeholder="Select Material"
+                        searchable
+                        searchPlaceholder="Search material name or SKU"
                         hasError={!!err("material")}
                         onChange={(val) =>
                           updateDraftRow(row.rowId, { materialName: val })
                         }
+                        renderOption={(option, selected) => (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px", textAlign: "left" }}>
+                            <span
+                              style={{
+                                fontSize: "var(--text-title-3)",
+                                fontWeight: selected ? "var(--font-weight-bold)" : "var(--font-weight-regular)",
+                                color: selected ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-primary)",
+                              }}
+                            >
+                              {option.label}
+                            </span>
+                            {option.sku && (
+                              <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>
+                                {option.sku}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       />
                       {err("material") && <span style={errStyle}>{err("material")}</span>}
                     </div>

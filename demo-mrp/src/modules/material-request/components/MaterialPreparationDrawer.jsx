@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { CloseIcon, Info, AddIcon, DeleteIcon } from "../../../components/icons/Icons.jsx";
+import { CloseIcon, AddIcon, DeleteIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
@@ -89,10 +89,13 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
     const total = row.lines.reduce((sum, l) => sum + (Number(l.qty) || 0), 0);
     const shortageQty = Math.max(it.requestedQty - total, 0);
     const rowStatusKey = deriveRowStatusKey(it.requestedQty, total);
-    return { ...row, total, shortageQty, rowStatusKey, needsReason: shortageQty > 0 };
+    const exceeds = total > it.requestedQty;
+    return { ...row, total, shortageQty, rowStatusKey, needsReason: shortageQty > 0, exceeds };
   });
 
-  const hasInvalid = computed.some((c) => c.needsReason && !c.reason.trim());
+  const hasInvalid = computed.some(
+    (c) => (c.needsReason && !c.reason.trim()) || c.exceeds
+  );
 
   const handleReview = () => {
     if (hasInvalid) {
@@ -196,13 +199,12 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
                 const c = computed[idx] || { lines: [], reason: "" };
                 const meta = ROW_STATUS_META[c.rowStatusKey] || ROW_STATUS_META.not_started;
                 const stock = totalAvailable(it.availableBatches);
-                const isNonBom = it.type === "Non-BOM";
                 const reasonError = submitted && c.needsReason && !c.reason.trim();
                 const usedBatches = c.lines.map((l) => l.batch);
                 const unusedBatches = it.availableBatches.filter((b) => !usedBatches.includes(b.batch));
                 return (
                   <React.Fragment key={idx}>
-                    <tr style={{ borderBottom: isNonBom ? "none" : "1px solid var(--neutral-line-separator-1)" }}>
+                    <tr style={{ borderBottom: "1px solid var(--neutral-line-separator-1)" }}>
                       <td style={tdStyle({ color: "var(--neutral-on-surface-secondary)" })}>{idx + 1}</td>
                       <td style={tdStyle()}>
                         <StatusBadge variant={it.type === "BOM" ? "blue-light" : "grey-light"}>
@@ -216,7 +218,33 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
                         </div>
                       </td>
                       <td style={tdStyle()}>
-                        {it.requestedQty} {it.unit}
+                        <span>
+                          {it.requestedQty} {it.unit}
+                        </span>
+                        {(it.exceedingReason || it.requestReason) && (
+                          <div
+                            style={{
+                              marginTop: "8px",
+                              fontSize: "var(--text-body)",
+                              color: "var(--neutral-on-surface-secondary)",
+                            }}
+                          >
+                            <div>
+                              <span style={{ fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                                {it.exceedingReason ? "Exceeding Reason: " : "Request Reason: "}
+                              </span>
+                              {it.exceedingReason || it.requestReason}
+                            </div>
+                            {(it.exceedingNotes || it.requestNotes) && (
+                              <div style={{ marginTop: "2px" }}>
+                                <span style={{ fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                                  Notes:{" "}
+                                </span>
+                                {it.exceedingNotes || it.requestNotes}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td style={tdStyle()}>
                         {readOnly ? (
@@ -309,6 +337,12 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
                               );
                             })}
 
+                            {c.lines.length === 0 && (
+                              <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>
+                                No batch selected
+                              </span>
+                            )}
+
                             {unusedBatches.length > 0 && (
                               <Button
                                 variant="tertiary"
@@ -320,6 +354,18 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
                               >
                                 Add Batch
                               </Button>
+                            )}
+
+                            {submitted && c.exceeds && (
+                              <span
+                                style={{
+                                  color: "var(--status-red-primary)",
+                                  fontSize: "var(--text-body)",
+                                  marginTop: "4px",
+                                }}
+                              >
+                                Exceeds requested qty
+                              </span>
                             )}
                               </>
                             )}
@@ -357,32 +403,6 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
                         <StatusBadge variant={`${meta.badge}-light`}>{meta.label}</StatusBadge>
                       </td>
                     </tr>
-                    {isNonBom && it.justification && (
-                      <tr style={{ borderBottom: "1px solid var(--neutral-line-separator-1)" }}>
-                        <td colSpan={7} style={{ padding: "0 16px 16px 16px" }}>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "10px",
-                              alignItems: "flex-start",
-                              padding: "12px 14px",
-                              background: "var(--feature-brand-container-lighter)",
-                              borderRadius: "var(--radius-md)",
-                            }}
-                          >
-                            <Info size={16} color="var(--feature-brand-primary)" style={{ flexShrink: 0, marginTop: "2px" }} />
-                            <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                              <span style={{ fontSize: "var(--text-body)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
-                                Requester Justification
-                              </span>
-                              <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)", lineHeight: 1.6 }}>
-                                {it.justification}
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
                   </React.Fragment>
                 );
               })}
