@@ -49,12 +49,12 @@ export const MaterialRequestListPage = ({ onNavigate }) => {
   }));
 
   const tableColumns = [
-    { label: "Requested Date", key: "requestedDateRaw", flex: "1.4", sortable: true },
     { label: "Request ID", key: "requestId", flex: "1.2", sortable: false },
-    { label: "Requested By", key: "requestedBy", flex: "1.2", sortable: false },
     { label: "Work Order No.", key: "workOrderShort", flex: "1.4", sortable: false },
-    { label: "Total Item Type", key: "totalItemType", flex: "1", sortable: false },
-    { label: "Status", key: "status", flex: "1", sortable: false },
+    { label: "Total Item", key: "totalItemType", flex: "1", sortable: false },
+    { label: "Requested By", key: "requestedBy", flex: "1.2", sortable: false },
+    { label: "Requested Date", key: "requestedDateRaw", flex: "1.4", sortable: true },
+    { label: "Status", key: "status", flex: "1", sortable: true },
   ];
 
   const statusCounts = statusCards.reduce((acc, card) => {
@@ -237,21 +237,6 @@ export const MaterialRequestListPage = ({ onNavigate }) => {
                 count={dateFilterType !== "all" ? 1 : 0}
               />
             </div>
-            <div
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setPopoverTriggerRect(rect);
-                setOpenFilterKey((prev) => (prev === "requester" ? null : "requester"));
-              }}
-            >
-              <FilterPill
-                label="Requested By"
-                active={requesterFilters.length > 0}
-                isOpen={openFilterKey === "requester"}
-                count={requesterFilters.length}
-              />
-            </div>
-
             {openFilterKey ? (
               <>
                 <div
@@ -391,7 +376,7 @@ export const MaterialRequestListPage = ({ onNavigate }) => {
           <TableSearchField
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search request"
+            placeholder="Search request ID"
             width="360px"
           />
         </div>
@@ -482,24 +467,24 @@ export const MaterialRequestListPage = ({ onNavigate }) => {
                       (e.currentTarget.style.background = "var(--neutral-surface-primary)")
                     }
                   >
-                    <div style={cellStyle({ flex: tableColumns[0].flex })}>
-                      <span style={ellipsis}>{row.requestedDate}</span>
-                    </div>
                     <div
                       style={cellStyle({
-                        flex: tableColumns[1].flex,
+                        flex: tableColumns[0].flex,
                         color: "var(--feature-brand-primary)",
                       })}
                     >
                       <span style={ellipsis}>{row.requestId}</span>
                     </div>
-                    <div style={cellStyle({ flex: tableColumns[2].flex })}>
-                      <span style={ellipsis}>{row.requestedBy}</span>
-                    </div>
-                    <div style={cellStyle({ flex: tableColumns[3].flex })}>
+                    <div style={cellStyle({ flex: tableColumns[1].flex })}>
                       <span style={ellipsis}>{row.workOrderShort}</span>
                     </div>
-                    <div style={cellStyle({ flex: tableColumns[4].flex })}>{row.totalItemType}</div>
+                    <div style={cellStyle({ flex: tableColumns[2].flex })}>{row.totalItemType}</div>
+                    <div style={cellStyle({ flex: tableColumns[3].flex })}>
+                      <span style={ellipsis}>{row.requestedBy}</span>
+                    </div>
+                    <div style={cellStyle({ flex: tableColumns[4].flex })}>
+                      <span style={ellipsis}>{row.requestedDate}</span>
+                    </div>
                     <div style={cellStyle({ flex: tableColumns[5].flex })}>
                       <StatusBadge variant={meta?.badge || "grey"}>{meta?.label}</StatusBadge>
                     </div>

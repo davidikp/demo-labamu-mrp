@@ -113,8 +113,8 @@ const Tooltip = ({ content, children }) => {
 
 const cellStyle = (overrides) => ({
   minWidth: 0,
-  height: "56px",
-  padding: "0 12px",
+  minHeight: "56px",
+  padding: "8px 12px",
   display: "flex",
   alignItems: "center",
   fontSize: "var(--text-title-3)",
@@ -781,7 +781,14 @@ const POReportPage = ({ onNavigate, t }) => {
                   onMouseEnter={(e) => e.currentTarget.style.background = "var(--neutral-surface-grey-lighter)"}
                   onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
                 >
-                  <div style={cellStyle({ flex: tableColumns[0].flex, fontWeight: "600", color: "var(--feature-brand-primary)" })}>{po.poNumber}</div>
+                  <div style={cellStyle({ flex: tableColumns[0].flex, fontWeight: "600", color: "var(--feature-brand-primary)" })}>
+                    <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px", minWidth: 0 }}>
+                      <span>{po.poNumber}</span>
+                      {po.version > 1 && (
+                        <StatusBadge variant="grey-light">{`V ${po.version}.0`}</StatusBadge>
+                      )}
+                    </div>
+                  </div>
                   <div style={cellStyle({ flex: tableColumns[1].flex })}>{po.createdDate}</div>
                   <div style={cellStyle({ flex: tableColumns[2].flex, fontWeight: "500" })}>{po.vendorName}</div>
                   <div style={cellStyle({ flex: tableColumns[3].flex, fontWeight: "500" })}>{formatCurrency(po.amount, currency)}</div>

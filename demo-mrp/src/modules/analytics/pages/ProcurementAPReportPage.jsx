@@ -447,10 +447,10 @@ const ProcurementAPReportPage = ({ onNavigate }) => {
             {operationalIssues.map((issue, idx) => (
               <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontSize: "14px", color: "var(--neutral-on-surface-secondary)" }}>{issue.label}</span>
-                <span style={{ 
-                  fontSize: "14px", 
-                  fontWeight: "600", 
-                  color: issue.count > 0 ? "var(--neutral-on-surface-primary)" : "var(--neutral-on-surface-tertiary)" 
+                <span style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color: "var(--neutral-on-surface-primary)"
                 }}>
                   {issue.count}
                 </span>

@@ -14,6 +14,7 @@ import { MOCK_COMPANY } from "../../../data/company.js";
 import { MOCK_VENDORS } from "../../../data/vendors.js";
 import { MOCK_PO_TABLE_DATA } from "../../purchase-order/mock/purchaseOrderMocks.js";
 import { MOCK_WO_TABLE_DATA } from "../mock/workOrderMocks.js";
+import { getRequests, addRequest, getStockBatchesForSku } from "../../material-request/mock/materialRequestMocks.js";
 import { formatCurrency, formatNumberWithCommas, parseNumberFromCommas } from "../../../utils/format/formatUtils.js";
 import { normalizeProofDocuments, createUploadDocumentRecord, validateUploadFile } from "../../../utils/upload/uploadUtils.js";
 import { MAX_PROOF_UPLOAD_FILES } from "../../../constants/appConstants.js";
@@ -55,11 +56,28 @@ export const addWoActivityLog = (woNumber, title, desc = undefined) => {
 };
 
 // --- Request Material flow constants ---
-const INITIAL_BOM_MATERIALS = [
+// Work order id that is seeded as an already-ongoing request flow (non-zero
+// requested/received quantities + an existing request history). Every other work
+// order starts empty (no requests yet).
+const ONGOING_REQUEST_WO = "WO-202604-002";
+
+// Fresh BOM materials — nothing requested or received yet.
+const EMPTY_BOM_MATERIALS = [
   { id: 1, type: "BOM", name: "Wooden Plank", sku: "WOD-023UDISJJDS", requiredQty: 50, requestedQty: 0, receivedQty: 0, unit: "pcs" },
   { id: 2, type: "BOM", name: "Paint", sku: "PAI-WIQIFQJFJSA", requiredQty: 5, requestedQty: 0, receivedQty: 0, unit: "liter" },
   { id: 3, type: "BOM", name: "Nail", sku: "NAI-9AIF0U092F", requiredQty: 10, requestedQty: 0, receivedQty: 0, unit: "box" },
 ];
+
+// Ongoing work order: materials already have requested and/or received quantities
+// from the existing material requests (see request history).
+const ONGOING_BOM_MATERIALS = [
+  { id: 1, type: "BOM", name: "Wooden Plank", sku: "WOD-023UDISJJDS", requiredQty: 50, requestedQty: 20, receivedQty: 25, unit: "pcs" },
+  { id: 2, type: "BOM", name: "Paint", sku: "PAI-WIQIFQJFJSA", requiredQty: 5, requestedQty: 3, receivedQty: 2, unit: "liter" },
+  { id: 3, type: "BOM", name: "Nail", sku: "NAI-9AIF0U092F", requiredQty: 10, requestedQty: 5, receivedQty: 0, unit: "box" },
+];
+
+const initialBomMaterials = (woId) =>
+  woId === ONGOING_REQUEST_WO ? ONGOING_BOM_MATERIALS : EMPTY_BOM_MATERIALS;
 
 // Catalog of materials available for Non-BOM requests (outside the work order BOM)
 const NON_BOM_CATALOG = [
@@ -89,13 +107,18 @@ const EXCEEDING_REASON_OPTIONS = [
   { value: "Other", label: "Other" },
 ];
 
-const INITIAL_REQUEST_HISTORY = [
+// Request history for the ongoing work order; other work orders start with none.
+const ONGOING_REQUEST_HISTORY = [
+  { id: "REQ0129032", date: "26/06/2026; 14:19", by: "Natasha Smith", status: "New Request" },
   { id: "REQ0129031", date: "12/02/2025; 15:00", by: "Anna Jones William Jonat...", status: "New Request" },
   { id: "REQ0129030", date: "10/02/2025; 15:00", by: "Richard Mille", status: "Preparing" },
   { id: "REQ0129029", date: "08/02/2025; 15:00", by: "Abigail Husni", status: "Transferring" },
   { id: "REQ0129028", date: "08/02/2025; 15:00", by: "Zoe Adams", status: "Completed" },
   { id: "REQ0129027", date: "08/02/2025; 15:00", by: "Zoe Adams", status: "Canceled" },
 ];
+
+const initialRequestHistory = (woId) =>
+  woId === ONGOING_REQUEST_WO ? ONGOING_REQUEST_HISTORY : [];
 
 const REQUEST_STATUS_VARIANT = {
   "New Request": "blue",
@@ -449,7 +472,32 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, initialDat
     mockLogs.push({
       name: "Natasha Smith", email: "natasha@company.com", title: "Created", timestamp: `${baseCreatedTs} at 08:00`
     });
-    
+
+    // Ongoing work order: record each seeded material request in the activity log.
+    // Material requests happen after the WO is ready to process, so any request
+    // dated at/before "Ready to Process" is placed just after it (keeping order).
+    if (initialData?.wo === ONGOING_REQUEST_WO) {
+      const readyDate = new Date(`${startDate} at 09:00`.replace(" at ", "T"));
+      ONGOING_REQUEST_HISTORY.forEach((req, i) => {
+        const [datePart, timePart] = (req.date || "").split("; ");
+        const [dd, mm, yyyy] = (datePart || "").split("/");
+        let ts = yyyy && mm && dd ? `${yyyy}-${mm}-${dd} at ${timePart || "00:00"}` : null;
+        const tsDate = ts ? new Date(ts.replace(" at ", "T")) : null;
+        if (!tsDate || tsDate <= readyDate) {
+          // Sit just after ready-to-process; earlier history rows get later minutes.
+          const minute = ONGOING_REQUEST_HISTORY.length - i;
+          ts = `${startDate} at 09:${String(minute).padStart(2, "0")}`;
+        }
+        mockLogs.push({
+          name: req.by,
+          email: `${(req.by || "user").trim().split(" ")[0].toLowerCase()}@company.com`,
+          title: "Material Request",
+          desc: req.id,
+          timestamp: ts,
+        });
+      });
+    }
+
     return mockLogs.sort((a, b) => new Date(b.timestamp.replace(" at ", "T")) - new Date(a.timestamp.replace(" at ", "T")));
   });
 
@@ -769,9 +817,13 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
   const [readyEndDate, setReadyEndDate] = useState("");
 
   // --- Request Material flow state ---
-  const [materials, setMaterials] = useState(INITIAL_BOM_MATERIALS);
-  const [requestHistory, setRequestHistory] = useState(INITIAL_REQUEST_HISTORY);
-  const [hasSubmittedRequest, setHasSubmittedRequest] = useState(false);
+  const [materials, setMaterials] = useState(() => initialBomMaterials(initialData?.wo));
+  const [requestHistory, setRequestHistory] = useState(() => initialRequestHistory(initialData?.wo));
+  // Ongoing work order has prior requests, so the history is available up front.
+  // Other work orders only show it after a request is submitted in-session.
+  const [hasSubmittedRequest, setHasSubmittedRequest] = useState(
+    initialData?.wo === ONGOING_REQUEST_WO
+  );
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [requestDraft, setRequestDraft] = useState([]);
@@ -793,7 +845,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
   const remainingForMaterial = (name) => {
     const m = materials.find((mat) => mat.type === "BOM" && mat.name === name);
     if (!m) return null;
-    return m.requiredQty - m.requestedQty - m.receivedQty;
+    return Math.max(0, m.requiredQty - m.requestedQty - m.receivedQty);
   };
 
   const unitForDraftRow = (row) => {
@@ -854,6 +906,17 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
     return `REQ${String(num + 1).padStart(7, "0")}`;
   };
 
+  // Open the material request detail page in a new tab (the row lives inside a modal,
+  // so we avoid replacing the current page). The history stores the display id
+  // (e.g. REQ0129032); the material request store keys it as `requestId`. A fresh tab
+  // has no navigation state, so we route by the id the detail page resolves with.
+  const openRequestDetail = (req) => {
+    const match = getRequests().find((r) => r.requestId === req.id);
+    const id = match ? match.id : req.id;
+    // Opened from the Work Order side → default the detail page to the Production POV.
+    window.open(`/material-request/${id}?pov=production`, "_blank", "noopener");
+  };
+
   const formatRequestTimestamp = () => {
     const d = new Date();
     const dd = String(d.getDate()).padStart(2, "0");
@@ -894,6 +957,65 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
       return;
     }
 
+    const newReqId = nextRequestId();
+    const timestamp = formatRequestTimestamp();
+
+    // Build a real material request entry so its detail page can be opened.
+    const requestItems = requestDraft.map((row) => {
+      const qtyNum = parseFloat(row.qty) || 0;
+      if (row.type === "BOM") {
+        const mat = materials.find((m) => m.type === "BOM" && m.name === row.materialName);
+        const remaining = mat
+          ? Math.max(0, mat.requiredQty - mat.requestedQty - mat.receivedQty)
+          : null;
+        const isExceeding = remaining != null && qtyNum > remaining;
+        const sku = mat ? mat.sku : "";
+        return {
+          type: "BOM",
+          name: row.materialName,
+          sku,
+          requestedQty: qtyNum,
+          unit: mat ? mat.unit : "",
+          availableBatches: getStockBatchesForSku(sku),
+          allocation: null,
+          ...(isExceeding
+            ? { exceedingReason: row.exceedingCategory, exceedingNotes: row.exceedingReason.trim() }
+            : {}),
+        };
+      }
+      const cat = NON_BOM_CATALOG.find((c) => c.name === row.materialName);
+      const sku = cat ? cat.sku : "";
+      return {
+        type: "Non-BOM",
+        name: row.materialName,
+        sku,
+        requestedQty: qtyNum,
+        unit: cat ? cat.unit : "",
+        availableBatches: getStockBatchesForSku(sku),
+        allocation: null,
+        requestReason: row.category,
+        requestNotes: row.reason.trim(),
+        justification: row.reason.trim(),
+      };
+    });
+
+    addActivityLog("Material Request", newReqId);
+
+    addRequest({
+      id: newReqId,
+      requestId: newReqId,
+      requestedDate: timestamp,
+      requestedDateRaw: new Date().toISOString().slice(0, 10),
+      requestedBy: "Natasha Smith",
+      workOrderNo: initialData?.wo || "",
+      workOrderShort: initialData?.wo || "",
+      status: "new_request",
+      items: requestItems,
+      logs: [
+        { statusKey: "new_request", title: "Request Created", by: "Natasha Smith", timestamp },
+      ],
+    });
+
     setMaterials((prev) => {
       let next = [...prev];
       requestDraft.forEach((row) => {
@@ -925,8 +1047,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
 
     setRequestHistory((prev) => [
       {
-        id: nextRequestId(),
-        date: formatRequestTimestamp(),
+        id: newReqId,
+        date: timestamp,
         by: "Natasha Smith",
         status: "New Request",
       },
@@ -1131,11 +1253,17 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         return (stage.comp || 0) + vendorCompleted >= TOTAL_QTY;
       });
 
-    if (allStagesCompleted && woStatus !== "completed") {
+    // A work order can only complete once no material request is still ongoing —
+    // i.e. every request is Completed/Canceled (or there is no request history).
+    const hasOngoingMaterialRequest = requestHistory.some(
+      (r) => r.status !== "Completed" && r.status !== "Canceled"
+    );
+
+    if (allStagesCompleted && !hasOngoingMaterialRequest && woStatus !== "completed") {
       setWoStatus("completed");
       addActivityLog("Completed");
     }
-  }, [routingStages, outsourceSteps, vendors, TOTAL_QTY, woStatus]);
+  }, [routingStages, outsourceSteps, vendors, TOTAL_QTY, woStatus, requestHistory]);
 
   const internalVendor = vendors.find((v) => v.name === "Internal");
   const internalOut = parseInt(internalVendor?.output || 0, 10) || 0;
@@ -3161,46 +3289,16 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       {err("material") && <span style={errStyle}>{err("material")}</span>}
                     </div>
                     <div style={{ flex: "1" }}>
-                      <div style={{ position: "relative" }}>
-                        <input
-                          type="number"
-                          min="0"
-                          value={row.qty}
-                          placeholder="0"
-                          onChange={(e) =>
-                            updateDraftRow(row.rowId, { qty: e.target.value })
-                          }
-                          style={{
-                            height: "46px",
-                            width: "100%",
-                            padding: unit ? "0 52px 0 16px" : "0 16px",
-                            borderRadius: "var(--radius-small)",
-                            border: `1px solid ${
-                              err("qty")
-                                ? "var(--status-red-primary)"
-                                : "var(--neutral-line-separator-1)"
-                            }`,
-                            fontSize: "var(--text-title-3)",
-                            boxSizing: "border-box",
-                          }}
-                        />
-                        {unit ? (
-                          <span
-                            style={{
-                              position: "absolute",
-                              right: "12px",
-                              top: "50%",
-                              transform: "translateY(-50%)",
-                              color: "var(--neutral-on-surface-tertiary)",
-                              fontSize: "var(--text-title-3)",
-                              pointerEvents: "none",
-                            }}
-                          >
-                            {unit}
-                          </span>
-                        ) : null}
-                      </div>
-                      {err("qty") && <span style={errStyle}>{err("qty")}</span>}
+                      <InputField
+                        type="number"
+                        placeholder="0"
+                        value={row.qty}
+                        onChange={(e) =>
+                          updateDraftRow(row.rowId, { qty: e.target.value })
+                        }
+                        suffix={unit || undefined}
+                        error={err("qty") || undefined}
+                      />
                       {row.type === "BOM" && remaining != null && row.materialName ? (
                         <span
                           style={{
@@ -3214,7 +3312,16 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                         </span>
                       ) : null}
                     </div>
-                    <div style={{ width: "40px", paddingTop: "4px" }}>
+                    <div
+                      style={{
+                        width: "40px",
+                        height: "48px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                      }}
+                    >
                       <IconButton
                         icon={DeleteIcon}
                         disabled={requestDraft.length === 1}
@@ -3520,12 +3627,19 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
             {requestHistory.map((req) => (
               <div
                 key={req.id}
+                onClick={() => openRequestDetail(req)}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = "var(--neutral-surface-grey-lighter)")
+                }
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 style={{
                   display: "flex",
                   alignItems: "center",
                   padding: "16px",
                   borderBottom: "1px solid var(--neutral-line-separator-1)",
                   fontSize: "var(--text-title-3)",
+                  cursor: "pointer",
+                  transition: "background 0.15s ease",
                 }}
               >
                 <div
@@ -3873,7 +3987,10 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   color: "var(--neutral-on-surface-secondary)",
                 }}
               >
-                BOM Name: {initialData?.product || "Wooden Chair"} Classic Model BOM
+                BOM Name:{" "}
+                <span style={{ color: "var(--neutral-on-surface-primary)" }}>
+                  {initialData?.product || "Wooden Chair"} Classic Model BOM
+                </span>
               </span>
             </div>
             {woStatus !== "not_started" && !isCanceled ? (

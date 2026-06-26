@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
-import { CloseIcon, AddIcon, DeleteIcon } from "../../../components/icons/Icons.jsx";
+import React, { useEffect, useRef, useState } from "react";
+import { CloseIcon, AddIcon, DeleteIcon, Info } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
+import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
 import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
 import { InputField } from "../../../components/molecules/InputField.jsx";
 import { ROW_STATUS_META, deriveRowStatusKey, totalAvailable } from "../mock/materialRequestMocks.js";
@@ -44,15 +45,134 @@ const prefillLines = (it) => {
   return lines;
 };
 
-export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfirm }) => {
+// Compact, grouped list of transfer-time stock issues (Expired / Stock Changes).
+// Each column groups batches under their material so many entries stay readable.
+const IssueColumn = ({ label, groups, renderBatch }) => {
+  // Count the leaf batch entries so the header reads e.g. "5 Expired Materials:".
+  const count = groups.reduce((n, g) => n + g.batches.length, 0);
+  // Show a bottom fade while there's more content to scroll into view.
+  const scrollRef = useRef(null);
+  const [showFade, setShowFade] = useState(false);
+  const updateFade = () => {
+    const el = scrollRef.current;
+    if (el) setShowFade(el.scrollHeight - el.scrollTop - el.clientHeight > 4);
+  };
+  useEffect(() => {
+    updateFade();
+  }, [groups]);
+  return (
+    <div
+      style={{
+        flex: "1 1 320px",
+        minWidth: 0,
+        display: "flex",
+        gap: "10px",
+        border: "1px solid var(--status-orange-primary)",
+        background: "var(--status-orange-container)",
+        borderRadius: "var(--radius-card)",
+        padding: "16px 20px",
+      }}
+    >
+      <Info size={18} color="var(--status-orange-primary)" style={{ flexShrink: 0, marginTop: "2px" }} />
+      <div
+        style={{
+          minWidth: 0,
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          gap: "6px",
+          color: "var(--status-orange-primary)",
+          fontSize: "var(--text-title-3)",
+          lineHeight: 1.5,
+        }}
+      >
+        <span style={{ fontWeight: "var(--font-weight-bold)" }}>
+          {count} {label}
+        </span>
+        {/* Long lists scroll inside the box so the section keeps a fixed height. */}
+        <div style={{ position: "relative", minWidth: 0 }}>
+          <div
+            ref={scrollRef}
+            onScroll={updateFade}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+              maxHeight: "200px",
+              overflowY: "auto",
+              paddingRight: "4px",
+            }}
+          >
+            {groups.map((g, gi) => (
+              <div key={gi} style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <span>&bull;</span>
+                  <span>{g.name}</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "2px", paddingLeft: "18px" }}>
+                  {g.batches.map((b, bi) => (
+                    <div key={bi} style={{ display: "flex", gap: "6px" }}>
+                      <span>&bull;</span>
+                      <span>{renderBatch(b)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Bottom fade cue — only while more rows remain below the fold. */}
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: "40px",
+              pointerEvents: "none",
+              opacity: showFade ? 1 : 0,
+              transition: "opacity 0.15s ease",
+              background:
+                "linear-gradient(to bottom, rgba(255, 244, 230, 0), var(--status-orange-container))",
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const MaterialPreparationDrawer = ({
+  isOpen,
+  onClose,
+  items = [],
+  onConfirm,
+  showSnackbar,
+  // When opened via the transfer "Review Stock" flow, groups the expired/changed
+  // materials so the preparer can re-allocate with the corrected stock.
+  // Shape: { expired: [{ name, sku, batches }], changed: [{ name, sku, batches }] }.
+  transferIssues = { expired: [], changed: [] },
+  // Label for the review-step primary button ("Start Preparing" / "Start Re-Preparing").
+  confirmLabel = "Start Preparing",
+}) => {
+  // Working copy of the items so the batch stock can be swapped in-place when the
+  // user refreshes after a stock allocation conflict.
+  const [workItems, setWorkItems] = useState(items);
   const [rows, setRows] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState("edit"); // "edit" | "review"
+  const [conflictOpen, setConflictOpen] = useState(false);
+  const [conflictResolved, setConflictResolved] = useState(false);
+
+  // This request triggers a stock allocation conflict on the first "Start Preparing".
+  const hasConflictData = items.some((it) => Array.isArray(it.updatedBatches));
 
   useEffect(() => {
     if (!isOpen) return;
     setSubmitted(false);
     setStep("edit");
+    setConflictOpen(false);
+    setConflictResolved(false);
+    setWorkItems(items);
     setRows(items.map((it) => ({ lines: prefillLines(it), reason: "" })));
   }, [isOpen, items]);
 
@@ -84,17 +204,33 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
       )
     );
 
-  const computed = items.map((it, idx) => {
+  const computed = workItems.map((it, idx) => {
     const row = rows[idx] || { lines: [], reason: "" };
     const total = row.lines.reduce((sum, l) => sum + (Number(l.qty) || 0), 0);
     const shortageQty = Math.max(it.requestedQty - total, 0);
     const rowStatusKey = deriveRowStatusKey(it.requestedQty, total);
     const exceeds = total > it.requestedQty;
-    return { ...row, total, shortageQty, rowStatusKey, needsReason: shortageQty > 0, exceeds };
+    // Per-line: the entered qty must not exceed the selected batch's available stock.
+    const lineBatchMax = row.lines.map(
+      (l) => it.availableBatches.find((b) => b.batch === l.batch)?.available ?? 0
+    );
+    const lineOverBatch = row.lines.map((l, i) => (Number(l.qty) || 0) > lineBatchMax[i]);
+    const hasBatchError = lineOverBatch.some(Boolean);
+    return {
+      ...row,
+      total,
+      shortageQty,
+      rowStatusKey,
+      needsReason: shortageQty > 0,
+      exceeds,
+      lineBatchMax,
+      lineOverBatch,
+      hasBatchError,
+    };
   });
 
   const hasInvalid = computed.some(
-    (c) => (c.needsReason && !c.reason.trim()) || c.exceeds
+    (c) => (c.needsReason && !c.reason.trim()) || c.exceeds || c.hasBatchError
   );
 
   const handleReview = () => {
@@ -110,15 +246,36 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
       setSubmitted(true);
       return;
     }
+    // First confirmation on a conflicting request surfaces the stock allocation
+    // conflict instead of proceeding.
+    if (hasConflictData && !conflictResolved) {
+      setConflictOpen(true);
+      return;
+    }
     const preparedItems = computed.map((c) => ({
       fulfillableQty: c.total,
       shortageQty: c.shortageQty,
-      reason: c.reason.trim(),
+      // Only keep the shortage reason when there is an actual shortage.
+      reason: c.shortageQty > 0 ? c.reason.trim() : "",
       batches: c.lines
         .filter((l) => l.batch && Number(l.qty) > 0)
         .map((l) => ({ batch: l.batch, qty: Number(l.qty) })),
     }));
     onConfirm(preparedItems);
+  };
+
+  // Swap in the refreshed batch stock, re-prefill, and return to the first step.
+  const handleRefreshData = () => {
+    const refreshed = workItems.map((it) =>
+      Array.isArray(it.updatedBatches) ? { ...it, availableBatches: it.updatedBatches } : it
+    );
+    setWorkItems(refreshed);
+    setRows(refreshed.map((it) => ({ lines: prefillLines(it), reason: "" })));
+    setConflictResolved(true);
+    setConflictOpen(false);
+    setSubmitted(false);
+    setStep("edit");
+    showSnackbar?.("Material batch successfully updated", "success");
   };
 
   return (
@@ -182,6 +339,37 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
 
         {/* Body (single scroll container so the sticky header tracks vertical scroll) */}
         <div style={{ flex: 1, overflow: "auto", padding: "0 24px" }}>
+          {(transferIssues.expired?.length > 0 || transferIssues.changed?.length > 0) && (
+            <div style={{ marginTop: "20px", display: "flex", gap: "16px", flexWrap: "wrap" }}>
+              {transferIssues.expired?.length > 0 && (
+                <IssueColumn
+                  label="Expired Materials:"
+                  groups={transferIssues.expired}
+                  renderBatch={(b) => (
+                    <>
+                      {b.batch} ({b.qty} {b.unit}) -{" "}
+                      <b>Expired on {b.expiredOn}</b>
+                    </>
+                  )}
+                />
+              )}
+              {transferIssues.changed?.length > 0 && (
+                <IssueColumn
+                  label="Stock Changes:"
+                  groups={transferIssues.changed}
+                  renderBatch={(b) => (
+                    <>
+                      {b.batch} (
+                      <b>
+                        {b.previous} {b.unit} &rarr; {b.current} {b.unit}
+                      </b>
+                      )
+                    </>
+                  )}
+                />
+              )}
+            </div>
+          )}
           <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
             <thead>
               <tr>
@@ -195,16 +383,23 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
               </tr>
             </thead>
             <tbody>
-              {items.map((it, idx) => {
+              {workItems.map((it, idx) => {
                 const c = computed[idx] || { lines: [], reason: "" };
                 const meta = ROW_STATUS_META[c.rowStatusKey] || ROW_STATUS_META.not_started;
                 const stock = totalAvailable(it.availableBatches);
                 const reasonError = submitted && c.needsReason && !c.reason.trim();
                 const usedBatches = c.lines.map((l) => l.batch);
                 const unusedBatches = it.availableBatches.filter((b) => !usedBatches.includes(b.batch));
+                const reasonLabel = it.exceedingReason
+                  ? "Exceeding reason:"
+                  : it.requestReason
+                  ? "Request reason:"
+                  : null;
+                const reasonValue = it.exceedingReason || it.requestReason;
+                const notesValue = it.exceedingNotes || it.requestNotes;
                 return (
                   <React.Fragment key={idx}>
-                    <tr style={{ borderBottom: "1px solid var(--neutral-line-separator-1)" }}>
+                    <tr style={{ borderBottom: reasonLabel ? "none" : "1px solid var(--neutral-line-separator-1)" }}>
                       <td style={tdStyle({ color: "var(--neutral-on-surface-secondary)" })}>{idx + 1}</td>
                       <td style={tdStyle()}>
                         <StatusBadge variant={it.type === "BOM" ? "blue-light" : "grey-light"}>
@@ -218,33 +413,7 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
                         </div>
                       </td>
                       <td style={tdStyle()}>
-                        <span>
-                          {it.requestedQty} {it.unit}
-                        </span>
-                        {(it.exceedingReason || it.requestReason) && (
-                          <div
-                            style={{
-                              marginTop: "8px",
-                              fontSize: "var(--text-body)",
-                              color: "var(--neutral-on-surface-secondary)",
-                            }}
-                          >
-                            <div>
-                              <span style={{ fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
-                                {it.exceedingReason ? "Exceeding Reason: " : "Request Reason: "}
-                              </span>
-                              {it.exceedingReason || it.requestReason}
-                            </div>
-                            {(it.exceedingNotes || it.requestNotes) && (
-                              <div style={{ marginTop: "2px" }}>
-                                <span style={{ fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
-                                  Notes:{" "}
-                                </span>
-                                {it.exceedingNotes || it.requestNotes}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        {it.requestedQty} {it.unit}
                       </td>
                       <td style={tdStyle()}>
                         {readOnly ? (
@@ -301,14 +470,11 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
                                 .filter((b) => b.batch === line.batch || !usedBatches.includes(b.batch))
                                 .map((b) => ({ value: b.batch, label: `${b.batch} (${b.available} ${it.unit})` }));
                               return (
-                                <div key={lineIdx} style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+                                <div key={lineIdx} style={{ display: "flex", alignItems: "flex-start", gap: "8px", minWidth: 0 }}>
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <DropdownSelect
                                       value={line.batch}
-                                      onChange={(val) => {
-                                        const max = it.availableBatches.find((b) => b.batch === val)?.available ?? 0;
-                                        updateLine(idx, lineIdx, { batch: val, qty: Math.min(Number(line.qty) || 0, max) });
-                                      }}
+                                      onChange={(val) => updateLine(idx, lineIdx, { batch: val })}
                                       options={options}
                                       placeholder="Select batch"
                                       fieldHeight="48px"
@@ -320,11 +486,17 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
                                       type="number"
                                       value={String(line.qty ?? "")}
                                       onChange={(e) => {
-                                        const next = Math.max(0, Math.min(Number(e.target.value) || 0, lineMax));
+                                        const next = Math.max(0, Number(e.target.value) || 0);
                                         updateLine(idx, lineIdx, { qty: next });
                                       }}
                                       placeholder="Qty"
                                       suffix={it.unit}
+                                      error={
+                                        submitted && c.lineOverBatch?.[lineIdx]
+                                          ? `Exceeds batch qty (${lineMax})`
+                                          : undefined
+                                      }
+                                      errorState={submitted && c.exceeds}
                                     />
                                   </div>
                                   <IconButton
@@ -343,29 +515,38 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
                               </span>
                             )}
 
-                            {unusedBatches.length > 0 && (
-                              <Button
-                                variant="tertiary"
-                                size="sm"
-                                leftIcon={AddIcon}
-                                disabled={c.shortageQty <= 0}
-                                onClick={() => addLine(idx, unusedBatches[0].batch)}
-                                style={{ alignSelf: "flex-start" }}
-                              >
-                                Add Batch
-                              </Button>
-                            )}
-
-                            {submitted && c.exceeds && (
-                              <span
-                                style={{
-                                  color: "var(--status-red-primary)",
-                                  fontSize: "var(--text-body)",
-                                  marginTop: "4px",
-                                }}
-                              >
-                                Exceeds requested qty
-                              </span>
+                            {(unusedBatches.length > 0 || (submitted && c.exceeds)) && (
+                              // Mirrors the batch-line layout (select / qty / delete) so the
+                              // message lines up with the qty column — same as "Exceeds batch qty".
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0 }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  {unusedBatches.length > 0 && (
+                                    <Button
+                                      variant="tertiary"
+                                      size="sm"
+                                      leftIcon={AddIcon}
+                                      disabled={c.shortageQty <= 0}
+                                      onClick={() => addLine(idx, unusedBatches[0].batch)}
+                                    >
+                                      Add Batch
+                                    </Button>
+                                  )}
+                                </div>
+                                <div style={{ width: "112px", flexShrink: 0 }}>
+                                  {submitted && c.exceeds && (
+                                    <span
+                                      style={{
+                                        whiteSpace: "nowrap",
+                                        color: "var(--status-red-primary)",
+                                        fontSize: "var(--text-body)",
+                                      }}
+                                    >
+                                      Exceeds requested qty
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ width: "50px", flexShrink: 0 }} />
+                              </div>
                             )}
                               </>
                             )}
@@ -403,6 +584,23 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
                         <StatusBadge variant={`${meta.badge}-light`}>{meta.label}</StatusBadge>
                       </td>
                     </tr>
+                    {reasonLabel && (
+                      <tr style={{ borderBottom: "1px solid var(--neutral-line-separator-1)", background: "var(--status-orange-container)" }}>
+                        <td style={{ borderLeft: "3px solid var(--status-orange-primary)" }} />
+                        <td colSpan={2} style={{ padding: "12px 12px", fontSize: "var(--text-title-3)", lineHeight: 1.6, verticalAlign: "top" }}>
+                          <span style={{ fontWeight: "var(--font-weight-bold)" }}>{reasonLabel} </span>
+                          {reasonValue}
+                        </td>
+                        <td colSpan={4} style={{ padding: "12px 12px", fontSize: "var(--text-title-3)", lineHeight: 1.6, verticalAlign: "top" }}>
+                          {notesValue && (
+                            <>
+                              <span style={{ fontWeight: "var(--font-weight-bold)" }}>Notes: </span>
+                              {notesValue}
+                            </>
+                          )}
+                        </td>
+                      </tr>
+                    )}
                   </React.Fragment>
                 );
               })}
@@ -426,7 +624,7 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
                 Back
               </Button>
               <Button size="xl" onClick={handleConfirm} style={{ flex: 1 }}>
-                Start Preparing
+                {confirmLabel}
               </Button>
             </>
           ) : (
@@ -436,6 +634,20 @@ export const MaterialPreparationDrawer = ({ isOpen, onClose, items = [], onConfi
           )}
         </div>
       </div>
+
+      {/* Stock allocation conflict — rendered above the drawer (zIndex > 6001). */}
+      <GeneralModal
+        isOpen={conflictOpen}
+        onClose={() => setConflictOpen(false)}
+        title="Stock Allocation Conflict"
+        description="Some materials are no longer available. Please refresh the updated stock before continuing."
+        zIndex={7000}
+        footer={
+          <Button size="lg" onClick={handleRefreshData} style={{ width: "100%" }}>
+            Refresh Data
+          </Button>
+        }
+      />
     </>
   );
 };

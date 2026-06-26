@@ -26,13 +26,18 @@ export const InputField = ({
   showCounter,
   multiline = false,
   error,
+  // Apply the error (red) frame without rendering a message — for when the message
+  // is shown elsewhere (e.g. a shared row-level error).
+  errorState = false,
   helperText,
   headerRight,
   labelFontSize,
   headerRightFontSize,
   headerRightColor,
   ...rest
-}) => (
+}) => {
+  const hasError = !!error || errorState;
+  return (
   <FormField
     label={label}
     required={required}
@@ -61,19 +66,19 @@ export const InputField = ({
             background: disabled
               ? "var(--neutral-surface-grey-lighter)"
               : "var(--neutral-surface-primary)",
-            ...inputFrameStyle(disabled, !!error),
+            ...inputFrameStyle(disabled, hasError),
             ...inputControlStyle(disabled, !!value),
             cursor: disabled ? "not-allowed" : "text",
           }}
           onFocus={(e) => focusInputFrame(e.currentTarget)}
-          onBlur={(e) => blurInputFrame(e.currentTarget, disabled, !!error)}
+          onBlur={(e) => blurInputFrame(e.currentTarget, disabled, hasError)}
         />
       ) : type === "date" ? (
         <DateInputControl
           value={value}
           onChange={onChange}
           disabled={disabled}
-          hasError={!!error}
+          hasError={hasError}
           placeholder={placeholder || "yyyy-mm-dd"}
           maxDate={max}
         />
@@ -88,11 +93,11 @@ export const InputField = ({
             background: disabled
               ? "var(--neutral-surface-grey-lighter)"
               : "var(--neutral-surface-primary)",
-            ...inputFrameStyle(disabled, !!error),
+            ...inputFrameStyle(disabled, hasError),
             boxSizing: "border-box",
           }}
           onFocus={(e) => focusInputFrame(e.currentTarget)}
-          onBlur={(e) => blurInputFrame(e.currentTarget, disabled, !!error)}
+          onBlur={(e) => blurInputFrame(e.currentTarget, disabled, hasError)}
         >
           {Icon && (
             <Icon size={20} color="var(--neutral-on-surface-tertiary)" />
@@ -168,4 +173,5 @@ export const InputField = ({
       )}
     </div>
   </FormField>
-);
+  );
+};
