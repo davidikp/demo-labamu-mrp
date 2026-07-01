@@ -67,7 +67,6 @@ import {
   poReferenceTableHeaderCellStyle,
   poReferenceTableCellStyle,
   poReferenceTableEmptyStateStyle,
-  tabButtonStyle
 } from "../components/detail/shared/PoDetailSharedComponents.jsx";
 
 // Utils
@@ -2791,12 +2790,8 @@ export const PurchaseOrderDetailPage = ({
         />
       ) : activeTab === "documents" ? (
         <PoDocumentsTab
-          documentFilterTriggerRef={documentFilterTriggerRef}
-          showDocumentFilterMenu={showDocumentFilterMenu}
-          setShowDocumentFilterMenu={setShowDocumentFilterMenu}
           documentTypeFilters={documentTypeFilters}
           setDocumentTypeFilters={setDocumentTypeFilters}
-          documentFilterMenuPosition={documentFilterMenuPosition}
           documentTypeFilterOptions={documentTypeFilterOptions}
           documentSearch={documentSearch}
           setDocumentSearch={setDocumentSearch}
@@ -2808,8 +2803,6 @@ export const PurchaseOrderDetailPage = ({
           openDocumentMenuId={openDocumentMenuId}
           setOpenDocumentMenuId={setOpenDocumentMenuId}
           documentMenuPosition={documentMenuPosition}
-          updateDocumentFilterMenuPosition={updateDocumentFilterMenuPosition}
-          toggleDocumentTypeFilter={toggleDocumentTypeFilter}
           resetDocumentUploadState={resetDocumentUploadState}
           setShowUploadDocumentModal={setShowUploadDocumentModal}
           handleDocumentAction={handleDocumentAction}

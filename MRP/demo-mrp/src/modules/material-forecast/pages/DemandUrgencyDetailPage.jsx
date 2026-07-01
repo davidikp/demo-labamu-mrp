@@ -1,11 +1,9 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRightIcon } from "../../../components/icons/Icons.jsx";
 import { StatusBadge } from "../../../components/atoms/StatusBadge.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
-import { FilterPopoverCheckbox } from "../../../components/molecules/FilterPopoverCheckbox.jsx";
-import { DateRangeInputControl } from "../../purchase-order/components/DateRangeInputControl.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { MOCK_DEMAND_URGENCY_ROWS } from "../mock/materialForecastMocks.js";
 import { CreatePoDrawer } from "../components/CreatePoDrawer.jsx";
@@ -35,77 +33,6 @@ const parseShortDate = (str) => {
   return isNaN(d.getTime()) ? null : d;
 };
 
-const toISO = (d) => {
-  if (!d) return "";
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
-
-const WoStartDateFilterPopover = ({ dateFilterType, setDateFilterType, customDateRange, setCustomDateRange, onClose }) => {
-  const popoverRef = useRef(null);
-  useEffect(() => {
-    const handler = (e) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target)) onClose();
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [onClose]);
-
-  return (
-    <div
-      ref={popoverRef}
-      style={{
-        position: "absolute",
-        top: "calc(100% + 8px)",
-        left: 0,
-        width: "360px",
-        background: "var(--neutral-surface-primary)",
-        border: "1px solid var(--neutral-line-separator-1)",
-        borderRadius: "var(--radius-card)",
-        boxShadow: "var(--elevation-sm)",
-        padding: "16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
-        zIndex: 1000,
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>
-          WO Start Date
-        </span>
-        <button
-          onClick={() => { setDateFilterType("all"); setCustomDateRange({ start: "", end: "" }); onClose(); }}
-          style={{ background: "none", border: "none", padding: 0, color: "var(--status-red-primary)", cursor: "pointer", fontSize: "var(--text-body)", fontWeight: "var(--font-weight-bold)" }}
-        >
-          Remove Filter
-        </button>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        {[
-          { key: "all",    label: "All" },
-          { key: "last7",  label: "Last 7 days" },
-          { key: "last30", label: "Last 30 days" },
-          { key: "next7",  label: "Next 7 days" },
-          { key: "next30", label: "Next 30 days" },
-          { key: "custom", label: "Custom date" },
-        ].map((opt) => (
-          <label key={opt.key} style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", fontSize: "var(--text-title-3)" }}>
-            <input type="radio" checked={dateFilterType === opt.key} onChange={() => setDateFilterType(opt.key)} />
-            <span>{opt.label}</span>
-          </label>
-        ))}
-        {dateFilterType === "custom" && (
-          <DateRangeInputControl
-            value={customDateRange}
-            onChange={(e) => setCustomDateRange(e.target.value)}
-            fieldHeight="40px"
-            fontSize="14px"
-          />
-        )}
-      </div>
-    </div>
-  );
-};
 
 export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -114,10 +41,8 @@ export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar
   const [productFilter, setProductFilter] = useState([]);
   const [customerFilter, setCustomerFilter] = useState([]);
   const [dateFilterType, setDateFilterType] = useState("all");
-  const [customDateRange, setCustomDateRange] = useState({ start: "", end: "" });
-  const [showDatePopover, setShowDatePopover] = useState(false);
-  const [openFilterKey, setOpenFilterKey] = useState(null);
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
+  const [customDateFrom, setCustomDateFrom] = useState(null);
+  const [customDateTo, setCustomDateTo] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [isCreatePoOpen, setIsCreatePoOpen] = useState(false);
@@ -163,7 +88,6 @@ export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar
       if (dateFilterType !== "all") {
         const startDate = parseShortDate(row.woStartDate);
         if (!startDate) return false;
-        const isoStart = toISO(startDate);
 
         if (dateFilterType === "last7") {
           const cutoff = new Date(now); cutoff.setDate(now.getDate() - 7);
@@ -177,14 +101,14 @@ export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar
         } else if (dateFilterType === "next30") {
           const cutoff = new Date(now); cutoff.setDate(now.getDate() + 30);
           if (startDate < now || startDate > cutoff) return false;
-        } else if (dateFilterType === "custom" && customDateRange.start && customDateRange.end) {
-          if (isoStart < customDateRange.start || isoStart > customDateRange.end) return false;
+        } else if (dateFilterType === "__custom__" && customDateFrom && customDateTo) {
+          if (startDate < customDateFrom || startDate > customDateTo) return false;
         }
       }
 
       return true;
     });
-  }, [sourceRows, searchQuery, materialFilter, productFilter, customerFilter, dateFilterType, customDateRange]);
+  }, [sourceRows, searchQuery, orderIdFilter, materialFilter, productFilter, customerFilter, dateFilterType, customDateFrom, customDateTo]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const paginated = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
@@ -256,46 +180,32 @@ export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar
             justifyContent: "space-between",
             gap: "12px",
             padding: "16px 24px",
-            borderBottom: hasActiveFilters ? "none" : "1px solid var(--neutral-line-separator-1)",
+            borderBottom: "1px solid var(--neutral-line-separator-1)",
             flexShrink: 0,
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            {/* Order ID — first */}
-            {[
-              { key: "orderId",  label: "Order ID", value: orderIdFilter,  options: orderIdOptions,  onChange: (v) => { setOrderIdFilter(v);  setCurrentPage(1); } },
-              { key: "material", label: "Material",  value: materialFilter, options: materialOptions, onChange: (v) => { setMaterialFilter(v); setCurrentPage(1); } },
-              { key: "customer", label: "Customer",  value: customerFilter, options: customerOptions, onChange: (v) => { setCustomerFilter(v); setCurrentPage(1); } },
-              { key: "product",  label: "Product",   value: productFilter,  options: productOptions,  onChange: (v) => { setProductFilter(v);  setCurrentPage(1); } },
-            ].map(({ key, label, value, options, onChange }) => (
-              <div
-                key={key}
-                onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); setPopoverTriggerRect(rect); setOpenFilterKey((prev) => prev === key ? null : key); }}
-              >
-                <FilterPill label={label} active={value.length > 0} isOpen={openFilterKey === key} count={value.length} />
-              </div>
-            ))}
-
-            {openFilterKey === "orderId"  && <FilterPopoverCheckbox title="Order ID" options={orderIdOptions}  value={orderIdFilter}  onChange={(v) => { setOrderIdFilter(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "material" && <FilterPopoverCheckbox title="Material" options={materialOptions} value={materialFilter} onChange={(v) => { setMaterialFilter(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "customer" && <FilterPopoverCheckbox title="Customer" options={customerOptions} value={customerFilter} onChange={(v) => { setCustomerFilter(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "product"  && <FilterPopoverCheckbox title="Product"  options={productOptions}  value={productFilter}  onChange={(v) => { setProductFilter(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-
-            {/* WO Start Date filter */}
-            <div style={{ position: "relative" }}>
-              <div onClick={() => setShowDatePopover((p) => !p)}>
-                <FilterPill label="WO Start Date" active={dateFilterActive} isOpen={showDatePopover} count={dateFilterCount} />
-              </div>
-              {showDatePopover && (
-                <WoStartDateFilterPopover
-                  dateFilterType={dateFilterType}
-                  setDateFilterType={(v) => { setDateFilterType(v); setCurrentPage(1); }}
-                  customDateRange={customDateRange}
-                  setCustomDateRange={setCustomDateRange}
-                  onClose={() => setShowDatePopover(false)}
-                />
-              )}
-            </div>
+            <FilterMenu label="Order ID" multiple options={orderIdOptions} values={orderIdFilter} onChangeMultiple={(v) => { setOrderIdFilter(v); setCurrentPage(1); }} />
+            <FilterMenu label="Material" multiple options={materialOptions} values={materialFilter} onChangeMultiple={(v) => { setMaterialFilter(v); setCurrentPage(1); }} />
+            <FilterMenu label="Customer" multiple options={customerOptions} values={customerFilter} onChangeMultiple={(v) => { setCustomerFilter(v); setCurrentPage(1); }} />
+            <FilterMenu label="Product" multiple options={productOptions} values={productFilter} onChangeMultiple={(v) => { setProductFilter(v); setCurrentPage(1); }} />
+            <FilterMenu
+              label="WO Start Date"
+              searchable={false}
+              options={[
+                { value: "last7", label: "Last 7 days" },
+                { value: "last30", label: "Last 30 days" },
+                { value: "next7", label: "Next 7 days" },
+                { value: "next30", label: "Next 30 days" },
+              ]}
+              value={dateFilterType}
+              onChange={(v) => { setDateFilterType(v); setCurrentPage(1); }}
+              allValue="all"
+              customDateEnabled
+              customDateFrom={customDateFrom}
+              customDateTo={customDateTo}
+              onCustomDateChange={(from, to) => { setCustomDateFrom(from); setCustomDateTo(to); }}
+            />
           </div>
 
           <TableSearchField
@@ -306,41 +216,6 @@ export const DemandUrgencyDetailPage = ({ onNavigate, statusType, showPoSnackbar
           />
         </div>
 
-        {/* Filter Pills Row */}
-        {hasActiveFilters && (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "8px 24px 12px",
-              flexWrap: "wrap",
-              borderBottom: "1px solid var(--neutral-line-separator-1)",
-              flexShrink: 0,
-            }}
-          >
-            <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>Active filters:</span>
-            {orderIdFilter.map((id) => (
-              <FilterPill key={`oid-${id}`} label={id} active={true} onRemove={() => setOrderIdFilter((prev) => prev.filter((x) => x !== id))} />
-            ))}
-            {materialFilter.map((m) => (
-              <FilterPill key={`mat-${m}`} label={m} active={true} onRemove={() => setMaterialFilter((prev) => prev.filter((x) => x !== m))} />
-            ))}
-            {productFilter.map((p) => (
-              <FilterPill key={`prod-${p}`} label={p} active={true} onRemove={() => setProductFilter((prev) => prev.filter((x) => x !== p))} />
-            ))}
-            {customerFilter.map((c) => (
-              <FilterPill key={`cust-${c}`} label={c} active={true} onRemove={() => setCustomerFilter((prev) => prev.filter((x) => x !== c))} />
-            ))}
-            {dateFilterActive && (
-              <FilterPill
-                label="WO Start Date"
-                active={true}
-                onRemove={() => { setDateFilterType("all"); setCustomDateRange({ start: "", end: "" }); }}
-              />
-            )}
-          </div>
-        )}
 
         {/* Table */}
         <div style={{ overflowX: "auto", overflowY: "auto", flex: 1 }}>

@@ -28,7 +28,7 @@ import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { FormField, InputField } from "../../../components/index.js";
 import { MOCK_STOCK_BATCHES } from "../mock/batchesMocks.js";
 import { MOCK_VENDORS } from "../../../data/vendors.js";
@@ -611,9 +611,6 @@ export const StockBatchesTab = ({
     vendor: [],
     expiration: []
   });
-  const [openFilterKey, setOpenFilterKey] = useState(null);
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
-  
   // localBatches and localTransactions are now passed as props
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [drawerMode, setDrawerMode] = useState(null); // 'add' | 'edit' | null
@@ -887,21 +884,6 @@ export const StockBatchesTab = ({
     setFormData({ ...formData, attachments: updated });
   };
 
-  const handleFilterClick = (key, e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setPopoverTriggerRect(rect);
-    setOpenFilterKey(prev => prev === key ? null : key);
-  };
-
-  const toggleFilterValue = (key, value) => {
-    setActiveFilters(prev => ({
-      ...prev,
-      [key]: prev[key].includes(value)
-        ? prev[key].filter(v => v !== value)
-        : [...prev[key], value]
-    }));
-  };
-
   const getFilterOptions = (key) => {
     const allBatches = MOCK_STOCK_BATCHES.filter(b => b.materialId === materialId);
     switch (key) {
@@ -1046,73 +1028,30 @@ export const StockBatchesTab = ({
           flexWrap: "wrap"
         }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center", flex: 1, position: "relative" }}>
-            <div onClick={(e) => handleFilterClick("status", e)}>
-              <FilterPill label="Batch Status" count={activeFilters.status.length} active={activeFilters.status.length > 0} isOpen={openFilterKey === "status"} />
-            </div>
-            <div onClick={(e) => handleFilterClick("vendor", e)}>
-              <FilterPill label="Vendor" count={activeFilters.vendor.length} active={activeFilters.vendor.length > 0} isOpen={openFilterKey === "vendor"} />
-            </div>
-            <div onClick={(e) => handleFilterClick("expiration", e)}>
-              <FilterPill label="Expiration Status" count={activeFilters.expiration.length} active={activeFilters.expiration.length > 0} isOpen={openFilterKey === "expiration"} />
-            </div>
-
-            {openFilterKey && (
-              <>
-                {createPortal(
-                  <div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setOpenFilterKey(null)} />,
-                  document.body
-                )}
-                {createPortal(
-                  <div style={{
-                    position: "fixed",
-                    top: popoverTriggerRect ? `${popoverTriggerRect.bottom + 8}px` : "200px",
-                    left: popoverTriggerRect ? `${popoverTriggerRect.left}px` : "24px",
-                    width: "280px",
-                    background: "var(--neutral-surface-primary)",
-                    border: "1px solid var(--neutral-line-separator-1)",
-                    borderRadius: "16px",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                    padding: "16px",
-                    zIndex: 14001,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px"
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>
-                        {openFilterKey === "status" ? "Batch Status" : 
-                         openFilterKey === "vendor" ? "Vendor" : "Expiration Status"}
-                      </span>
-                      <button 
-                        onClick={() => {
-                          setActiveFilters(prev => ({ ...prev, [openFilterKey]: [] }));
-                          setOpenFilterKey(null);
-                        }}
-                        style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
-                      >
-                        Remove Filter
-                      </button>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                      {getFilterOptions(openFilterKey).length > 0 ? getFilterOptions(openFilterKey).map(opt => (
-                        <label key={opt} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
-                          <Checkbox 
-                            checked={activeFilters[openFilterKey].includes(opt)} 
-                            onChange={() => toggleFilterValue(openFilterKey, opt)} 
-                          />
-                          {opt}
-                        </label>
-                      )) : (
-                        <div style={{ padding: "12px", textAlign: "center", fontSize: "var(--text-body)", color: "var(--neutral-on-surface-tertiary)" }}>
-                          No options available
-                        </div>
-                      )}
-                    </div>
-                  </div>,
-                  document.body
-                )}
-              </>
-            )}
+            <FilterMenu
+              label="Batch Status"
+              multiple
+              searchable={false}
+              options={getFilterOptions("status").map((o) => ({ value: o, label: o }))}
+              values={activeFilters.status}
+              onChangeMultiple={(values) => setActiveFilters((prev) => ({ ...prev, status: values }))}
+            />
+            <FilterMenu
+              label="Vendor"
+              multiple
+              searchable={false}
+              options={getFilterOptions("vendor").map((o) => ({ value: o, label: o }))}
+              values={activeFilters.vendor}
+              onChangeMultiple={(values) => setActiveFilters((prev) => ({ ...prev, vendor: values }))}
+            />
+            <FilterMenu
+              label="Expiration Status"
+              multiple
+              searchable={false}
+              options={getFilterOptions("expiration").map((o) => ({ value: o, label: o }))}
+              values={activeFilters.expiration}
+              onChangeMultiple={(values) => setActiveFilters((prev) => ({ ...prev, expiration: values }))}
+            />
           </div>
           
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>

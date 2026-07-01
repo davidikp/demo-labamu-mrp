@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { ChevronDownIcon } from "../../../components/icons/Icons.jsx";
-import { Checkbox } from "../../../components/common/Checkbox.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { ListStatusCounterCard } from "../../../components/common/ListStatusCounterCard.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
-import { DateRangeInputControl } from "../../work-order/components/DateRangeInputControl.jsx";
 import { getRequests, REQUEST_STATUS_META } from "../mock/materialRequestMocks.js";
 
 const cellStyle = (overrides) => ({
@@ -31,11 +29,10 @@ export const MaterialRequestListPage = ({ onNavigate }) => {
   const rows = getRequests();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [openFilterKey, setOpenFilterKey] = useState(null);
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [requesterFilters, setRequesterFilters] = useState([]);
   const [dateFilterType, setDateFilterType] = useState("all");
-  const [dateRange, setDateRange] = useState({ start: "", end: "" });
+  const [customDateFrom, setCustomDateFrom] = useState(null);
+  const [customDateTo, setCustomDateTo] = useState(null);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
@@ -78,11 +75,8 @@ export const MaterialRequestListPage = ({ onNavigate }) => {
       start.setDate(referenceNow.getDate() - (dateFilterType === "last7" ? 7 : 30));
       return rowDate >= start && rowDate <= referenceNow;
     }
-    if (dateFilterType === "custom" && dateRange.start && dateRange.end) {
-      const start = parsedDate(dateRange.start);
-      const end = parsedDate(dateRange.end);
-      if (start && end) return rowDate >= start && rowDate <= end;
-      return false;
+    if (dateFilterType === "__custom__" && customDateFrom && customDateTo) {
+      return rowDate >= customDateFrom && rowDate <= customDateTo;
     }
     return true;
   };
@@ -130,8 +124,8 @@ export const MaterialRequestListPage = ({ onNavigate }) => {
     searchQuery,
     requesterFilters.join("|"),
     dateFilterType,
-    dateRange.start,
-    dateRange.end,
+    customDateFrom,
+    customDateTo,
     rowsPerPage,
     sortBy,
     sortDirection,
@@ -223,154 +217,24 @@ export const MaterialRequestListPage = ({ onNavigate }) => {
               position: "relative",
             }}
           >
-            <div
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setPopoverTriggerRect(rect);
-                setOpenFilterKey((prev) => (prev === "date" ? null : "date"));
+            <FilterMenu
+              label="Requested Date"
+              searchable={false}
+              options={[
+                { value: "last7", label: "Last 7 days" },
+                { value: "last30", label: "Last 30 days" },
+              ]}
+              value={dateFilterType}
+              onChange={setDateFilterType}
+              allValue="all"
+              customDateEnabled
+              customDateFrom={customDateFrom}
+              customDateTo={customDateTo}
+              onCustomDateChange={(from, to) => {
+                setCustomDateFrom(from);
+                setCustomDateTo(to);
               }}
-            >
-              <FilterPill
-                label="Requested Date"
-                active={dateFilterType !== "all"}
-                isOpen={openFilterKey === "date"}
-                count={dateFilterType !== "all" ? 1 : 0}
-              />
-            </div>
-            {openFilterKey ? (
-              <>
-                <div
-                  style={{ position: "fixed", inset: 0, zIndex: 80 }}
-                  onClick={() => setOpenFilterKey(null)}
-                />
-                <div
-                  style={{
-                    position: "fixed",
-                    top: popoverTriggerRect ? `${popoverTriggerRect.bottom + 8}px` : "160px",
-                    left: popoverTriggerRect ? `${popoverTriggerRect.left}px` : "0",
-                    width: "360px",
-                    background: "var(--neutral-surface-primary)",
-                    border: "1px solid var(--neutral-line-separator-1)",
-                    borderRadius: "var(--radius-card)",
-                    boxShadow: "var(--elevation-sm)",
-                    padding: "16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px",
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "var(--text-title-2)",
-                        fontWeight: "var(--font-weight-bold)",
-                      }}
-                    >
-                      {openFilterKey === "requester" ? "Requested By" : "Requested Date"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (openFilterKey === "requester") {
-                          setRequesterFilters([]);
-                        } else {
-                          setDateFilterType("all");
-                          setDateRange({ start: "", end: "" });
-                        }
-                        setOpenFilterKey(null);
-                      }}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        color: "var(--status-red-primary)",
-                        cursor: "pointer",
-                        fontSize: "var(--text-body)",
-                        fontWeight: "var(--font-weight-bold)",
-                      }}
-                    >
-                      Remove Filter
-                    </button>
-                  </div>
-
-                  {openFilterKey === "requester" ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                      {requesterOptions.map((option) => (
-                        <label
-                          key={option}
-                          onClick={() =>
-                            setRequesterFilters((prev) =>
-                              prev.includes(option)
-                                ? prev.filter((item) => item !== option)
-                                : [...prev, option]
-                            )
-                          }
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            cursor: "pointer",
-                            fontSize: "var(--text-title-3)",
-                          }}
-                        >
-                          <Checkbox
-                            checked={requesterFilters.includes(option)}
-                            onChange={() =>
-                              setRequesterFilters((prev) =>
-                                prev.includes(option)
-                                  ? prev.filter((o) => o !== option)
-                                  : [...prev, option]
-                              )
-                            }
-                          />
-                          <span>{option}</span>
-                        </label>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                      {[
-                        { key: "all", label: "All" },
-                        { key: "last7", label: "Last 7 days" },
-                        { key: "last30", label: "Last 30 days" },
-                        { key: "custom", label: "Custom date" },
-                      ].map((option) => (
-                        <label
-                          key={option.key}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            cursor: "pointer",
-                            fontSize: "var(--text-title-3)",
-                          }}
-                        >
-                          <input
-                            type="radio"
-                            checked={dateFilterType === option.key}
-                            onChange={() => setDateFilterType(option.key)}
-                          />
-                          <span>{option.label}</span>
-                        </label>
-                      ))}
-                      {dateFilterType === "custom" && (
-                        <DateRangeInputControl
-                          value={dateRange}
-                          onChange={(e) => setDateRange(e.target.value)}
-                        />
-                      )}
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : null}
+            />
           </div>
 
           <TableSearchField

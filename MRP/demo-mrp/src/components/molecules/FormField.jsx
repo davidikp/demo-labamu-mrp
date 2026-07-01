@@ -12,7 +12,7 @@ export const FormField = ({
     style={{
       display: "flex",
       flexDirection: "column",
-      gap: "8px",
+      gap: "4px",
       width: "100%",
     }}
   >
@@ -22,16 +22,14 @@ export const FormField = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          fontSize: "var(--text-body)",
-          fontWeight: "var(--font-weight-regular)",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
           {required ? (
-            <span style={{ color: "var(--status-red-primary)" }}>*</span>
+            <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--status-red-primary)" }}>*</span>
           ) : null}
           {label && (
-            <span style={{ color: "var(--neutral-on-surface-primary)" }}>
+            <span style={{ fontSize: "12px", lineHeight: "18px", color: "var(--neutral-on-surface-primary)" }}>
               {label}
             </span>
           )}
@@ -49,7 +47,7 @@ export const FormField = ({
         style={{
           fontSize: "var(--text-body)",
           color: "var(--status-red-primary)",
-          marginTop: "-4px",
+          marginTop: "0px",
         }}
       >
         {error}
@@ -60,7 +58,7 @@ export const FormField = ({
         style={{
           fontSize: "var(--text-desc)",
           color: "var(--neutral-on-surface-secondary)",
-          marginTop: "-4px",
+          marginTop: "0px",
         }}
       >
         {helperText}

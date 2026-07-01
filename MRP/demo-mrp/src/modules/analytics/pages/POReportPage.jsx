@@ -18,7 +18,7 @@ import { MOCK_REPORT_POS } from "../mock/reportMocks";
 import { formatCurrency } from "../../../utils/format/formatUtils";
 import { StatusBadge } from "../../../components/common/StatusBadge";
 import { DropdownSelect } from "../../../components/common/DropdownSelect";
-import { MultiSelectDropdown } from "../../../components/common/MultiSelectDropdown.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { Button } from "../../../components/common/Button";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter";
 import { TableSearchField } from "../../../components/table/TableSearchField";
@@ -664,18 +664,20 @@ const POReportPage = ({ onNavigate, t }) => {
         {/* Filters Header */}
         <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <MultiSelectDropdown 
-              searchable={true}
-              placeholder="Vendor"
-              value={vendorFilter}
-              options={vendors.map(v => ({ value: v, label: v === "all" ? "Vendor" : v }))}
-              onChange={(val) => { setVendorFilter(val); setCurrentPage(1); }}
+            <FilterMenu
+              label="Vendor"
+              multiple
+              options={vendors.filter(v => v !== "all").map(v => ({ value: v, label: v }))}
+              values={vendorFilter}
+              onChangeMultiple={(val) => { setVendorFilter(val); setCurrentPage(1); }}
             />
-            <MultiSelectDropdown 
-              placeholder="PO Status"
-              value={poStatusFilter}
-              options={poStatuses.map(s => ({ value: s, label: s === "all" ? "PO Status" : s }))}
-              onChange={(val) => { setPoStatusFilter(val); setCurrentPage(1); }}
+            <FilterMenu
+              label="PO Status"
+              multiple
+              searchable={false}
+              options={poStatuses.filter(s => s !== "all").map(s => ({ value: s, label: s }))}
+              values={poStatusFilter}
+              onChangeMultiple={(val) => { setPoStatusFilter(val); setCurrentPage(1); }}
             />
           </div>
 

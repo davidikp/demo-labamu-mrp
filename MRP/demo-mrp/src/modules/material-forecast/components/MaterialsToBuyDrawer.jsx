@@ -4,8 +4,7 @@ import { IconButton } from "../../../components/common/IconButton.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
-import { FilterPopoverCheckbox } from "../../../components/molecules/FilterPopoverCheckbox.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { MOCK_DEMAND_URGENCY_ROWS } from "../mock/materialForecastMocks.js";
@@ -76,8 +75,6 @@ export const MaterialsToBuyDrawer = ({ isOpen, onClose, urgencyDaysInAdvance = 5
   const [woIdFilter, setWoIdFilter]       = useState([]);
   const [orderIdFilter, setOrderIdFilter] = useState([]);
   const [estStartFilter, setEstStartFilter] = useState([]);
-  const [openFilterKey, setOpenFilterKey] = useState(null);
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [currentPage, setCurrentPage]     = useState(1);
   const [rowsPerPage, setRowsPerPage]     = useState(10);
   const [selectedIds, setSelectedIds]     = useState([]);
@@ -303,15 +300,8 @@ export const MaterialsToBuyDrawer = ({ isOpen, onClose, urgencyDaysInAdvance = 5
         <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "16px 24px 12px", borderBottom: ROW_BORDER, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             {filterDefs.map(({ key, label, value, options, onChange }) => (
-              <div key={key} onClick={e => { const rect = e.currentTarget.getBoundingClientRect(); setPopoverTriggerRect(rect); setOpenFilterKey(prev => prev === key ? null : key); }}>
-                <FilterPill label={label} active={value.length > 0} isOpen={openFilterKey === key} count={value.length} />
-              </div>
+              <FilterMenu key={key} label={label} multiple options={options.map(o => ({ value: o.value, label: o.label }))} values={value} onChangeMultiple={v => { onChange(v); setCurrentPage(1); }} />
             ))}
-            {filterDefs.map(({ key, label, value, options, onChange }) =>
-              openFilterKey === key ? (
-                <FilterPopoverCheckbox key={key} title={label} options={options} value={value} onChange={v => { onChange(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />
-              ) : null
-            )}
           </div>
         </div>
 

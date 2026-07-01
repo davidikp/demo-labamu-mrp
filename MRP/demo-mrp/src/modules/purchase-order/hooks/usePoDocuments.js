@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { MOCK_PO_DOCUMENTS } from "../mock/purchaseOrderMocks";
 import {
   validateUploadFile,
@@ -47,14 +47,6 @@ export const usePoDocuments = ({
   const [documentSearch, setDocumentSearch] = useState("");
   const [documentTypeFilters, setDocumentTypeFilters] = useState([]);
   const [documentView, setDocumentView] = useState("list");
-  const [showDocumentFilterMenu, setShowDocumentFilterMenu] = useState(false);
-  const [documentFilterMenuPosition, setDocumentFilterMenuPosition] = useState({
-    top: 0,
-    left: 0,
-    placement: "bottom",
-  });
-  const documentFilterTriggerRef = useRef(null);
-
   // --- Modal & Menu State ---
   const [openDocumentMenuId, setOpenDocumentMenuId] = useState(null);
   const [documentMenuPosition, setDocumentMenuPosition] = useState({
@@ -320,21 +312,6 @@ export const usePoDocuments = ({
     }
   }, [documents]);
 
-  const updateDocumentFilterMenuPosition = useCallback(() => {
-    if (documentFilterTriggerRef.current) {
-      const rect = documentFilterTriggerRef.current.getBoundingClientRect();
-      const estimatedHeight = 360;
-      const openAbove =
-        window.innerHeight - rect.bottom < estimatedHeight + 16 &&
-        rect.top > estimatedHeight + 16;
-      setDocumentFilterMenuPosition({
-        top: openAbove ? rect.top - 8 : rect.bottom + 8,
-        left: rect.left,
-        placement: openAbove ? "top" : "bottom",
-      });
-    }
-  }, []);
-
   const openDocumentActionMenu = useCallback((event, docId) => {
     const rect = event.currentTarget.getBoundingClientRect();
     setDocumentMenuPosition({
@@ -374,14 +351,6 @@ export const usePoDocuments = ({
     };
   }, [documentUploadFileObject, documentUploadFileName, documentUploadFileSize]);
 
-  const toggleDocumentTypeFilter = useCallback((filterKey) => {
-    setDocumentTypeFilters((prev) =>
-      prev.includes(filterKey)
-        ? prev.filter((key) => key !== filterKey)
-        : [...prev, filterKey]
-    );
-  }, []);
-
   return {
     // Data
     documents,
@@ -391,7 +360,6 @@ export const usePoDocuments = ({
     filteredDocuments,
     documentTypeFilterOptions,
     getDocumentTypeLabel,
-    toggleDocumentTypeFilter,
 
     // Search & Filter
     documentSearch,
@@ -400,11 +368,6 @@ export const usePoDocuments = ({
     setDocumentTypeFilters,
     documentView,
     setDocumentView,
-    showDocumentFilterMenu,
-    setShowDocumentFilterMenu,
-    documentFilterMenuPosition,
-    documentFilterTriggerRef,
-    updateDocumentFilterMenuPosition,
 
     // Menu & Selection
     openDocumentMenuId,

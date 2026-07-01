@@ -11,7 +11,7 @@ import {
 import { Button } from "../../../components/common/Button.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
@@ -31,6 +31,7 @@ import { MOCK_WO_TABLE_DATA } from "../../work-order/mock/workOrderMocks.js";
 import { MOCK_ORDER_TABLE_DATA, MOCK_ORDER_MATERIALS_DATA, MOCK_ORDER_PRODUCTS_DATA } from "../mock/orderMocks.js";
 import { MOCK_PO_TABLE_DATA } from "../../../modules/purchase-order/mock/purchaseOrderMocks.js";
 import { TraceabilityTab } from "../components/TraceabilityTab.jsx";
+import { ChipTabBar } from "../../../components/molecules/ChipTabBar.jsx";
 import { DateInputControl } from "../../../modules/purchase-order/components/detail/shared/PoDetailSharedComponents.jsx";
 
 
@@ -271,25 +272,6 @@ const LabelValue = ({ label, value, badge, gridColumn, isClickable, onClick }) =
   );
 };
 
-const tabButtonStyle = (isActive) => ({
-  height: "48px",
-  padding: "0 28px",
-  borderRadius: "100px",
-  border: isActive
-    ? "1px solid var(--feature-brand-primary)"
-    : "1px solid var(--neutral-line-separator-1)",
-  background: isActive ? "#EAF1FF" : "var(--neutral-surface-primary)",
-  color: isActive ? "var(--feature-brand-primary)" : "#7F7F7F",
-  fontSize: "var(--text-title-2)",
-  fontWeight: isActive
-    ? "var(--font-weight-bold)"
-    : "var(--font-weight-regular)",
-  cursor: "pointer",
-  transition: "all 0.18s ease",
-  boxShadow: "none",
-});
-
-
 
 
 
@@ -298,8 +280,6 @@ const WorkOrderTab = ({ orderNo, orderStatus, onNavigate }) => {
   const [statusFilter, setStatusFilter] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterTriggerRect, setFilterTriggerRect] = useState(null);
 
   const [hoveredSku, setHoveredSku] = useState(null);
   const [hoveredWo, setHoveredWo] = useState(null);
@@ -332,18 +312,6 @@ const WorkOrderTab = ({ orderNo, orderStatus, onNavigate }) => {
   const visibleData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
   const statusOptions = [...new Set(rawData.map(wo => wo.status))];
 
-  const handleFilterToggle = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setFilterTriggerRect(rect);
-    setIsFilterOpen(!isFilterOpen);
-  };
-
-  const toggleStatus = (status) => {
-    setStatusFilter(prev => 
-      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
-    );
-  };
-
   const gridTemplate = "2.5fr 1.5fr 0.8fr 1.1fr 1.1fr 1.1fr";
   const rowHeight = 64; 
   const maxBodyHeight = rowHeight * 5; 
@@ -352,45 +320,14 @@ const WorkOrderTab = ({ orderNo, orderStatus, onNavigate }) => {
     <div style={{ width: "100%", background: "var(--neutral-surface-primary)", display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <div onClick={handleFilterToggle}>
-            <FilterPill label="Status" count={statusFilter.length} active={statusFilter.length > 0} isOpen={isFilterOpen} />
-          </div>
-          {isFilterOpen && (
-            <>
-              {createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setIsFilterOpen(false)} />, document.body)}
-              {createPortal(
-                <div style={{
-                  position: "fixed",
-                  top: `${filterTriggerRect.bottom + 8}px`,
-                  left: `${filterTriggerRect.left}px`,
-                  width: "240px",
-                  background: "var(--neutral-surface-primary)",
-                  border: "1px solid var(--neutral-line-separator-1)",
-                  borderRadius: "16px",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                  padding: "16px",
-                  zIndex: 14001,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "16px"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Status</span>
-                    <button onClick={() => { setStatusFilter([]); setIsFilterOpen(false); }} style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Remove Filter</button>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {statusOptions.map(opt => (
-                      <label key={opt} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
-                        <Checkbox checked={statusFilter.includes(opt)} onChange={() => toggleStatus(opt)} />
-                        {opt}
-                      </label>
-                    ))}
-                  </div>
-                </div>,
-                document.body
-              )}
-            </>
-          )}
+          <FilterMenu
+            label="Status"
+            multiple
+            searchable={false}
+            options={statusOptions.map((o) => ({ value: o, label: o }))}
+            values={statusFilter}
+            onChangeMultiple={setStatusFilter}
+          />
         </div>
         <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search WO Number, Product, SKU" width="320px" />
       </div>
@@ -476,8 +413,6 @@ const InvoicesTab = ({ onNavigate }) => {
   const [statusFilter, setStatusFilter] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterTriggerRect, setFilterTriggerRect] = useState(null);
 
   const [hoveredInv, setHoveredInv] = useState(null);
 
@@ -514,18 +449,6 @@ const InvoicesTab = ({ onNavigate }) => {
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const visibleData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
   const statusOptions = ["Paid", "Issued", "Void", "Canceled", "Need Revision"];
-
-  const handleFilterToggle = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setFilterTriggerRect(rect);
-    setIsFilterOpen(!isFilterOpen);
-  };
-
-  const toggleStatus = (status) => {
-    setStatusFilter(prev => 
-      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
-    );
-  };
 
   const gridTemplate = "2fr 1.5fr 1.2fr 1.2fr 1.5fr 1.2fr";
   const rowHeight = 64;
@@ -579,45 +502,14 @@ const InvoicesTab = ({ onNavigate }) => {
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <div onClick={handleFilterToggle}>
-              <FilterPill label="Status" count={statusFilter.length} active={statusFilter.length > 0} isOpen={isFilterOpen} />
-            </div>
-            {isFilterOpen && (
-              <>
-                {createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setIsFilterOpen(false)} />, document.body)}
-                {createPortal(
-                  <div style={{
-                    position: "fixed",
-                    top: `${filterTriggerRect.bottom + 8}px`,
-                    left: `${filterTriggerRect.left}px`,
-                    width: "240px",
-                    background: "var(--neutral-surface-primary)",
-                    border: "1px solid var(--neutral-line-separator-1)",
-                    borderRadius: "16px",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                    padding: "16px",
-                    zIndex: 14001,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px"
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Status</span>
-                      <button onClick={() => { setStatusFilter([]); setIsFilterOpen(false); }} style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Remove Filter</button>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                      {statusOptions.map(opt => (
-                        <label key={opt} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
-                          <Checkbox checked={statusFilter.includes(opt)} onChange={() => toggleStatus(opt)} />
-                          {opt}
-                        </label>
-                      ))}
-                    </div>
-                  </div>,
-                  document.body
-                )}
-              </>
-            )}
+            <FilterMenu
+              label="Status"
+              multiple
+              searchable={false}
+              options={statusOptions.map((o) => ({ value: o, label: o }))}
+              values={statusFilter}
+              onChangeMultiple={setStatusFilter}
+            />
           </div>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Invoice Number" width="320px" />
@@ -685,8 +577,6 @@ const AttachmentsTab = ({ onNavigate, showSnackbar }) => {
   const [view, setView] = useState("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState([]);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterTriggerRect, setFilterTriggerRect] = useState(null);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [menuTriggerRect, setMenuTriggerRect] = useState(null);
   const MAX_ATTACHMENTS = 10;
@@ -739,12 +629,6 @@ const AttachmentsTab = ({ onNavigate, showSnackbar }) => {
         <DocumentTypeBadge fileName={doc.name} type={doc.type} size={compact ? "small" : "preview"} />
       </div>
     );
-  };
-
-  const handleFilterToggle = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setFilterTriggerRect(rect);
-    setIsFilterOpen(!isFilterOpen);
   };
 
   const resetUploadState = () => {
@@ -2114,8 +1998,6 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
   const [statusFilter, setStatusFilter] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterTriggerRect, setFilterTriggerRect] = useState(null);
   const [showBreakdownDrawer, setShowBreakdownDrawer] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState(null);
   const [drawerTab, setDrawerTab] = useState("Calculation");
@@ -2172,18 +2054,6 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
   const visibleData = filteredData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
   const statusOptions = ["Shortage", "Covered"];
-
-  const handleFilterToggle = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setFilterTriggerRect(rect);
-    setIsFilterOpen(!isFilterOpen);
-  };
-
-  const toggleStatus = (status) => {
-    setStatusFilter(prev => 
-      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
-    );
-  };
 
   const handleRowClick = (material) => {
     setSelectedMaterial(material);
@@ -2242,45 +2112,14 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <div onClick={handleFilterToggle}>
-              <FilterPill label="Status" count={statusFilter.length} active={statusFilter.length > 0} isOpen={isFilterOpen} />
-            </div>
-            {isFilterOpen && (
-              <>
-                {createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setIsFilterOpen(false)} />, document.body)}
-                {createPortal(
-                  <div style={{
-                    position: "fixed",
-                    top: `${filterTriggerRect.bottom + 8}px`,
-                    left: `${filterTriggerRect.left}px`,
-                    width: "240px",
-                    background: "var(--neutral-surface-primary)",
-                    border: "1px solid var(--neutral-line-separator-1)",
-                    borderRadius: "16px",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                    padding: "16px",
-                    zIndex: 14001,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px"
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Status</span>
-                      <button onClick={() => { setStatusFilter([]); setIsFilterOpen(false); }} style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}>Remove Filter</button>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                      {statusOptions.map(opt => (
-                        <label key={opt} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
-                          <Checkbox checked={statusFilter.includes(opt)} onChange={() => toggleStatus(opt)} />
-                          {opt}
-                        </label>
-                      ))}
-                    </div>
-                  </div>,
-                  document.body
-                )}
-              </>
-            )}
+            <FilterMenu
+              label="Status"
+              multiple
+              searchable={false}
+              options={statusOptions.map((o) => ({ value: o, label: o }))}
+              values={statusFilter}
+              onChangeMultiple={setStatusFilter}
+            />
           </div>
           <div style={{ display: "flex", gap: "12px", alignItems: "center", position: "relative" }}>
             <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Material Name, SKU" width="320px" />
@@ -2463,21 +2302,16 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
                 </StatusBadge>
               </div>
 
-              <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "8px" }}>
-                {["Calculation", "Work Orders"].map(tab => (
-                  <button 
-                    key={tab}
-                    onClick={() => setDrawerTab(tab)}
-                    style={{
-                      ...tabButtonStyle(drawerTab === tab),
-                      height: "36px",
-                      padding: "0 16px",
-                      fontSize: "14px"
-                    }}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              <div style={{ marginBottom: "8px" }}>
+                <ChipTabBar
+                  tabs={[
+                    { id: "Calculation", label: "Calculation" },
+                    { id: "Work Orders", label: "Work Orders" },
+                  ]}
+                  activeTab={drawerTab}
+                  onChange={setDrawerTab}
+                  size="sm"
+                />
               </div>
 
               <div>
@@ -3098,22 +2932,11 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
       </div>
 
       {/* Tab Chips */}
-      <div style={{ 
-        display: "flex", 
-        gap: "12px", 
-        alignItems: "center" 
-      }}>
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => setActiveTab(tab.key)}
-            style={tabButtonStyle(activeTab === tab.key)}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <ChipTabBar
+        tabs={tabs.map(t => ({ id: t.key, label: t.label }))}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+      />
 
       {/* Tab Content */}
       <div style={{ 

@@ -10,8 +10,8 @@ import {
   Button,
   StatusBadge,
   LabelValue,
-  tabButtonStyle,
 } from "./shared/PoDetailSharedComponents.jsx";
+import { ChipTabBar } from "../../../../components/molecules/index.js";
 
 
 const PoDetailHeader = ({
@@ -338,56 +338,18 @@ const PoDetailHeader = ({
       </div>
 
       {!isHistoricalVersion ? (
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            alignItems: "center",
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setActiveTab("details")}
-            style={tabButtonStyle(activeTab === "details")}
-          >
-            PO Detail
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("invoices")}
-            style={tabButtonStyle(activeTab === "invoices")}
-          >
-            Invoices & Payments
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("receipt")}
-            style={tabButtonStyle(activeTab === "receipt")}
-          >
-            Receipt
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("3-ways-match")}
-            style={tabButtonStyle(activeTab === "3-ways-match")}
-          >
-            3-Ways Match
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("documents")}
-            style={tabButtonStyle(activeTab === "documents")}
-          >
-            Documents
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("logs")}
-            style={tabButtonStyle(activeTab === "logs")}
-          >
-            Logs
-          </button>
-        </div>
+        <ChipTabBar
+          tabs={[
+            { id: "details", label: "PO Detail" },
+            { id: "invoices", label: "Invoices & Payments" },
+            { id: "receipt", label: "Receipt" },
+            { id: "3-ways-match", label: "3-Ways Match" },
+            { id: "documents", label: "Documents" },
+            { id: "logs", label: "Logs" },
+          ]}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+        />
       ) : (
         <div
           style={{

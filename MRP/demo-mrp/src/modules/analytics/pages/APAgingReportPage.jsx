@@ -21,7 +21,7 @@ import { MOCK_REPORT_POS } from "../mock/reportMocks";
 import { formatCurrency } from "../../../utils/format/formatUtils";
 import { StatusBadge } from "../../../components/common/StatusBadge";
 import { DropdownSelect } from "../../../components/common/DropdownSelect";
-import { MultiSelectDropdown } from "../../../components/common/MultiSelectDropdown.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { Button } from "../../../components/common/Button";
 import { TableSearchField } from "../../../components/table/TableSearchField";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter";
@@ -380,35 +380,39 @@ const APAgingReportPage = ({ onNavigate, t }) => {
         {/* Filters Header */}
         <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <MultiSelectDropdown 
-              placeholder="Aging Bucket"
-              value={agingBucketFilter}
+            <FilterMenu
+              label="Aging Bucket"
+              multiple
+              searchable={false}
               options={[
                 { value: "Not Due", label: "Not Due" },
                 { value: "Late 1-30 days", label: "Late 1-30 days" },
                 { value: "Late 31-60 days", label: "Late 31-60 days" },
                 { value: "Late 61-90 days", label: "Late 61-90 days" },
-                { value: "Late 90+ days", label: "Late 90+ days" }
+                { value: "Late 90+ days", label: "Late 90+ days" },
               ]}
-              onChange={(val) => { setAgingBucketFilter(val); setCurrentPage(1); }}
+              values={agingBucketFilter}
+              onChangeMultiple={(val) => { setAgingBucketFilter(val); setCurrentPage(1); }}
             />
-            <MultiSelectDropdown 
-              searchable={true}
-              placeholder="Vendor"
-              value={vendorFilter}
-              options={["all", ...new Set(allInvoices.map(inv => inv.vendorName))].map(v => ({ value: v, label: v === "all" ? "Vendor" : v }))}
-              onChange={(val) => { setVendorFilter(val); setCurrentPage(1); }}
+            <FilterMenu
+              label="Vendor"
+              multiple
+              options={[...new Set(allInvoices.map(inv => inv.vendorName))].map(v => ({ value: v, label: v }))}
+              values={vendorFilter}
+              onChangeMultiple={(val) => { setVendorFilter(val); setCurrentPage(1); }}
             />
-            <MultiSelectDropdown
-              placeholder="Invoice Status"
-              value={invoiceStatusFilter}
+            <FilterMenu
+              label="Invoice Status"
+              multiple
+              searchable={false}
               options={[
                 { value: "Open", label: "Open" },
                 { value: "Overdue", label: "Overdue" },
                 { value: "Partially Paid", label: "Partially Paid" },
-                { value: "Paid", label: "Paid" }
+                { value: "Paid", label: "Paid" },
               ]}
-              onChange={(val) => { setInvoiceStatusFilter(val); setCurrentPage(1); }}
+              values={invoiceStatusFilter}
+              onChangeMultiple={(val) => { setInvoiceStatusFilter(val); setCurrentPage(1); }}
             />
           </div>
 

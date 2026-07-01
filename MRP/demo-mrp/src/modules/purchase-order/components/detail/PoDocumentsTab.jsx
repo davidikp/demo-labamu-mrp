@@ -17,8 +17,7 @@ import {
   getDocumentSecondaryLabel,
 } from "../../../../utils/upload/uploadUtils.js";
 import { IconButton } from "../../../../components/common/IconButton.jsx";
-import { FilterPill } from "../../../../components/common/FilterPill.jsx";
-import { Checkbox } from "../../../../components/common/Checkbox.jsx";
+import { FilterMenu } from "../../../../components/molecules/FilterMenu.jsx";
 import { DocumentTypeBadge } from "../DocumentTypeBadge.jsx";
 import {
   TableSearchField,
@@ -34,14 +33,9 @@ import {
 } from "./shared/PoDetailSharedComponents.jsx";
 
 const PoDocumentsTab = ({
-  // Refs
-  documentFilterTriggerRef,
   // State / Data
-  showDocumentFilterMenu,
-  setShowDocumentFilterMenu,
   documentTypeFilters,
   setDocumentTypeFilters,
-  documentFilterMenuPosition,
   documentTypeFilterOptions,
   documentSearch,
   setDocumentSearch,
@@ -54,8 +48,6 @@ const PoDocumentsTab = ({
   setOpenDocumentMenuId,
   documentMenuPosition,
   // Handlers
-  updateDocumentFilterMenuPosition,
-  toggleDocumentTypeFilter,
   resetDocumentUploadState,
   setShowUploadDocumentModal,
   handleDocumentAction,
@@ -327,129 +319,14 @@ const PoDocumentsTab = ({
               flexWrap: "wrap",
             }}
           >
-            <div style={{ position: "relative" }}>
-              <div
-                ref={documentFilterTriggerRef}
-                onClick={() => {
-                  if (showDocumentFilterMenu) {
-                    setShowDocumentFilterMenu(false);
-                    return;
-                  }
-                  updateDocumentFilterMenuPosition();
-                  setShowDocumentFilterMenu(true);
-                }}
-              >
-                <FilterPill
-                  label="Document Type"
-                  active={documentTypeFilters.length > 0}
-                  isOpen={showDocumentFilterMenu}
-                  count={documentTypeFilters.length}
-                />
-              </div>
-
-              {showDocumentFilterMenu ? (
-                <>
-                  <div
-                    style={{ position: "fixed", inset: 0, zIndex: 999 }}
-                    onClick={() => setShowDocumentFilterMenu(false)}
-                  />
-                  <div
-                    style={{
-                      position: "fixed",
-                      top: `${documentFilterMenuPosition.top}px`,
-                      left: `${documentFilterMenuPosition.left}px`,
-                      transform:
-                        documentFilterMenuPosition.placement === "top"
-                          ? "translateY(-100%)"
-                          : "none",
-                      width: "360px",
-                      background: "var(--neutral-surface-primary)",
-                      border: "1px solid var(--neutral-line-separator-1)",
-                      borderRadius: "var(--radius-card)",
-                      boxShadow: "var(--elevation-sm)",
-                      padding: "16px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "16px",
-                      zIndex: 1000,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        gap: "12px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "var(--text-title-2)",
-                          fontWeight: "var(--font-weight-bold)",
-                          color: "var(--neutral-on-surface-primary)",
-                        }}
-                      >
-                        Document Type
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDocumentTypeFilters([]);
-                          setShowDocumentFilterMenu(false);
-                        }}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          padding: 0,
-                          color: "var(--status-red-primary)",
-                          cursor: "pointer",
-                          fontSize: "var(--text-body)",
-                          fontWeight: "var(--font-weight-bold)",
-                        }}
-                      >
-                        Remove Filter
-                      </button>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: "12px",
-                      }}
-                    >
-                      {documentTypeFilterOptions.map((opt) => {
-                        const isSelected = documentTypeFilters.includes(
-                          opt.value
-                        );
-                        return (
-                          <label
-                            key={opt.value}
-                            onClick={() => toggleDocumentTypeFilter(opt.value)}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "12px",
-                              cursor: "pointer",
-                              fontSize: "var(--text-title-3)",
-                              color: "var(--neutral-on-surface-primary)",
-                              textAlign: "left",
-                            }}
-                          >
-                            <Checkbox
-                              checked={isSelected}
-                              onChange={() =>
-                                toggleDocumentTypeFilter(opt.value)
-                              }
-                            />
-                            <span>{opt.label}</span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </>
-              ) : null}
-            </div>
+            <FilterMenu
+              label="Document Type"
+              multiple
+              searchable={false}
+              options={documentTypeFilterOptions}
+              values={documentTypeFilters}
+              onChangeMultiple={setDocumentTypeFilters}
+            />
           </div>
 
           <div

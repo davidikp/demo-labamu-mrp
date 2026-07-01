@@ -1,12 +1,10 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRightIcon } from "../../../components/icons/Icons.jsx";
 import { ListStatusCounterCard } from "../../../components/common/ListStatusCounterCard.jsx";
 import { StatusBadge } from "../../../components/atoms/StatusBadge.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
-import { MultiSelectDropdown } from "../../../components/common/MultiSelectDropdown.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
-import { DateRangeInputControl } from "../../purchase-order/components/DateRangeInputControl.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { MOCK_INCOMING_PO, MOCK_INCOMING_PO_COUNTERS } from "../mock/materialForecastMocks.js";
 
 const URGENCY_CONFIG = {
@@ -64,73 +62,6 @@ const toISO = (d) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
-const EstArrivalFilterPopover = ({ dateFilterType, setDateFilterType, customDateRange, setCustomDateRange, onClose }) => {
-  const popoverRef = useRef(null);
-  useEffect(() => {
-    const handler = (e) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target)) onClose();
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [onClose]);
-
-  return (
-    <div
-      ref={popoverRef}
-      style={{
-        position: "absolute",
-        top: "calc(100% + 8px)",
-        left: 0,
-        width: "360px",
-        background: "var(--neutral-surface-primary)",
-        border: "1px solid var(--neutral-line-separator-1)",
-        borderRadius: "var(--radius-card)",
-        boxShadow: "var(--elevation-sm)",
-        padding: "16px",
-        display: "flex",
-        flexDirection: "column",
-        gap: "16px",
-        zIndex: 1000,
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>
-          Est. Arrival
-        </span>
-        <button
-          onClick={() => { setDateFilterType("all"); setCustomDateRange({ start: "", end: "" }); onClose(); }}
-          style={{ background: "none", border: "none", padding: 0, color: "var(--status-red-primary)", cursor: "pointer", fontSize: "var(--text-body)", fontWeight: "var(--font-weight-bold)" }}
-        >
-          Remove Filter
-        </button>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        {[
-          { key: "all",    label: "All" },
-          { key: "last7",  label: "Last 7 days" },
-          { key: "last30", label: "Last 30 days" },
-          { key: "next7",  label: "Next 7 days" },
-          { key: "next30", label: "Next 30 days" },
-          { key: "custom", label: "Custom date" },
-        ].map((opt) => (
-          <label key={opt.key} style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", fontSize: "var(--text-title-3)" }}>
-            <input type="radio" checked={dateFilterType === opt.key} onChange={() => setDateFilterType(opt.key)} />
-            <span>{opt.label}</span>
-          </label>
-        ))}
-        {dateFilterType === "custom" && (
-          <DateRangeInputControl
-            value={customDateRange}
-            onChange={(e) => setCustomDateRange(e.target.value)}
-            fieldHeight="40px"
-            fontSize="14px"
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
 export const IncomingPOPage = ({ onNavigate }) => {
   const [expandedRows, setExpandedRows] = useState({});
   const [activeFilter, setActiveFilter] = useState(null);
@@ -138,8 +69,8 @@ export const IncomingPOPage = ({ onNavigate }) => {
   const [materialFilter, setMaterialFilter] = useState([]);
   const [vendorFilter, setVendorFilter] = useState([]);
   const [dateFilterType, setDateFilterType] = useState("all");
-  const [customDateRange, setCustomDateRange] = useState({ start: "", end: "" });
-  const [showDatePopover, setShowDatePopover] = useState(false);
+  const [customDateFrom, setCustomDateFrom] = useState(null);
+  const [customDateTo, setCustomDateTo] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -159,9 +90,6 @@ export const IncomingPOPage = ({ onNavigate }) => {
     [...new Set(MOCK_INCOMING_PO.map((p) => p.vendor))].map((v) => ({ value: v, label: v })),
   []);
 
-  const dateFilterActive = dateFilterType !== "all";
-  const dateFilterCount = dateFilterActive ? 1 : 0;
-
   const filtered = useMemo(() => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
@@ -175,7 +103,6 @@ export const IncomingPOPage = ({ onNavigate }) => {
       if (dateFilterType !== "all") {
         const arrivalDate = parseDisplayDate(po.estArrival);
         if (!arrivalDate) return false;
-        const isoArrival = toISO(arrivalDate);
 
         if (dateFilterType === "last7") {
           const cutoff = new Date(now); cutoff.setDate(now.getDate() - 7);
@@ -189,14 +116,14 @@ export const IncomingPOPage = ({ onNavigate }) => {
         } else if (dateFilterType === "next30") {
           const cutoff = new Date(now); cutoff.setDate(now.getDate() + 30);
           if (arrivalDate < now || arrivalDate > cutoff) return false;
-        } else if (dateFilterType === "custom" && customDateRange.start && customDateRange.end) {
-          if (isoArrival < customDateRange.start || isoArrival > customDateRange.end) return false;
+        } else if (dateFilterType === "__custom__" && customDateFrom && customDateTo) {
+          if (arrivalDate < customDateFrom || arrivalDate > customDateTo) return false;
         }
       }
 
       return true;
     });
-  }, [activeFilter, searchQuery, materialFilter, vendorFilter, dateFilterType, customDateRange]);
+  }, [activeFilter, searchQuery, materialFilter, vendorFilter, dateFilterType, customDateFrom, customDateTo]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const paginated = filtered.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
@@ -280,41 +207,41 @@ export const IncomingPOPage = ({ onNavigate }) => {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-            <MultiSelectDropdown
-              placeholder="Material"
-              value={materialFilter}
+            <FilterMenu
+              label="Material"
+              multiple
               options={materialOptions}
-              onChange={(v) => { setMaterialFilter(v); setCurrentPage(1); }}
-              searchable={true}
+              values={materialFilter}
+              onChangeMultiple={(v) => { setMaterialFilter(v); setCurrentPage(1); }}
             />
-            <MultiSelectDropdown
-              placeholder="Vendor"
-              value={vendorFilter}
+            <FilterMenu
+              label="Vendor"
+              multiple
               options={vendorOptions}
-              onChange={(v) => { setVendorFilter(v); setCurrentPage(1); }}
-              searchable={true}
+              values={vendorFilter}
+              onChangeMultiple={(v) => { setVendorFilter(v); setCurrentPage(1); }}
             />
 
-            {/* Est. Arrival FilterPill + popover */}
-            <div style={{ position: "relative" }}>
-              <div onClick={() => setShowDatePopover((p) => !p)}>
-                <FilterPill
-                  label="Est. Arrival"
-                  active={dateFilterActive}
-                  isOpen={showDatePopover}
-                  count={dateFilterCount}
-                />
-              </div>
-              {showDatePopover && (
-                <EstArrivalFilterPopover
-                  dateFilterType={dateFilterType}
-                  setDateFilterType={(v) => { setDateFilterType(v); setCurrentPage(1); }}
-                  customDateRange={customDateRange}
-                  setCustomDateRange={setCustomDateRange}
-                  onClose={() => setShowDatePopover(false)}
-                />
-              )}
-            </div>
+            <FilterMenu
+              label="Est. Arrival"
+              searchable={false}
+              options={[
+                { value: "last7",  label: "Last 7 days" },
+                { value: "last30", label: "Last 30 days" },
+                { value: "next7",  label: "Next 7 days" },
+                { value: "next30", label: "Next 30 days" },
+              ]}
+              value={dateFilterType}
+              onChange={(v) => { setDateFilterType(v); setCurrentPage(1); }}
+              allValue="all"
+              customDateEnabled
+              customDateFrom={customDateFrom}
+              customDateTo={customDateTo}
+              onCustomDateChange={(from, to) => {
+                setCustomDateFrom(from);
+                setCustomDateTo(to);
+              }}
+            />
           </div>
 
           <TableSearchField

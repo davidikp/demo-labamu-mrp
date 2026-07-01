@@ -10,8 +10,7 @@ import { createPortal } from "react-dom";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
-import { Checkbox } from "../../../components/common/Checkbox.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 
 const Tooltip = ({ content, children }) => {
   const [isVisible, setIsVisible] = useState(false);
@@ -126,26 +125,12 @@ export const StockTransactionsTab = ({ materialId, onNavigate, localTransactions
     dateRange: 'all'
   });
   const [sortConfig, setSortConfig] = useState({ key: 'date', direction: 'desc' });
-  const [openFilterKey, setOpenFilterKey] = useState(null);
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
+  const [customDateFrom, setCustomDateFrom] = useState(null);
+  const [customDateTo, setCustomDateTo] = useState(null);
 
   const scrollerRef = useRef(null);
   const [scrollShadows, setScrollShadows] = useState({ left: false, right: false });
 
-  const handleFilterClick = (key, e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setPopoverTriggerRect(rect);
-    setOpenFilterKey(prev => prev === key ? null : key);
-  };
-
-  const toggleFilterValue = (key, value) => {
-    setActiveFilters(prev => ({
-      ...prev,
-      [key]: prev[key].includes(value)
-        ? prev[key].filter(v => v !== value)
-        : [...prev[key], value]
-    }));
-  };
 
   const toggleSort = (key) => {
     setSortConfig(prev => ({
@@ -190,6 +175,11 @@ export const StockTransactionsTab = ({ materialId, onNavigate, localTransactions
       } else if (activeFilters.dateRange === 'last_30') {
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         result = result.filter(t => new Date(t.date) >= thirtyDaysAgo);
+      } else if (activeFilters.dateRange === '__custom__' && customDateFrom && customDateTo) {
+        result = result.filter(t => {
+          const d = new Date(t.date);
+          return d >= customDateFrom && d <= customDateTo;
+        });
       }
     }
 
@@ -263,115 +253,32 @@ export const StockTransactionsTab = ({ materialId, onNavigate, localTransactions
         padding: "20px 24px"
       }}>
         <div style={{ display: "flex", gap: "12px", alignItems: "center", flex: 1, position: "relative" }}>
-          <div onClick={(e) => handleFilterClick("type", e)}>
-            <FilterPill 
-              label="Transaction Type" 
-              count={activeFilters.type.length} 
-              active={activeFilters.type.length > 0}
-              isOpen={openFilterKey === "type"}
-            />
-          </div>
-          <div onClick={(e) => handleFilterClick("dateRange", e)}>
-            <FilterPill 
-              label="Select date range" 
-              active={activeFilters.dateRange !== 'all'}
-              isOpen={openFilterKey === "dateRange"}
-            />
-          </div>
-
-          {openFilterKey && (
-            <>
-              {createPortal(
-                <div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setOpenFilterKey(null)} />,
-                document.body
-              )}
-              {createPortal(
-                <div style={{
-                  position: "fixed",
-                  top: popoverTriggerRect ? `${popoverTriggerRect.bottom + 8}px` : "200px",
-                  left: popoverTriggerRect ? `${popoverTriggerRect.left}px` : "24px",
-                  width: "280px",
-                  background: "var(--neutral-surface-primary)",
-                  border: "1px solid var(--neutral-line-separator-1)",
-                  borderRadius: "16px",
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                  padding: "16px",
-                  zIndex: 14001,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "16px"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>
-                      {openFilterKey === "type" ? "Transaction Type" : "Select date range"}
-                    </span>
-                    <button 
-                      onClick={() => {
-                        if (openFilterKey === 'dateRange') {
-                          setActiveFilters(prev => ({ ...prev, dateRange: 'all' }));
-                        } else {
-                          setActiveFilters(prev => ({ ...prev, [openFilterKey]: [] }));
-                        }
-                        setOpenFilterKey(null);
-                      }}
-                      style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
-                    >
-                      Remove Filter
-                    </button>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    {openFilterKey === "type" ? (
-                      getFilterOptions("type").length > 0 ? getFilterOptions("type").map(opt => (
-                        <label key={opt} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
-                          <Checkbox 
-                            checked={activeFilters.type.includes(opt)} 
-                            onChange={() => toggleFilterValue("type", opt)} 
-                          />
-                          {opt}
-                        </label>
-                      )) : (
-                        <div style={{ padding: "12px", textAlign: "center", fontSize: "var(--text-body)", color: "var(--neutral-on-surface-tertiary)" }}>
-                          No options available
-                        </div>
-                      )
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                        {[
-                          { id: 'all', label: 'All' },
-                          { id: 'last_7', label: 'Last 7 days' },
-                          { id: 'last_30', label: 'Last 30 days' },
-                          { id: 'custom', label: 'Custom date' }
-                        ].map((opt) => (
-                          <label key={opt.id} style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}>
-                            <div 
-                              onClick={() => setActiveFilters(prev => ({ ...prev, dateRange: opt.id }))}
-                              style={{
-                                width: "18px",
-                                height: "18px",
-                                borderRadius: "50%",
-                                border: `1.5px solid ${activeFilters.dateRange === opt.id ? "var(--feature-brand-primary)" : "var(--neutral-line-separator-1)"}`,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                background: "white",
-                                transition: "all 0.2s ease"
-                              }}
-                            >
-                              {activeFilters.dateRange === opt.id && (
-                                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--feature-brand-primary)" }} />
-                              )}
-                            </div>
-                            <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-primary)" }}>{opt.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>,
-                document.body
-              )}
-            </>
-          )}
+          <FilterMenu
+            label="Transaction Type"
+            multiple
+            searchable={false}
+            options={getFilterOptions("type").map(t => ({ value: t, label: t }))}
+            values={activeFilters.type}
+            onChangeMultiple={(values) => setActiveFilters(prev => ({ ...prev, type: values }))}
+          />
+          <FilterMenu
+            label="Date Range"
+            searchable={false}
+            options={[
+              { value: "last_7",  label: "Last 7 days" },
+              { value: "last_30", label: "Last 30 days" },
+            ]}
+            value={activeFilters.dateRange}
+            onChange={(v) => setActiveFilters(prev => ({ ...prev, dateRange: v }))}
+            allValue="all"
+            customDateEnabled
+            customDateFrom={customDateFrom}
+            customDateTo={customDateTo}
+            onCustomDateChange={(from, to) => {
+              setCustomDateFrom(from);
+              setCustomDateTo(to);
+            }}
+          />
         </div>
         
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>

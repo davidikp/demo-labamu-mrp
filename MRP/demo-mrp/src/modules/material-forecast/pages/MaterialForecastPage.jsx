@@ -225,8 +225,7 @@ import { ListStatusCounterCard } from "../../../components/common/ListStatusCoun
 import { MaterialForecastDrawer } from "../components/MaterialForecastDrawer.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
-import { FilterPopoverCheckbox } from "../../../components/molecules/FilterPopoverCheckbox.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { MaterialBreakdownDrawer } from "../components/MaterialBreakdownDrawer.jsx";
 import { DemandUrgencyDrawer } from "../components/DemandUrgencyDrawer.jsx";
 import { MaterialsToBuyDrawer } from "../components/MaterialsToBuyDrawer.jsx";
@@ -275,9 +274,6 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
   const [filterProduct, setFilterProduct] = useState([]);
   const [filterWoId, setFilterWoId] = useState([]);
   const [forecastWeeks, setForecastWeeks] = useState(12);
-  const [openFilterKey, setOpenFilterKey] = useState(null);
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
-
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [materialSortDir, setMaterialSortDir] = useState("asc");
@@ -587,54 +583,18 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
           flexShrink: 0,
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", position: "relative" }}>
-            {[
-              { key: "material",label: "Material",      value: filterMaterial,options: materialOptions, onChange: (v) => { setFilterMaterial(v);setCurrentPage(1); } },
-              { key: "woId",    label: "WO ID",         value: filterWoId,    options: woIdOptions,    onChange: (v) => { setFilterWoId(v);    setCurrentPage(1); } },
-              { key: "orderId", label: "Order ID",      value: filterOrderId, options: orderIdOptions, onChange: (v) => { setFilterOrderId(v); setCurrentPage(1); } },
-              { key: "customer",label: "Customer",      value: filterCustomer,options: customerOptions, onChange: (v) => { setFilterCustomer(v);setCurrentPage(1); } },
-              { key: "product", label: "Product",       value: filterProduct, options: productOptions, onChange: (v) => { setFilterProduct(v); setCurrentPage(1); } },
-            ].map(({ key, label, value, options, onChange }) => (
-              <div
-                key={key}
-                onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); setPopoverTriggerRect(rect); setOpenFilterKey((prev) => prev === key ? null : key); }}
-              >
-                <FilterPill label={label} active={value.length > 0} isOpen={openFilterKey === key} count={value.length} />
-              </div>
-            ))}
-
-            <div
-              onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); setPopoverTriggerRect(rect); setOpenFilterKey((prev) => prev === "planningRange" ? null : "planningRange"); }}
-            >
-              <FilterPill
-                label={planningRangeOptions.find(o => o.value === forecastWeeks)?.label || "Planning Range"}
-                active={true}
-                isOpen={openFilterKey === "planningRange"}
-                count={0}
-              />
-            </div>
-
-            {openFilterKey === "material" && <FilterPopoverCheckbox title="Material" options={materialOptions} value={filterMaterial} onChange={(v) => { setFilterMaterial(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "woId" && <FilterPopoverCheckbox title="WO ID" options={woIdOptions} value={filterWoId} onChange={(v) => { setFilterWoId(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "orderId" && <FilterPopoverCheckbox title="Order ID" options={orderIdOptions} value={filterOrderId} onChange={(v) => { setFilterOrderId(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "customer" && <FilterPopoverCheckbox title="Customer" options={customerOptions} value={filterCustomer} onChange={(v) => { setFilterCustomer(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "product" && <FilterPopoverCheckbox title="Product" options={productOptions} value={filterProduct} onChange={(v) => { setFilterProduct(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-
-            {openFilterKey === "planningRange" && (
-              <>
-                <div style={{ position: "fixed", inset: 0, zIndex: 9998 }} onClick={() => setOpenFilterKey(null)} />
-                <div style={{ position: "fixed", top: popoverTriggerRect ? popoverTriggerRect.bottom + 8 : 200, left: popoverTriggerRect ? popoverTriggerRect.left : 0, width: "220px", background: "var(--neutral-surface-primary)", border: "1px solid var(--neutral-line-separator-1)", borderRadius: "var(--radius-card)", boxShadow: "var(--elevation-sm)", padding: "16px", display: "flex", flexDirection: "column", gap: "16px", zIndex: 9999 }}>
-                  <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Planning Range</span>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {planningRangeOptions.map((opt) => (
-                      <label key={opt.value} style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", fontSize: "var(--text-title-3)" }}>
-                        <input type="radio" checked={forecastWeeks === opt.value} onChange={() => { setForecastWeeks(opt.value); setOpenFilterKey(null); }} />
-                        <span>{opt.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
+            <FilterMenu label="Material" multiple options={materialOptions.map(o => ({ value: o.value, label: o.label }))} values={filterMaterial} onChangeMultiple={(v) => { setFilterMaterial(v); setCurrentPage(1); }} />
+            <FilterMenu label="WO ID" multiple options={woIdOptions.map(o => ({ value: o.value, label: o.label }))} values={filterWoId} onChangeMultiple={(v) => { setFilterWoId(v); setCurrentPage(1); }} />
+            <FilterMenu label="Order ID" multiple options={orderIdOptions.map(o => ({ value: o.value, label: o.label }))} values={filterOrderId} onChangeMultiple={(v) => { setFilterOrderId(v); setCurrentPage(1); }} />
+            <FilterMenu label="Customer" multiple options={customerOptions.map(o => ({ value: o.value, label: o.label }))} values={filterCustomer} onChangeMultiple={(v) => { setFilterCustomer(v); setCurrentPage(1); }} />
+            <FilterMenu label="Product" multiple options={productOptions.map(o => ({ value: o.value, label: o.label }))} values={filterProduct} onChangeMultiple={(v) => { setFilterProduct(v); setCurrentPage(1); }} />
+            <FilterMenu
+              label="Planning Range"
+              searchable={false}
+              options={planningRangeOptions.map(o => ({ value: String(o.value), label: o.label }))}
+              value={String(forecastWeeks)}
+              onChange={(v) => setForecastWeeks(Number(v))}
+            />
           </div>
 
           {/* Week / Month view switcher */}

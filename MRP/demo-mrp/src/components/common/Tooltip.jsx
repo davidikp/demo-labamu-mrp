@@ -1,14 +1,2 @@
-import React from "react";
-import { Tooltip as CeTooltip } from "../../ce-ui";
-
-/**
- * Tooltip — adapter over the ce-ui Tooltip.
- * Legacy API: { content, children }. ce-ui adds optional `placement`.
- */
-const Tooltip = ({ content, children, placement = "top" }) => (
-  <CeTooltip content={content} placement={placement}>
-    {children}
-  </CeTooltip>
-);
-
-export { Tooltip };
+// Re-export shim → canonical adapter lives in atoms/Tooltip.jsx (ce-ui backed).
+export * from "../atoms/Tooltip.jsx";

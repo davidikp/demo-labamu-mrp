@@ -7,31 +7,13 @@ import {
 } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
 import { FormField, InputField } from "../../../components/index.js";
-
-const tabButtonStyle = (isActive) => ({
-  height: "48px",
-  padding: "0 28px",
-  borderRadius: "100px",
-  border: isActive
-    ? "1px solid var(--feature-brand-primary)"
-    : "1px solid transparent",
-  background: isActive ? "#EAF1FF" : "var(--neutral-surface-primary)",
-  color: isActive ? "var(--feature-brand-primary)" : "#7F7F7F",
-  fontSize: "var(--text-title-2)",
-  fontWeight: "var(--font-weight-regular)",
-  cursor: "pointer",
-  transition: "all 0.18s ease",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  whiteSpace: "nowrap"
-});
+import { ChipTabBar } from "../../../components/molecules/ChipTabBar.jsx";
 
 const cellStyle = (overrides) => ({
   minWidth: 0,
@@ -102,8 +84,6 @@ export const MaterialManagePage = ({ onNavigate, showSnackbar, t }) => {
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState([]);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filterTriggerRect, setFilterTriggerRect] = useState(null);
 
   // Data states
   const [categories, setCategories] = useState(MOCK_CATEGORIES);
@@ -122,18 +102,6 @@ export const MaterialManagePage = ({ onNavigate, showSnackbar, t }) => {
   // Error states
   const [categoryErrors, setCategoryErrors] = useState({});
   const [uomErrors, setUomErrors] = useState({});
-
-  const handleFilterClick = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setFilterTriggerRect(rect);
-    setIsFilterOpen(!isFilterOpen);
-  };
-
-  const toggleStatusFilter = (status) => {
-    setStatusFilter(prev => 
-      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
-    );
-  };
 
   const filteredData = (activeTab === "Category" ? categories : uoms).filter(item => {
     const nameVal = item.name || "";
@@ -304,22 +272,20 @@ export const MaterialManagePage = ({ onNavigate, showSnackbar, t }) => {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "24px" }}>
-          {["Category", "Unit of Measurement"].map(tab => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => {
-                setActiveTab(tab);
-                setCurrentPage(1);
-                setSearchQuery("");
-                setStatusFilter([]);
-              }}
-              style={tabButtonStyle(activeTab === tab)}
-            >
-              {tab}
-            </button>
-          ))}
+        <div style={{ marginTop: "24px" }}>
+          <ChipTabBar
+            tabs={[
+              { id: "Category", label: "Category" },
+              { id: "Unit of Measurement", label: "Unit of Measurement" },
+            ]}
+            activeTab={activeTab}
+            onChange={(tab) => {
+              setActiveTab(tab);
+              setCurrentPage(1);
+              setSearchQuery("");
+              setStatusFilter([]);
+            }}
+          />
         </div>
       </div>
 
@@ -341,53 +307,14 @@ export const MaterialManagePage = ({ onNavigate, showSnackbar, t }) => {
           borderBottom: "1px solid var(--neutral-line-separator-2)" 
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "12px", position: "relative" }}>
-            <div onClick={handleFilterClick}>
-              <FilterPill 
-                label="Status" 
-                active={statusFilter.length > 0} 
-                isOpen={isFilterOpen} 
-                count={statusFilter.length}
-              />
-            </div>
-
-            {isFilterOpen && (
-              <>
-                <div style={{ position: "fixed", inset: 0, zIndex: 999 }} onClick={() => setIsFilterOpen(false)} />
-                <div style={{
-                  position: "fixed",
-                  top: filterTriggerRect ? `${filterTriggerRect.bottom + 8}px` : "160px",
-                  left: filterTriggerRect ? `${filterTriggerRect.left}px` : "0",
-                  width: "240px",
-                  background: "var(--neutral-surface-primary)",
-                  border: "1px solid var(--neutral-line-separator-1)",
-                  borderRadius: "var(--radius-card)",
-                  boxShadow: "var(--elevation-sm)",
-                  padding: "16px",
-                  zIndex: 1000,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "16px"
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Status</span>
-                    <button
-                      onClick={() => setStatusFilter([])}
-                      style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "var(--text-body)", fontWeight: "var(--font-weight-bold)" }}
-                    >
-                      Clear
-                    </button>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {["Active", "Inactive"].map(status => (
-                      <label key={status} style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}>
-                        <Checkbox checked={statusFilter.includes(status)} onChange={() => toggleStatusFilter(status)} />
-                        <span style={{ fontSize: "var(--text-title-3)" }}>{status}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
+            <FilterMenu
+              label="Status"
+              multiple
+              searchable={false}
+              options={["Active", "Inactive"].map((o) => ({ value: o, label: o }))}
+              values={statusFilter}
+              onChangeMultiple={setStatusFilter}
+            />
           </div>
 
           <TableSearchField 

@@ -4,9 +4,7 @@ import { IconButton } from "../../../components/common/IconButton.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
-import { FilterPopoverCheckbox } from "../../../components/molecules/FilterPopoverCheckbox.jsx";
-import { DateRangeInputControl } from "../../purchase-order/components/DateRangeInputControl.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { MOCK_PROCUREMENT_STATUS, MOCK_CUSTOMER_PIC_MAP } from "../mock/materialForecastMocks.js";
@@ -125,35 +123,6 @@ const thBase = (width, extra = {}) => ({
   whiteSpace: "nowrap",
 });
 
-// ── Est. Start Date popover ────────────────────────────────────────────────────
-const toISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-
-const StartDatePopover = ({ dateFilterType, setDateFilterType, customDateRange, setCustomDateRange, onClose }) => {
-  const ref = useRef(null);
-  useEffect(() => {
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) onClose(); };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [onClose]);
-
-  return (
-    <div ref={ref} style={{ position: "absolute", top: "calc(100% + 8px)", left: 0, width: "300px", background: "var(--neutral-surface-primary)", border: ROW_BORDER, borderRadius: "var(--radius-card)", boxShadow: "var(--elevation-sm)", padding: "16px", display: "flex", flexDirection: "column", gap: "16px", zIndex: 100000 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>Est. Start</span>
-        <button onClick={() => { setDateFilterType("all"); setCustomDateRange({ start: "", end: "" }); onClose(); }} style={{ background: "none", border: "none", padding: 0, color: "var(--status-red-primary)", cursor: "pointer", fontSize: "var(--text-body)", fontWeight: "var(--font-weight-bold)" }}>Remove Filter</button>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-        {[{ key: "all", label: "All" }, { key: "last7", label: "Last 7 days" }, { key: "last30", label: "Last 30 days" }, { key: "next7", label: "Next 7 days" }, { key: "next30", label: "Next 30 days" }, { key: "custom", label: "Custom date" }].map((opt) => (
-          <label key={opt.key} style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", fontSize: "var(--text-title-3)" }}>
-            <input type="radio" checked={dateFilterType === opt.key} onChange={() => setDateFilterType(opt.key)} />
-            <span>{opt.label}</span>
-          </label>
-        ))}
-        {dateFilterType === "custom" && <DateRangeInputControl value={customDateRange} onChange={(e) => setCustomDateRange(e.target.value)} fieldHeight="40px" fontSize="14px" />}
-      </div>
-    </div>
-  );
-};
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
@@ -170,13 +139,11 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
   const [filterOrderId, setFilterOrderId] = useState([]);
   const [filterWoId, setFilterWoId] = useState([]);
   const [filterStatus, setFilterStatus] = useState([]);
-  const [openFilterKey, setOpenFilterKey] = useState(null);
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [dateFilterType, setDateFilterType] = useState("all");
-  const [customDateRange, setCustomDateRange] = useState({ start: "", end: "" });
-  const [showDatePopover, setShowDatePopover] = useState(false);
+  const [customDateFrom, setCustomDateFrom] = useState(null);
+  const [customDateTo, setCustomDateTo] = useState(null);
   const [sortCol, setSortCol] = useState(null); // null | "estStart" | "status"
   const [sortDir, setSortDir] = useState("asc");
   const scrollerRef = useRef(null);
@@ -287,18 +254,17 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
       if (dateFilterType !== "all") {
         const d = new Date(r.estStart); d.setHours(0, 0, 0, 0);
         if (isNaN(d.getTime())) return false;
-        const iso = toISO(d);
         if (dateFilterType === "last7") { const c = new Date(now); c.setDate(now.getDate() - 7); if (d < c || d > now) return false; }
         else if (dateFilterType === "last30") { const c = new Date(now); c.setDate(now.getDate() - 30); if (d < c || d > now) return false; }
         else if (dateFilterType === "next7") { const c = new Date(now); c.setDate(now.getDate() + 7); if (d < now || d > c) return false; }
         else if (dateFilterType === "next30") { const c = new Date(now); c.setDate(now.getDate() + 30); if (d < now || d > c) return false; }
-        else if (dateFilterType === "custom" && customDateRange.start && customDateRange.end) {
-          if (iso < customDateRange.start || iso > customDateRange.end) return false;
+        else if (dateFilterType === "__custom__" && customDateFrom && customDateTo) {
+          if (d < customDateFrom || d > customDateTo) return false;
         }
       }
       return true;
     });
-  }, [allRows, filterProduct, filterCustomer, filterOrderId, filterWoId, filterStatus, dateFilterType, customDateRange]);
+  }, [allRows, filterProduct, filterCustomer, filterOrderId, filterWoId, filterStatus, dateFilterType, customDateFrom, customDateTo]);
 
   const toggleSort = (col) => {
     if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
@@ -320,8 +286,8 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
 
   const handleClose = () => {
     setFilterProduct([]); setFilterCustomer([]); setFilterOrderId([]); setFilterWoId([]); setFilterStatus([]);
-    setOpenFilterKey(null); setCurrentPage(1);
-    setDateFilterType("all"); setCustomDateRange({ start: "", end: "" }); setShowDatePopover(false);
+    setCurrentPage(1);
+    setDateFilterType("all"); setCustomDateFrom(null); setCustomDateTo(null);
     setPoMenuOpenRowId(null); setIsSelectExistingPoOpen(false); setSelectPoRow(null);
     setSortCol(null); setSortDir("asc");
     onClose();
@@ -406,43 +372,28 @@ export const MaterialBreakdownDrawer = ({ isOpen, onClose, materialData, onCreat
         {/* Filter bar */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "0 24px 12px", flexShrink: 0, borderBottom: ROW_BORDER }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            {[
-              { key: "woId",     label: "WO ID",         value: filterWoId,    options: woIdOptions,    onChange: setFilterWoId    },
-              { key: "orderId",  label: "Order ID",      value: filterOrderId, options: orderIdOptions, onChange: setFilterOrderId },
-              { key: "product",  label: "Product",       value: filterProduct, options: productOptions, onChange: setFilterProduct },
-              { key: "customer", label: "Customer",      value: filterCustomer,options: customerOptions,onChange: setFilterCustomer },
-            ].map(({ key, label, value, options, onChange }) => (
-              <div key={key} onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); setPopoverTriggerRect(rect); setOpenFilterKey((prev) => prev === key ? null : key); }}>
-                <FilterPill label={label} active={value.length > 0} isOpen={openFilterKey === key} count={value.length} />
-              </div>
-            ))}
-
-            {openFilterKey === "woId"     && <FilterPopoverCheckbox title="WO ID" options={woIdOptions}     value={filterWoId}     onChange={(v) => { setFilterWoId(v);     setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "orderId"  && <FilterPopoverCheckbox title="Order ID"      options={orderIdOptions}  value={filterOrderId}  onChange={(v) => { setFilterOrderId(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "product"  && <FilterPopoverCheckbox title="Product"       options={productOptions}  value={filterProduct}  onChange={(v) => { setFilterProduct(v);  setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "customer" && <FilterPopoverCheckbox title="Customer"      options={customerOptions} value={filterCustomer} onChange={(v) => { setFilterCustomer(v); setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "status"   && <FilterPopoverCheckbox title="Status"        options={statusOptions}   value={filterStatus}   onChange={(v) => { setFilterStatus(v);   setCurrentPage(1); }} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} searchable={false} />}
-
-            {/* Est. Start */}
-            <div style={{ position: "relative" }}>
-              <div onClick={() => setShowDatePopover((p) => !p)}>
-                <FilterPill label="Est. Start" active={dateFilterType !== "all"} isOpen={showDatePopover} count={dateFilterType !== "all" ? 1 : 0} />
-              </div>
-              {showDatePopover && (
-                <StartDatePopover
-                  dateFilterType={dateFilterType}
-                  setDateFilterType={(v) => { setDateFilterType(v); setCurrentPage(1); }}
-                  customDateRange={customDateRange}
-                  setCustomDateRange={setCustomDateRange}
-                  onClose={() => setShowDatePopover(false)}
-                />
-              )}
-            </div>
-
-            {/* Status filter */}
-            <div onClick={(e) => { const rect = e.currentTarget.getBoundingClientRect(); setPopoverTriggerRect(rect); setOpenFilterKey((prev) => prev === "status" ? null : "status"); }}>
-              <FilterPill label="Status" active={filterStatus.length > 0} isOpen={openFilterKey === "status"} count={filterStatus.length} />
-            </div>
+            <FilterMenu label="WO ID" multiple options={woIdOptions} values={filterWoId} onChangeMultiple={(v) => { setFilterWoId(v); setCurrentPage(1); }} />
+            <FilterMenu label="Order ID" multiple options={orderIdOptions} values={filterOrderId} onChangeMultiple={(v) => { setFilterOrderId(v); setCurrentPage(1); }} />
+            <FilterMenu label="Product" multiple options={productOptions} values={filterProduct} onChangeMultiple={(v) => { setFilterProduct(v); setCurrentPage(1); }} />
+            <FilterMenu label="Customer" multiple options={customerOptions} values={filterCustomer} onChangeMultiple={(v) => { setFilterCustomer(v); setCurrentPage(1); }} />
+            <FilterMenu
+              label="Est. Start"
+              searchable={false}
+              options={[
+                { value: "last7", label: "Last 7 days" },
+                { value: "last30", label: "Last 30 days" },
+                { value: "next7", label: "Next 7 days" },
+                { value: "next30", label: "Next 30 days" },
+              ]}
+              value={dateFilterType}
+              onChange={(v) => { setDateFilterType(v); setCurrentPage(1); }}
+              allValue="all"
+              customDateEnabled
+              customDateFrom={customDateFrom}
+              customDateTo={customDateTo}
+              onCustomDateChange={(from, to) => { setCustomDateFrom(from); setCustomDateTo(to); }}
+            />
+            <FilterMenu label="Status" multiple searchable={false} options={statusOptions} values={filterStatus} onChangeMultiple={(v) => { setFilterStatus(v); setCurrentPage(1); }} />
           </div>
         </div>
 

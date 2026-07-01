@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ChevronDownIcon, Settings, SearchIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { ListStatusCounterCard } from "../../../components/common/ListStatusCounterCard.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
@@ -12,15 +12,12 @@ import { cellStyle } from "../utils/orderTableUtils.js";
 export const OrderListPage = ({ onNavigate, t }) => {
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortDirection, setSortDirection] = useState("desc");
-  const [openFilterKey, setOpenFilterKey] = useState(null);
   const [filterStatuses, setFilterStatuses] = useState([]);
   const [filterCustomer, setFilterCustomer] = useState("all");
   const [filterOrderType, setFilterOrderType] = useState("all");
-  const [customerSearch, setCustomerSearch] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [viewportHeight, setViewportHeight] = useState(() =>
     typeof window !== "undefined" ? window.innerHeight : 900
   );
@@ -80,8 +77,8 @@ export const OrderListPage = ({ onNavigate, t }) => {
       !searchQuery ||
       row.orderNo.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesCustomer = filterCustomer === "all" || row.customerName === filterCustomer;
-    const matchesOrderType = filterOrderType === "all" || row.orderType === filterOrderType; 
+    const matchesCustomer = !filterCustomer || filterCustomer === "all" || row.customerName === filterCustomer;
+    const matchesOrderType = !filterOrderType || filterOrderType === "all" || row.orderType === filterOrderType;
 
     return matchesStatusFilter && matchesSearch && matchesCustomer && matchesOrderType;
   }).sort((a, b) => {
@@ -114,10 +111,6 @@ export const OrderListPage = ({ onNavigate, t }) => {
 
   const customers = Array.from(new Set(MOCK_ORDER_TABLE_DATA.map(r => r.customerName)));
   const orderTypes = ["Internal", "Customer", "Forecast", "Rework"];
-
-  const filteredCustomers = customerSearch 
-    ? customers.filter(c => c.toLowerCase().includes(customerSearch.toLowerCase()))
-    : customers;
 
   return (
     <div
@@ -207,151 +200,21 @@ export const OrderListPage = ({ onNavigate, t }) => {
               position: "relative",
             }}
           >
-            <div
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setPopoverTriggerRect(rect);
-                setCustomerSearch("");
-                setOpenFilterKey((prev) => (prev === "customer" ? null : "customer"));
-              }}
-            >
-              <FilterPill
-                label="Customer"
-                active={filterCustomer !== "all"}
-                isOpen={openFilterKey === "customer"}
-                count={filterCustomer !== "all" ? 1 : 0}
-              />
-            </div>
-
-            <div
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setPopoverTriggerRect(rect);
-                setOpenFilterKey((prev) => (prev === "orderType" ? null : "orderType"));
-              }}
-            >
-              <FilterPill
-                label="Order Type"
-                active={filterOrderType !== "all"}
-                isOpen={openFilterKey === "orderType"}
-                count={filterOrderType !== "all" ? 1 : 0}
-              />
-            </div>
-
-            {openFilterKey ? (
-              <>
-                <div
-                  style={{ position: "fixed", inset: 0, zIndex: 80 }}
-                  onClick={() => setOpenFilterKey(null)}
-                />
-                <div
-                  style={{
-                    position: "fixed",
-                    top: popoverTriggerRect ? `${popoverTriggerRect.bottom + 8}px` : "160px",
-                    left: popoverTriggerRect ? `${popoverTriggerRect.left}px` : "0",
-                    width: "280px",
-                    background: "var(--neutral-surface-primary)",
-                    border: "1px solid var(--neutral-line-separator-1)",
-                    borderRadius: "var(--radius-card)",
-                    boxShadow: "var(--elevation-sm)",
-                    padding: "16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px",
-                    zIndex: 1000,
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>
-                      {openFilterKey === "customer" ? "Customer" : "Order Type"}
-                    </span>
-                    <button
-                      onClick={() => {
-                        if (openFilterKey === "customer") setFilterCustomer("all");
-                        else setFilterOrderType("all");
-                        setOpenFilterKey(null);
-                      }}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "var(--status-red-primary)",
-                        cursor: "pointer",
-                        fontSize: "var(--text-body)",
-                        fontWeight: "var(--font-weight-bold)",
-                      }}
-                    >
-                      Remove Filter
-                    </button>
-                  </div>
-
-                  {openFilterKey === "customer" && customers.length > 5 && (
-                    <div style={{ position: "relative" }}>
-                      <input
-                        type="text"
-                        placeholder="Search customer..."
-                        value={customerSearch}
-                        onChange={(e) => setCustomerSearch(e.target.value)}
-                        style={{
-                          width: "100%",
-                          padding: "8px 12px 8px 32px",
-                          borderRadius: "8px",
-                          border: "1px solid var(--neutral-line-separator-1)",
-                          fontSize: "var(--text-title-3)",
-                          outline: "none",
-                        }}
-                      />
-                      <SearchIcon 
-                        size={14} 
-                        color="var(--neutral-on-surface-tertiary)" 
-                        style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)" }} 
-                      />
-                    </div>
-                  )}
-
-                  <div 
-                    style={{ 
-                      display: "flex", 
-                      flexDirection: "column", 
-                      gap: "10px",
-                      maxHeight: "240px",
-                      overflowY: "auto",
-                      paddingRight: "4px"
-                    }}
-                  >
-                    {(openFilterKey === "customer" ? ["all", ...filteredCustomers] : ["all", ...orderTypes]).map((opt) => (
-                      <label
-                        key={opt}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          cursor: "pointer",
-                          fontSize: "var(--text-title-3)",
-                          padding: "4px 0"
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name={openFilterKey}
-                          checked={(openFilterKey === "customer" ? filterCustomer : filterOrderType) === opt}
-                          onChange={() => {
-                            if (openFilterKey === "customer") setFilterCustomer(opt);
-                            else setFilterOrderType(opt);
-                            setOpenFilterKey(null);
-                          }}
-                        />
-                        <span>{opt === "all" ? "All" : opt}</span>
-                      </label>
-                    ))}
-                    {openFilterKey === "customer" && filteredCustomers.length === 0 && (
-                      <div style={{ textAlign: "center", color: "var(--neutral-on-surface-tertiary)", fontSize: "var(--text-desc)", padding: "12px 0" }}>
-                        No results found
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
-            ) : null}
+            <FilterMenu
+              label="Customer"
+              options={customers.map((c) => ({ value: c, label: c }))}
+              value={filterCustomer}
+              onChange={setFilterCustomer}
+              allValue="all"
+            />
+            <FilterMenu
+              label="Order Type"
+              searchable={false}
+              options={orderTypes.map((o) => ({ value: o, label: o }))}
+              value={filterOrderType}
+              onChange={setFilterOrderType}
+              allValue="all"
+            />
           </div>
 
           <TableSearchField

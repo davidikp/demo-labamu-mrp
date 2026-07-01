@@ -628,11 +628,14 @@ const DropdownSelect = (props) => {
     return <LegacyDropdownSelect {...props} />;
   }
 
-  const ceOptions = options.map((o) => ({
-    value: String(o.value),
-    label: o.label ?? String(o.value),
-    disabled: o.disabled,
-  }));
+  const ceOptions = options.map((o) => {
+    const opt = typeof o === "object" ? o : { value: o, label: String(o) };
+    return {
+      value: String(opt.value),
+      label: opt.label ?? String(opt.value),
+      disabled: opt.disabled,
+    };
+  });
 
   return (
     <div style={style} className={className}>
@@ -643,7 +646,7 @@ const DropdownSelect = (props) => {
         placeholder={placeholder}
         disabled={disabled}
         searchable={searchable}
-        size={SIZE_MAP[size] || "md"}
+        size={SIZE_MAP[size] || "lg"}
       />
     </div>
   );

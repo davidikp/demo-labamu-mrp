@@ -11,7 +11,7 @@ import {
 } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
@@ -663,9 +663,7 @@ export const TraceabilityTab = ({ onNavigate, showSnackbar }) => {
   
   const [materialFilter, setMaterialFilter] = useState([]);
   const [productFilter, setProductFilter] = useState([]);
-  const [openFilterKey, setOpenFilterKey] = useState(null); // 'material' | 'product' | null
-  const [filterTriggerRect, setFilterTriggerRect] = useState(null);
-  
+
   const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const [downloadTriggerRect, setDownloadTriggerRect] = useState(null);
 
@@ -726,89 +724,22 @@ export const TraceabilityTab = ({ onNavigate, showSnackbar }) => {
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <div 
-              onClick={(e) => {
-                setOpenFilterKey("material");
-                setFilterTriggerRect(e.currentTarget.getBoundingClientRect());
-              }}
-            >
-              <FilterPill 
-                label="Material" 
-                count={materialFilter.length} 
-                active={materialFilter.length > 0} 
-                isOpen={openFilterKey === "material"} 
-              />
-            </div>
-            <div 
-              onClick={(e) => {
-                setOpenFilterKey("product");
-                setFilterTriggerRect(e.currentTarget.getBoundingClientRect());
-              }}
-            >
-              <FilterPill 
-                label="Product" 
-                count={productFilter.length} 
-                active={productFilter.length > 0} 
-                isOpen={openFilterKey === "product"} 
-              />
-            </div>
-
-            {openFilterKey && (
-              <>
-                {createPortal(<div style={{ position: "fixed", inset: 0, zIndex: 14000 }} onClick={() => setOpenFilterKey(null)} />, document.body)}
-                {createPortal(
-                  <div style={{
-                    position: "fixed",
-                    top: `${filterTriggerRect.bottom + 8}px`,
-                    left: `${filterTriggerRect.left}px`,
-                    width: "240px",
-                    background: "var(--neutral-surface-primary)",
-                    border: "1px solid var(--neutral-line-separator-1)",
-                    borderRadius: "16px",
-                    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
-                    padding: "16px",
-                    zIndex: 14001,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px"
-                  }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>
-                        {openFilterKey === "material" ? "Material" : "Product"}
-                      </span>
-                      <button 
-                        onClick={() => { 
-                          if (openFilterKey === "material") setMaterialFilter([]);
-                          else setProductFilter([]);
-                          setOpenFilterKey(null); 
-                        }} 
-                        style={{ background: "none", border: "none", color: "var(--status-red-primary)", cursor: "pointer", fontSize: "12px", fontWeight: "bold" }}
-                      >
-                        Remove Filter
-                      </button>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                      {(openFilterKey === "material" ? materialOptions : productOptions).map(opt => (
-                        <label key={opt} style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer", fontSize: "13px" }}>
-                          <Checkbox 
-                            checked={openFilterKey === "material" ? materialFilter.includes(opt) : productFilter.includes(opt)} 
-                            onChange={() => {
-                              if (openFilterKey === "material") {
-                                setMaterialFilter(prev => prev.includes(opt) ? prev.filter(s => s !== opt) : [...prev, opt]);
-                              } else {
-                                setProductFilter(prev => prev.includes(opt) ? prev.filter(s => s !== opt) : [...prev, opt]);
-                              }
-                            }} 
-                          />
-                          {opt}
-                        </label>
-                      ))}
-                    </div>
-                  </div>,
-                  document.body
-                )}
-              </>
-            )}
+            <FilterMenu
+              label="Material"
+              multiple
+              searchable={false}
+              options={materialOptions.map((o) => ({ value: o, label: o }))}
+              values={materialFilter}
+              onChangeMultiple={setMaterialFilter}
+            />
+            <FilterMenu
+              label="Product"
+              multiple
+              searchable={false}
+              options={productOptions.map((o) => ({ value: o, label: o }))}
+              values={productFilter}
+              onChangeMultiple={setProductFilter}
+            />
           </div>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Batch No, Material, WO, Product" width="320px" />

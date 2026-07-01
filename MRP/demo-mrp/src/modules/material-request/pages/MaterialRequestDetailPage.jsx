@@ -8,6 +8,7 @@ import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
 import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
 import { InputField } from "../../../components/molecules/InputField.jsx";
 import { UploadDropzone } from "../../../components/molecules/UploadDropzone.jsx";
+import { ChipTabBar } from "../../../components/molecules/ChipTabBar.jsx";
 import { UploadDescriptionCard } from "../../purchase-order/components/detail/shared/PoDetailSharedComponents.jsx";
 import { MaterialPreparationDrawer } from "../components/MaterialPreparationDrawer.jsx";
 import {
@@ -60,20 +61,6 @@ const QTY_TOOLTIPS = {
 };
 
 const COLS = "48px 1fr 2.2fr 1.2fr 1.4fr 1.2fr 1.3fr";
-
-const tabButtonStyle = (isActive) => ({
-  height: "44px",
-  padding: "0 24px",
-  borderRadius: "100px",
-  border: isActive ? "1px solid var(--feature-brand-primary)" : "1px solid transparent",
-  background: isActive ? "#EAF1FF" : "var(--neutral-surface-primary)",
-  color: isActive ? "var(--feature-brand-primary)" : "#7F7F7F",
-  fontSize: "var(--text-title-2)",
-  fontWeight: isActive ? "var(--font-weight-bold)" : "var(--font-weight-regular)",
-  cursor: "pointer",
-  transition: "all 0.18s ease",
-  whiteSpace: "nowrap",
-});
 
 const headerCell = (overrides = {}) => ({
   fontSize: "var(--text-title-3)",
@@ -843,15 +830,15 @@ export const MaterialRequestDetailPage = ({ onNavigate, initialData, requestId, 
 
         {/* Tabs */}
         <div style={{ display: "flex", gap: "12px", alignItems: "center", flexShrink: 0 }}>
-          <button type="button" style={tabButtonStyle(activeTab === "requested_material")} onClick={() => setActiveTab("requested_material")}>
-            Requested Material
-          </button>
-          <button type="button" style={tabButtonStyle(activeTab === "related_request")} onClick={() => setActiveTab("related_request")}>
-            Related Request
-          </button>
-          <button type="button" style={tabButtonStyle(activeTab === "logs")} onClick={() => setActiveTab("logs")}>
-            Logs
-          </button>
+          <ChipTabBar
+            tabs={[
+              { id: "requested_material", label: "Requested Material" },
+              { id: "related_request", label: "Related Request" },
+              { id: "logs", label: "Logs" },
+            ]}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+          />
         </div>
 
         {/* Tab content */}

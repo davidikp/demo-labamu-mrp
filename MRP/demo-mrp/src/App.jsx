@@ -48,6 +48,7 @@ import {
 import { Sidebar } from "./components/layout/Sidebar.jsx";
 import { TopHeader } from "./components/layout/TopHeader.jsx";
 import { NotificationProvider } from "./context/NotificationContext.jsx";
+import { LocaleProvider } from "./ce-ui";
 import { NotificationSeeder } from "./components/notification/NotificationSeeder.jsx";
 import { SimulateEventPanel } from "./components/notification/SimulateEventPanel.jsx";
 import { DashboardPage } from "./modules/dashboard/pages/DashboardPage.jsx";
@@ -1114,6 +1115,7 @@ export default function App() {
         order: orderApprovalSettings?.approvers,
       }}
     >
+    <LocaleProvider locale={language === "id" ? "id" : "en"}>
     <div
       ref={appRootRef}
       style={{
@@ -1294,6 +1296,7 @@ export default function App() {
         </div>
       </div>
     </div>
+    </LocaleProvider>
     </NotificationProvider>
   );
 }

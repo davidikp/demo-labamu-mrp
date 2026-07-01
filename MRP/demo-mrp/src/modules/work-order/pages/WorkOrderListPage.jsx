@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Settings, ChevronDownIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
-import { Checkbox } from "../../../components/common/Checkbox.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { ListStatusCounterCard } from "../../../components/common/ListStatusCounterCard.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
-import { DateRangeInputControl } from "../components/DateRangeInputControl.jsx";
 import { MOCK_WO_TABLE_DATA } from "../mock/workOrderMocks.js";
 
 const cellStyle = (overrides) => ({
@@ -23,16 +21,16 @@ const cellStyle = (overrides) => ({
 
 export const WorkOrderListPage = ({ onNavigate, t }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [openFilterKey, setOpenFilterKey] = useState(null);
   const [priorityFilters, setPriorityFilters] = useState([]);
   const [creatorFilters, setCreatorFilters] = useState([]);
   const [startDateFilterType, setStartDateFilterType] = useState("all");
-  const [startDateRange, setStartDateRange] = useState({ start: "", end: "" });
+  const [startCustomDateFrom, setStartCustomDateFrom] = useState(null);
+  const [startCustomDateTo, setStartCustomDateTo] = useState(null);
   const [endDateFilterType, setEndDateFilterType] = useState("all");
-  const [endDateRange, setEndDateRange] = useState({ start: "", end: "" });
+  const [endCustomDateFrom, setEndCustomDateFrom] = useState(null);
+  const [endCustomDateTo, setEndCustomDateTo] = useState(null);
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [selectedStatuses, setSelectedStatuses] = useState([]);
   const [sortBy, setSortBy] = useState("wo");
   const [sortDirection, setSortDirection] = useState("desc");
@@ -86,7 +84,7 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
     return Number.isNaN(d.getTime()) ? null : d;
   };
   const referenceNow = new Date("2026-03-31");
-  const matchesDateFilter = (rowDateValue, filterType, customRange) => {
+  const matchesDateFilter = (rowDateValue, filterType, customDateFrom, customDateTo) => {
     if (filterType === "all") return true;
     const rowDate = parsedDate(rowDateValue);
     if (!rowDate) return false;
@@ -101,11 +99,8 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
       start.setDate(referenceNow.getDate() - 30);
       return rowDate >= start && rowDate <= referenceNow;
     }
-    if (filterType === "custom" && customRange.start && customRange.end) {
-      const start = parsedDate(customRange.start);
-      const end = parsedDate(customRange.end);
-      if (start && end) return rowDate >= start && rowDate <= end;
-      return false;
+    if (filterType === "__custom__" && customDateFrom && customDateTo) {
+      return rowDate >= customDateFrom && rowDate <= customDateTo;
     }
     return true;
   };
@@ -142,16 +137,8 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
       priorityFilters.length === 0 || priorityFilters.includes(row.priority);
     const matchesCreator =
       creatorFilters.length === 0 || creatorFilters.includes(row.createdBy);
-    const matchesStartDate = matchesDateFilter(
-      row.start,
-      startDateFilterType,
-      startDateRange
-    );
-    const matchesEndDate = matchesDateFilter(
-      row.end,
-      endDateFilterType,
-      endDateRange
-    );
+    const matchesStartDate = matchesDateFilter(row.start, startDateFilterType, startCustomDateFrom, startCustomDateTo);
+    const matchesEndDate = matchesDateFilter(row.end, endDateFilterType, endCustomDateFrom, endCustomDateTo);
     return (
       matchesStatus &&
       matchesSearch &&
@@ -185,11 +172,11 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
     priorityFilters.join("|"),
     creatorFilters.join("|"),
     startDateFilterType,
-    startDateRange.start,
-    startDateRange.end,
+    startCustomDateFrom,
+    startCustomDateTo,
     endDateFilterType,
-    endDateRange.start,
-    endDateRange.end,
+    endCustomDateFrom,
+    endCustomDateTo,
     rowsPerPage,
     sortBy,
     sortDirection,
@@ -285,234 +272,58 @@ export const WorkOrderListPage = ({ onNavigate, t }) => {
                 position: "relative",
               }}
             >
-              <div
-                onClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setPopoverTriggerRect(rect);
-                  setOpenFilterKey((prev) => (prev === "priority" ? null : "priority"));
+              <FilterMenu
+                label="Priority"
+                multiple
+                searchable={false}
+                options={priorityOptions.map((p) => ({ value: p, label: p }))}
+                values={priorityFilters}
+                onChangeMultiple={setPriorityFilters}
+              />
+              <FilterMenu
+                label="Planned Start Date"
+                searchable={false}
+                options={[
+                  { value: "last7",  label: "Last 7 days" },
+                  { value: "last30", label: "Last 30 days" },
+                ]}
+                value={startDateFilterType}
+                onChange={setStartDateFilterType}
+                allValue="all"
+                customDateEnabled
+                customDateFrom={startCustomDateFrom}
+                customDateTo={startCustomDateTo}
+                onCustomDateChange={(from, to) => {
+                  setStartCustomDateFrom(from);
+                  setStartCustomDateTo(to);
                 }}
-              >
-                <FilterPill
-                  label="Priority"
-                  active={priorityFilters.length > 0}
-                  isOpen={openFilterKey === "priority"}
-                  count={priorityFilters.length}
-                />
-              </div>
-              <div
-                onClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setPopoverTriggerRect(rect);
-                  setOpenFilterKey((prev) => (prev === "start" ? null : "start"));
+              />
+              <FilterMenu
+                label="Planned End Date"
+                searchable={false}
+                options={[
+                  { value: "last7",  label: "Last 7 days" },
+                  { value: "last30", label: "Last 30 days" },
+                ]}
+                value={endDateFilterType}
+                onChange={setEndDateFilterType}
+                allValue="all"
+                customDateEnabled
+                customDateFrom={endCustomDateFrom}
+                customDateTo={endCustomDateTo}
+                onCustomDateChange={(from, to) => {
+                  setEndCustomDateFrom(from);
+                  setEndCustomDateTo(to);
                 }}
-              >
-                <FilterPill
-                  label="Planned Start Date"
-                  active={startDateFilterType !== "all"}
-                  isOpen={openFilterKey === "start"}
-                  count={startDateFilterType !== "all" ? 1 : 0}
-                />
-              </div>
-              <div
-                onClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setPopoverTriggerRect(rect);
-                  setOpenFilterKey((prev) => (prev === "end" ? null : "end"));
-                }}
-              >
-                <FilterPill
-                  label="Planned End Date"
-                  active={endDateFilterType !== "all"}
-                  isOpen={openFilterKey === "end"}
-                  count={endDateFilterType !== "all" ? 1 : 0}
-                />
-              </div>
-              <div
-                onClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  setPopoverTriggerRect(rect);
-                  setOpenFilterKey((prev) => (prev === "creator" ? null : "creator"));
-                }}
-              >
-                <FilterPill
-                  label="Created By"
-                  active={creatorFilters.length > 0}
-                  isOpen={openFilterKey === "creator"}
-                  count={creatorFilters.length}
-                />
-              </div>
-
-              {openFilterKey ? (
-                <>
-                  <div
-                    style={{ position: "fixed", inset: 0, zIndex: 80 }}
-                    onClick={() => setOpenFilterKey(null)}
-                  />
-                  <div
-                    style={{
-                      position: "fixed",
-                      top: popoverTriggerRect ? `${popoverTriggerRect.bottom + 8}px` : "160px",
-                      left: popoverTriggerRect ? `${popoverTriggerRect.left}px` : "0",
-                      width: "360px",
-                      background: "var(--neutral-surface-primary)",
-                      border: "1px solid var(--neutral-line-separator-1)",
-                      borderRadius: "var(--radius-card)",
-                      boxShadow: "var(--elevation-sm)",
-                      padding: "16px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "16px",
-                      zIndex: 1000,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "var(--text-title-2)",
-                          fontWeight: "var(--font-weight-bold)",
-                        }}
-                      >
-                        {openFilterKey === "priority"
-                          ? "Priority"
-                          : openFilterKey === "creator"
-                            ? "Created By"
-                            : openFilterKey === "start"
-                              ? "Planned Start Date"
-                              : "Planned End Date"}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (openFilterKey === "priority") {
-                            setPriorityFilters([]);
-                          }
-                          if (openFilterKey === "creator") {
-                            setCreatorFilters([]);
-                          }
-                          if (openFilterKey === "start") {
-                            setStartDateFilterType("all");
-                            setStartDateRange({ start: "", end: "" });
-                          }
-                          if (openFilterKey === "end") {
-                            setEndDateFilterType("all");
-                            setEndDateRange({ start: "", end: "" });
-                          }
-                          setOpenFilterKey(null);
-                        }}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          padding: 0,
-                          color: "var(--status-red-primary)",
-                          cursor: "pointer",
-                          fontSize: "var(--text-body)",
-                          fontWeight: "var(--font-weight-bold)",
-                        }}
-                      >
-                        Remove Filter
-                      </button>
-                    </div>
-
-                    {openFilterKey === "priority" || openFilterKey === "creator" ? (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "12px",
-                        }}
-                      >
-                        {(openFilterKey === "priority"
-                          ? priorityOptions
-                          : creatorOptions
-                        ).map((option) => {
-                          const currentList = openFilterKey === "priority" ? priorityFilters : creatorFilters;
-                          const setter = openFilterKey === "priority" ? setPriorityFilters : setCreatorFilters;
-                          return (
-                            <label
-                              key={option}
-                              onClick={() => {
-                                setter((prev) =>
-                                  prev.includes(option)
-                                    ? prev.filter((item) => item !== option)
-                                    : [...prev, option]
-                                );
-                              }}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "12px",
-                                cursor: "pointer",
-                                fontSize: "var(--text-title-3)",
-                              }}
-                            >
-                              <Checkbox
-                                checked={currentList.includes(option)}
-                                onChange={() => {
-                                  setter(prev => prev.includes(option) ? prev.filter(o => o !== option) : [...prev, option]);
-                                }}
-                              />
-                              <span>{option}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "12px",
-                        }}
-                      >
-                        {[
-                          { key: "all", label: "All" },
-                          { key: "last7", label: "Last 7 days" },
-                          { key: "last30", label: "Last 30 days" },
-                          { key: "custom", label: "Custom date" },
-                        ].map((option) => {
-                          const activeValue = openFilterKey === "start" ? startDateFilterType : endDateFilterType;
-                          const setter = openFilterKey === "start" ? setStartDateFilterType : setEndDateFilterType;
-                          return (
-                            <label
-                              key={option.key}
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "12px",
-                                cursor: "pointer",
-                                fontSize: "var(--text-title-3)",
-                              }}
-                            >
-                              <input
-                                type="radio"
-                                checked={activeValue === option.key}
-                                onChange={() => setter(option.key)}
-                              />
-                              <span>{option.label}</span>
-                            </label>
-                          );
-                        })}
-
-                        {(openFilterKey === "start" ? startDateFilterType : endDateFilterType) === "custom" && (
-                          <DateRangeInputControl
-                            value={openFilterKey === "start" ? startDateRange : endDateRange}
-                            onChange={(e) => {
-                              const setter = openFilterKey === "start" ? setStartDateRange : setEndDateRange;
-                              setter(e.target.value);
-                            }}
-                          />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : null}
+              />
+              <FilterMenu
+                label="Created By"
+                multiple
+                searchable={false}
+                options={creatorOptions.map((c) => ({ value: c, label: c }))}
+                values={creatorFilters}
+                onChangeMultiple={setCreatorFilters}
+              />
             </div>
           </div>
           <TableSearchField

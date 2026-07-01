@@ -4,12 +4,14 @@ import { AddIcon, Box, Building2, CheckIcon, ChevronDownIcon, ChevronLeftIcon, C
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
 import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
+import { ChipTabBar } from "../../../components/molecules/ChipTabBar.jsx";
 import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
-import { Card, DateInputControl, DateRangeInputControl, DocumentTypeBadge, FormField, ImageUploadField, InputField, InputGroup, LabelValue, PhoneInputField, ProgressRing, ProofDocumentList, SectionCard, Tooltip, UploadDescriptionCard, UploadDropzone, UnifiedInputShell, focusInputFrame, blurInputFrame } from "../components/WorkOrderDetailWidgets.jsx";
+import { Card, DateInputControl, DateRangeInputControl, DocumentTypeBadge, FormField, ImageUploadField, InputField, InputGroup, LabelValue, PhoneInputField, ProgressRing, ProofDocumentList, SectionCard, UploadDescriptionCard, UploadDropzone, UnifiedInputShell, focusInputFrame, blurInputFrame } from "../components/WorkOrderDetailWidgets.jsx";
+import { Tooltip } from "../../../components/atoms/Tooltip.jsx";
 import { MOCK_COMPANY } from "../../../data/company.js";
 import { MOCK_VENDORS } from "../../../data/vendors.js";
 import { MOCK_PO_TABLE_DATA } from "../../purchase-order/mock/purchaseOrderMocks.js";
@@ -525,27 +527,6 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, initialDat
       ...prev
     ]);
   };
-
-  const tabButtonStyle = (isActive) => ({
-    height: "48px",
-    padding: "0 28px",
-    borderRadius: "100px",
-    border: isActive
-      ? "1px solid var(--feature-brand-primary)"
-      : "1px solid transparent",
-    background: isActive ? "#EAF1FF" : "var(--neutral-surface-primary)",
-    color: isActive ? "var(--feature-brand-primary)" : "#7F7F7F",
-    fontSize: "var(--text-title-2)",
-    fontWeight: isActive
-      ? "var(--font-weight-bold)"
-      : "var(--font-weight-regular)",
-    cursor: "pointer",
-    transition: "all 0.18s ease",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    whiteSpace: "nowrap",
-  });
 
   const [isPlannedDateModalOpen, setIsPlannedDateModalOpen] = useState(false);
   const [editingPlannedDateStep, setEditingPlannedDateStep] = useState(null);
@@ -1145,11 +1126,6 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
   const [vendorStatusFilters, setVendorStatusFilters] = useState([]);
   const [vendorPoFilters, setVendorPoFilters] = useState([]);
   const [includedStepsFilters, setIncludedStepsFilters] = useState([]);
-  const [openVendorFilterKey, setOpenVendorFilterKey] = useState(null);
-  const [vendorPopoverTriggerRect, setVendorPopoverTriggerRect] = useState(null);
-  const [includedStepsSearchQuery, setIncludedStepsSearchQuery] = useState("");
-  const [vendorNameSearchQuery, setVendorNameSearchQuery] = useState("");
-  const [vendorPoSearchQuery, setVendorPoSearchQuery] = useState("");
 
   const [routingStages, setRoutingStages] = useState(() => {
     const cachedWo2 = initialData?.wo
@@ -3941,18 +3917,14 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
             alignItems: "center",
           }}
         >
-          <button
-            style={tabButtonStyle(activeTab === "details")}
-            onClick={() => setActiveTab("details")}
-          >
-            Details
-          </button>
-          <button
-            style={tabButtonStyle(activeTab === "logs")}
-            onClick={() => setActiveTab("logs")}
-          >
-            Logs
-          </button>
+          <ChipTabBar
+            tabs={[
+              { id: "details", label: "Details" },
+              { id: "logs", label: "Logs" },
+            ]}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+          />
         </div>
 
         {activeTab === "details" && (
@@ -4730,224 +4702,47 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 }}
               >
                 <div style={{ display: "flex", gap: "12px", alignItems: "center", position: "relative" }}>
-                  <div onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setVendorPopoverTriggerRect(rect);
-                    setOpenVendorFilterKey(prev => prev === "vendor_name" ? null : "vendor_name");
-                  }}>
-                    <FilterPill
-                      label="All Vendors"
-                      active={vendorNameFilters.length > 0}
-                      isOpen={openVendorFilterKey === "vendor_name"}
-                      count={vendorNameFilters.length}
-                    />
-                  </div>
-                  <div onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setVendorPopoverTriggerRect(rect);
-                    setOpenVendorFilterKey(prev => prev === "vendor_status" ? null : "vendor_status");
-                  }}>
-                    <FilterPill
-                      label="All Statuses"
-                      active={vendorStatusFilters.length > 0}
-                      isOpen={openVendorFilterKey === "vendor_status"}
-                      count={vendorStatusFilters.length}
-                    />
-                  </div>
-                  <div onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setVendorPopoverTriggerRect(rect);
-                    setOpenVendorFilterKey(prev => prev === "vendor_po" ? null : "vendor_po");
-                  }}>
-                    <FilterPill
-                      label="All POs"
-                      active={vendorPoFilters.length > 0}
-                      isOpen={openVendorFilterKey === "vendor_po"}
-                      count={vendorPoFilters.length}
-                    />
-                  </div>
-                  <div onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setVendorPopoverTriggerRect(rect);
-                    setOpenVendorFilterKey(prev => prev === "included_steps" ? null : "included_steps");
-                  }}>
-                    <FilterPill
-                      label="Included Steps"
-                      active={includedStepsFilters.length > 0}
-                      isOpen={openVendorFilterKey === "included_steps"}
-                      count={includedStepsFilters.length}
-                    />
-                  </div>
-
-                  {openVendorFilterKey ? (() => {
-                    const popoverPos = getFilterPopoverPosition(vendorPopoverTriggerRect, 320);
-                    return (
-                    <>
-                      <div
-                        style={{ position: "fixed", inset: 0, zIndex: 80 }}
-                        onClick={() => setOpenVendorFilterKey(null)}
-                      />
-                      <div
-                        style={{
-                          position: "fixed",
-                          top: `${popoverPos.top}px`,
-                          left: `${popoverPos.left}px`,
-                          transform: popoverPos.placement === "top" ? "translateY(-100%)" : "none",
-                          width: "360px",
-                          background: "var(--neutral-surface-primary)",
-                          border: "1px solid var(--neutral-line-separator-1)",
-                          borderRadius: "var(--radius-card)",
-                          boxShadow: "var(--elevation-sm)",
-                          padding: "16px",
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "16px",
-                          zIndex: 1000,
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: "var(--text-title-2)",
-                              fontWeight: "var(--font-weight-bold)",
-                            }}
-                          >
-                            {openVendorFilterKey === "vendor_name"
-                              ? "Vendor Name"
-                              : openVendorFilterKey === "vendor_status"
-                                ? "Status"
-                                : openVendorFilterKey === "vendor_po"
-                                  ? "Purchase Order"
-                                  : "Included Steps"}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (openVendorFilterKey === "vendor_name") setVendorNameFilters([]);
-                              if (openVendorFilterKey === "vendor_status") setVendorStatusFilters([]);
-                              if (openVendorFilterKey === "vendor_po") setVendorPoFilters([]);
-                              if (openVendorFilterKey === "included_steps") setIncludedStepsFilters([]);
-                              setOpenVendorFilterKey(null);
-                            }}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              padding: 0,
-                              color: "var(--status-red-primary)",
-                              cursor: "pointer",
-                              fontSize: "var(--text-body)",
-                              fontWeight: "var(--font-weight-bold)",
-                            }}
-                          >
-                            Remove Filter
-                          </button>
-                        </div>
-                        
-                        {openVendorFilterKey === "included_steps" && (
-                          <TableSearchField
-                            value={includedStepsSearchQuery}
-                            onChange={(e) => setIncludedStepsSearchQuery(e.target.value)}
-                            placeholder="Search Steps"
-                          />
-                        )}
-                        {openVendorFilterKey === "vendor_name" && (
-                          <TableSearchField
-                            value={vendorNameSearchQuery}
-                            onChange={(e) => setVendorNameSearchQuery(e.target.value)}
-                            placeholder="Search Vendor Name"
-                          />
-                        )}
-                        {openVendorFilterKey === "vendor_po" && (
-                          <TableSearchField
-                            value={vendorPoSearchQuery}
-                            onChange={(e) => setVendorPoSearchQuery(e.target.value)}
-                            placeholder="Search PO Number"
-                          />
-                        )}
-
-                        <div
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "12px",
-                            maxHeight: "240px",
-                            overflowY: "auto",
-                          }}
-                        >
-                          {(() => {
-                            let options = [];
-                            let currentFilters = [];
-                            let setter = null;
-
-                            if (openVendorFilterKey === "vendor_name") {
-                              options = Array.from(new Set(vendors.map(v => v.name))).map(name => ({ value: name, label: name }))
-                                .filter(opt => !vendorNameSearchQuery || opt.label.toLowerCase().includes(vendorNameSearchQuery.toLowerCase()));
-                              currentFilters = vendorNameFilters;
-                              setter = setVendorNameFilters;
-                            } else if (openVendorFilterKey === "vendor_status") {
-                              options = [
-                                { value: "Not Started", label: "Not Started" },
-                                { value: "In Progress", label: "In Progress" },
-                                { value: "Partially Received", label: "Partially Received" },
-                                { value: "Completed", label: "Completed" },
-                                { value: "Canceled", label: "Canceled" }
-                              ];
-                              currentFilters = vendorStatusFilters;
-                              setter = setVendorStatusFilters;
-                            } else if (openVendorFilterKey === "vendor_po") {
-                              const poList = Array.from(new Set(vendors.map(v => v.poNumber).filter(Boolean))).map(po => ({ value: po, label: po }));
-                              poList.unshift({ value: "No PO", label: "Without Purchase Order" });
-                              options = poList.filter(opt => !vendorPoSearchQuery || opt.label.toLowerCase().includes(vendorPoSearchQuery.toLowerCase()));
-                              currentFilters = vendorPoFilters;
-                              setter = setVendorPoFilters;
-                            } else if (openVendorFilterKey === "included_steps") {
-                              options = outsourceSteps.map((stepId) => {
-                                const st = routingStages.find((s) => s.step === stepId);
-                                return {
-                                  value: stepId,
-                                  label: st ? `Step ${st.step}: ${st.route} - ${st.op}` : `Step ${stepId}`
-                                };
-                              }).filter(opt => !includedStepsSearchQuery || opt.label.toLowerCase().includes(includedStepsSearchQuery.toLowerCase()));
-                              currentFilters = includedStepsFilters;
-                              setter = setIncludedStepsFilters;
-                            }
-
-                            return options.map((opt) => (
-                              <label
-                                key={opt.value}
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "12px",
-                                  cursor: "pointer",
-                                  fontSize: "var(--text-title-3)",
-                                }}
-                              >
-                                <Checkbox
-                                  checked={currentFilters.includes(opt.value)}
-                                  onChange={() => {
-                                    setter((prev) =>
-                                      prev.includes(opt.value)
-                                        ? prev.filter((item) => item !== opt.value)
-                                        : [...prev, opt.value]
-                                    );
-                                  }}
-                                />
-                                <span>{opt.label}</span>
-                              </label>
-                            ));
-                          })()}
-                        </div>
-                      </div>
-                    </>
-                    );
-                  })() : null}
+                  <FilterMenu
+                    label="All Vendors"
+                    multiple
+                    options={Array.from(new Set(vendors.map(v => v.name))).map(name => ({ value: name, label: name }))}
+                    values={vendorNameFilters}
+                    onChangeMultiple={setVendorNameFilters}
+                  />
+                  <FilterMenu
+                    label="All Statuses"
+                    multiple
+                    searchable={false}
+                    options={[
+                      { value: "Not Started", label: "Not Started" },
+                      { value: "In Progress", label: "In Progress" },
+                      { value: "Partially Received", label: "Partially Received" },
+                      { value: "Completed", label: "Completed" },
+                      { value: "Canceled", label: "Canceled" },
+                    ]}
+                    values={vendorStatusFilters}
+                    onChangeMultiple={setVendorStatusFilters}
+                  />
+                  <FilterMenu
+                    label="All POs"
+                    multiple
+                    options={[
+                      { value: "No PO", label: "Without Purchase Order" },
+                      ...Array.from(new Set(vendors.map(v => v.poNumber).filter(Boolean))).map(po => ({ value: po, label: po })),
+                    ]}
+                    values={vendorPoFilters}
+                    onChangeMultiple={setVendorPoFilters}
+                  />
+                  <FilterMenu
+                    label="Included Steps"
+                    multiple
+                    options={outsourceSteps.map((stepId) => {
+                      const st = routingStages.find((s) => s.step === stepId);
+                      return { value: stepId, label: st ? `Step ${st.step}: ${st.route} - ${st.op}` : `Step ${stepId}` };
+                    })}
+                    values={includedStepsFilters}
+                    onChangeMultiple={setIncludedStepsFilters}
+                  />
                 </div>
                 <TableSearchField
                   value={vendorSearchQuery}

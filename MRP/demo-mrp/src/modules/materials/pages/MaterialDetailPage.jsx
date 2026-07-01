@@ -12,6 +12,7 @@ import { StockTransactionsTab } from "../components/StockTransactionsTab.jsx";
 import { MaterialCreateDrawer } from "../components/MaterialCreateDrawer.jsx";
 import { MOCK_STOCK_BATCHES } from "../mock/batchesMocks.js";
 import { MOCK_STOCK_TRANSACTIONS } from "../mock/transactionsMocks.js";
+import { ChipTabBar } from "../../../components/molecules/ChipTabBar.jsx";
 
 export const MaterialDetailPage = ({ material, onNavigate, showSnackbar, t }) => {
   const [activeTab, setActiveTab] = useState("stock_batches");
@@ -84,27 +85,6 @@ export const MaterialDetailPage = ({ material, onNavigate, showSnackbar, t }) =>
       </div>
     );
   };
-
-  const tabButtonStyle = (isActive) => ({
-    height: "48px",
-    padding: "0 28px",
-    borderRadius: "100px",
-    border: isActive
-      ? "1px solid var(--feature-brand-primary)"
-      : "1px solid transparent",
-    background: isActive ? "#EAF1FF" : "var(--neutral-surface-primary)",
-    color: isActive ? "var(--feature-brand-primary)" : "#7F7F7F",
-    fontSize: "var(--text-title-2)",
-    fontWeight: isActive
-      ? "var(--font-weight-bold)"
-      : "var(--font-weight-regular)",
-    cursor: "pointer",
-    transition: "all 0.18s ease",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    whiteSpace: "nowrap"
-  });
 
   const StockTooltip = ({ content, children }) => {
     const [isVisible, setIsVisible] = useState(false);
@@ -354,20 +334,14 @@ export const MaterialDetailPage = ({ material, onNavigate, showSnackbar, t }) =>
       {/* Tabs Section */}
       <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <button
-            type="button"
-            onClick={() => setActiveTab("stock_batches")}
-            style={tabButtonStyle(activeTab === "stock_batches")}
-          >
-            Stock Batches
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("stock_transaction")}
-            style={tabButtonStyle(activeTab === "stock_transaction")}
-          >
-            Stock Transactions
-          </button>
+          <ChipTabBar
+            tabs={[
+              { id: "stock_batches", label: "Stock Batches" },
+              { id: "stock_transaction", label: "Stock Transactions" },
+            ]}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+          />
         </div>
 
         <div style={{

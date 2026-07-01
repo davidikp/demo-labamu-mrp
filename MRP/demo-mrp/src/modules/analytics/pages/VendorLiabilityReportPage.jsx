@@ -17,7 +17,7 @@ import {
 import { MOCK_REPORT_POS } from "../mock/reportMocks";
 import { formatCurrency } from "../../../utils/format/formatUtils";
 import { StatusBadge } from "../../../components/common/StatusBadge";
-import { MultiSelectDropdown } from "../../../components/common/MultiSelectDropdown.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { Button } from "../../../components/common/Button";
 import { TableSearchField } from "../../../components/table/TableSearchField";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter";
@@ -258,12 +258,12 @@ const VendorLiabilityReportPage = ({ onNavigate, t }) => {
         {/* Filters Header */}
         <div style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--neutral-line-separator-2)" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <MultiSelectDropdown 
-              searchable={true}
-              placeholder="Vendor"
-              value={vendorFilter}
-              options={["all", ...new Set(vendorLiabilities.map(v => v.name))].map(v => ({ value: v, label: v === "all" ? "Vendor" : v }))}
-              onChange={(val) => { setVendorFilter(val); setCurrentPage(1); }}
+            <FilterMenu
+              label="Vendor"
+              multiple
+              options={[...new Set(vendorLiabilities.map(v => v.name))].map(v => ({ value: v, label: v }))}
+              values={vendorFilter}
+              onChangeMultiple={(val) => { setVendorFilter(val); setCurrentPage(1); }}
             />
           </div>
 

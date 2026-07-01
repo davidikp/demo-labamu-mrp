@@ -7,7 +7,7 @@ import {
 } from "../../utils/date/dateUtils.js";
 import { createSyntheticInputEvent } from "../../utils/upload/uploadUtils.js";
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, CloseIcon } from "../icons/Icons.jsx";
-import { baseInputBorderColor } from "../atoms/index.js";
+const baseInputBorderColor = "var(--lb-line-2, #d1d5db)";
 
 export const DateInputControl = ({
   value = "",

@@ -1,6 +1,5 @@
 import React from "react";
-import { IconButton } from "../atoms/IconButton.jsx";
-import { CloseIcon } from "../icons/Icons.jsx";
+import { Popup } from "../../ce-ui";
 
 const GeneralModal = ({
   isOpen,
@@ -10,56 +9,41 @@ const GeneralModal = ({
   children,
   footer,
   width = "400px",
-  showCloseButton = true,
   centeredHeader = true,
   zIndex = 5000,
   noPadding = false,
 }) => {
-  if (!isOpen) return null;
   const hasChildren = React.Children.count(children) > 0;
 
   return (
-    <div
-      className="ds-modal-overlay"
-      style={{
-        "--ds-modal-z-index": zIndex,
-      }}
+    <Popup
+      open={isOpen}
+      onClose={onClose}
+      title={title}
+      description={description}
+      align={centeredHeader ? "center" : "left"}
+      platform="desktop"
+      className={`!w-[${width}]`}
+      style={{ zIndex }}
     >
-      <div
-        className="ds-modal-shell"
-        style={{
-          "--ds-modal-width": width,
-          padding: noPadding ? "0" : undefined,
-          gap: noPadding ? "0" : undefined,
-        }}
-      >
-        {showCloseButton ? (
-          <IconButton
-            icon={CloseIcon}
-            size="large"
-            onClick={onClose}
-            style={{ position: "absolute", top: "16px", right: "16px" }}
-            color="var(--neutral-on-surface-primary)"
-          />
-        ) : null}
-
-        <div
-          className="ds-modal-header"
-          style={{
-            textAlign: centeredHeader ? "center" : "left",
-          }}
-        >
-          <h2 className="ds-modal-title">{title}</h2>
-          {description ? (
-            <p className="ds-modal-description">{description}</p>
-          ) : null}
+      {hasChildren && (
+        noPadding
+          ? <div style={{ margin: "-16px -24px" }}>{children}</div>
+          : <>{children}</>
+      )}
+      {footer && (
+        <div style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          gap: "12px",
+          paddingTop: "16px",
+          borderTop: "1px solid var(--neutral-line-separator-1)",
+          marginTop: hasChildren ? "0" : "-8px",
+        }}>
+          {footer}
         </div>
-
-        {hasChildren ? <div className="ds-modal-body">{children}</div> : null}
-
-        {footer ? <div className="ds-modal-footer">{footer}</div> : null}
-      </div>
-    </div>
+      )}
+    </Popup>
   );
 };
 

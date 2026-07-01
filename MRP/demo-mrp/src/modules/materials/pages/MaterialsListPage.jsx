@@ -11,10 +11,9 @@ import {
   CheckIcon
 } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { ListStatusCounterCard } from "../../../components/common/ListStatusCounterCard.jsx";
-import { Checkbox } from "../../../components/common/Checkbox.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { MaterialCreateDrawer } from "../components/MaterialCreateDrawer.jsx";
@@ -40,10 +39,19 @@ export const MaterialsListPage = ({ onNavigate, showSnackbar, t }) => {
     stockRisk: [],
     status: [],
   });
-  const [openFilterKey, setOpenFilterKey] = useState(null);
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+
+  // Filter option lists (values match the stored filter values, which are the labels).
+  const FILTER_OPTIONS = {
+    category: ["Raw Material", "Chemicals", "Electronics", "Fasteners"],
+    type: ["Raw Material", "Semi-Finished Material", "Finished Material"],
+    stockRisk: ["Low Stock", "Out of Stock", "Expired Batches"],
+    status: ["Active", "Inactive"],
+  };
+  const filterOptions = (key) => FILTER_OPTIONS[key].map((o) => ({ value: o, label: o }));
+  const setFilterValues = (key, values) =>
+    setActiveFilters((prev) => ({ ...prev, [key]: values }));
 
   const tableColumns = [
     { label: "Image", key: "image", flex: "0.8", sortable: false },
@@ -294,21 +302,6 @@ export const MaterialsListPage = ({ onNavigate, showSnackbar, t }) => {
     }).format(val || 0);
   };
 
-  const handleFilterClick = (key, e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setPopoverTriggerRect(rect);
-    setOpenFilterKey(prev => prev === key ? null : key);
-  };
-
-  const toggleFilterValue = (key, value) => {
-    setActiveFilters(prev => ({
-      ...prev,
-      [key]: prev[key].includes(value)
-        ? prev[key].filter(v => v !== value)
-        : [...prev[key], value]
-    }));
-  };
-
   const handleSaveMaterial = (data) => {
     const newMaterial = {
       id: Date.now(),
@@ -412,121 +405,40 @@ export const MaterialsListPage = ({ onNavigate, showSnackbar, t }) => {
             flexShrink: 0,
           }}
         >
-          {/* Filters on the left */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap", position: "relative" }}>
-            <div onClick={(e) => handleFilterClick("category", e)}>
-              <FilterPill
-                label="Category"
-                active={activeFilters.category.length > 0}
-                isOpen={openFilterKey === "category"}
-                count={activeFilters.category.length}
-              />
-            </div>
-
-            <div onClick={(e) => handleFilterClick("type", e)}>
-              <FilterPill
-                label="Type"
-                active={activeFilters.type.length > 0}
-                isOpen={openFilterKey === "type"}
-                count={activeFilters.type.length}
-              />
-            </div>
-
-            <div onClick={(e) => handleFilterClick("stockRisk", e)}>
-              <FilterPill
-                label="Stock Risk Status"
-                active={activeFilters.stockRisk.length > 0}
-                isOpen={openFilterKey === "stockRisk"}
-                count={activeFilters.stockRisk.length}
-              />
-            </div>
-
-            <div onClick={(e) => handleFilterClick("status", e)}>
-              <FilterPill
-                label="Status"
-                active={activeFilters.status.length > 0}
-                isOpen={openFilterKey === "status"}
-                count={activeFilters.status.length}
-              />
-            </div>
-
-            {/* Filter Popovers - Fixed Positioned like PO Page */}
-            {openFilterKey && (
-              <>
-                <div 
-                  style={{ position: "fixed", inset: 0, zIndex: 999 }} 
-                  onClick={() => setOpenFilterKey(null)} 
-                />
-                <div
-                  style={{
-                    position: "fixed",
-                    top: popoverTriggerRect ? `${popoverTriggerRect.bottom + 8}px` : "160px",
-                    left: popoverTriggerRect ? `${popoverTriggerRect.left}px` : "0",
-                    width: "320px",
-                    background: "var(--neutral-surface-primary)",
-                    border: "1px solid var(--neutral-line-separator-1)",
-                    borderRadius: "var(--radius-card)",
-                    boxShadow: "var(--elevation-sm)",
-                    padding: "16px",
-                    zIndex: 1000,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px"
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>
-                      {openFilterKey === "category" ? "Category" : 
-                       openFilterKey === "type" ? "Type" : 
-                       openFilterKey === "stockRisk" ? "Stock Risk Status" : "Status"}
-                    </span>
-                    <button
-                      onClick={() => {
-                        setActiveFilters(prev => ({ ...prev, [openFilterKey]: [] }));
-                        setOpenFilterKey(null);
-                      }}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "var(--status-red-primary)",
-                        cursor: "pointer",
-                        fontSize: "var(--text-body)",
-                        fontWeight: "var(--font-weight-bold)",
-                        padding: 0
-                      }}
-                    >
-                      Remove Filter
-                    </button>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {(openFilterKey === "category" ? ["Raw Material", "Chemicals", "Electronics", "Fasteners"] :
-                      openFilterKey === "type" ? ["Raw Material", "Semi-Finished Material", "Finished Material"] :
-                      openFilterKey === "stockRisk" ? ["Low Stock", "Out of Stock", "Expired Batches"] :
-                      ["Active", "Inactive"]
-                    ).map((option) => (
-                      <label
-                        key={option}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                          cursor: "pointer",
-                          fontSize: "var(--text-title-3)",
-                          color: "var(--neutral-on-surface-primary)"
-                        }}
-                      >
-                        <Checkbox
-                          checked={activeFilters[openFilterKey].includes(option)}
-                          onChange={() => toggleFilterValue(openFilterKey, option)}
-                        />
-                        <span>{option}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
+          {/* Filters on the left — ce-ui self-contained FilterMenu (trigger + dropdown) */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+            <FilterMenu
+              label="Category"
+              multiple
+              searchable={false}
+              options={filterOptions("category")}
+              values={activeFilters.category}
+              onChangeMultiple={(values) => setFilterValues("category", values)}
+            />
+            <FilterMenu
+              label="Type"
+              multiple
+              searchable={false}
+              options={filterOptions("type")}
+              values={activeFilters.type}
+              onChangeMultiple={(values) => setFilterValues("type", values)}
+            />
+            <FilterMenu
+              label="Stock Risk Status"
+              multiple
+              searchable={false}
+              options={filterOptions("stockRisk")}
+              values={activeFilters.stockRisk}
+              onChangeMultiple={(values) => setFilterValues("stockRisk", values)}
+            />
+            <FilterMenu
+              label="Status"
+              multiple
+              searchable={false}
+              options={filterOptions("status")}
+              values={activeFilters.status}
+              onChangeMultiple={(values) => setFilterValues("status", values)}
+            />
           </div>
 
           {/* Search on the right */}

@@ -7,8 +7,7 @@ import {
   StatusBadge,
   TableSearchField,
 } from "./shared/PoDetailSharedComponents.jsx";
-import { FilterPill } from "../../../../components/common/FilterPill.jsx";
-import { DateRangeInputControl } from "../DateRangeInputControl.jsx";
+import { FilterMenu } from "../../../../components/molecules/FilterMenu.jsx";
 
 const RadialBarChart = ({ items, totalValue, centerLabel, centerValue, size = 180 }) => {
   const center = size / 2;
@@ -97,10 +96,9 @@ const PoInvoicePaymentTab = ({
   getInvoiceStatus,
   lastInvoiceId,
 }) => {
-  const [openFilterKey, setOpenFilterKey] = useState(null);
   const [dateFilterType, setDateFilterType] = useState("all");
-  const [customDateRange, setCustomDateRange] = useState({ start: "", end: "" });
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
+  const [customDateFrom, setCustomDateFrom] = useState(null);
+  const [customDateTo, setCustomDateTo] = useState(null);
 
   const parsedDate = (value) => {
     const d = new Date(value);
@@ -121,15 +119,8 @@ const PoInvoicePaymentTab = ({
       const start = new Date(now);
       start.setDate(now.getDate() - 30);
       matchesDate = rowDate >= start && rowDate <= now;
-    } else if (
-      dateFilterType === "custom" &&
-      rowDate &&
-      customDateRange.start &&
-      customDateRange.end
-    ) {
-      const start = parsedDate(customDateRange.start);
-      const end = parsedDate(customDateRange.end);
-      if (start && end) matchesDate = rowDate >= start && rowDate <= end;
+    } else if (dateFilterType === "__custom__" && rowDate && customDateFrom && customDateTo) {
+      matchesDate = rowDate >= customDateFrom && rowDate <= customDateTo;
     }
 
     return matchesSearch && matchesDate;
@@ -149,7 +140,7 @@ const PoInvoicePaymentTab = ({
 
   useEffect(() => {
     setInvoiceCurrentPage(1);
-  }, [dateFilterType, customDateRange.start, customDateRange.end, invoiceSearch, invoiceRowsPerPage]);
+  }, [dateFilterType, customDateFrom, customDateTo, invoiceSearch, invoiceRowsPerPage]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -378,120 +369,24 @@ const PoInvoicePaymentTab = ({
             alignItems: "center",
           }}
         >
-          <div style={{ position: "relative" }}>
-            <div
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setPopoverTriggerRect(rect);
-                setOpenFilterKey((prev) =>
-                  prev === "invoiceDate" ? null : "invoiceDate"
-                );
-              }}
-            >
-              <FilterPill
-                label="Invoice Date"
-                active={dateFilterType !== "all"}
-                isOpen={openFilterKey === "invoiceDate"}
-                count={dateFilterType !== "all" ? 1 : 0}
-              />
-            </div>
-
-            {openFilterKey === "invoiceDate" ? (
-              <>
-                <div
-                  style={{ position: "fixed", inset: 0, zIndex: 80 }}
-                  onClick={() => setOpenFilterKey(null)}
-                />
-                <div
-                  style={{
-                    position: "fixed",
-                    top: popoverTriggerRect
-                      ? `${popoverTriggerRect.bottom + 8}px`
-                      : "160px",
-                    left: popoverTriggerRect ? `${popoverTriggerRect.left}px` : "0",
-                    width: "360px",
-                    background: "var(--neutral-surface-primary)",
-                    border: "1px solid var(--neutral-line-separator-1)",
-                    borderRadius: "var(--radius-card)",
-                    boxShadow: "var(--elevation-sm)",
-                    padding: "16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px",
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "var(--text-title-2)",
-                        fontWeight: "var(--font-weight-bold)",
-                      }}
-                    >
-                      Invoice Date
-                    </span>
-                    <button
-                      onClick={() => {
-                        setDateFilterType("all");
-                        setCustomDateRange({ start: "", end: "" });
-                        setOpenFilterKey(null);
-                      }}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        color: "var(--status-red-primary)",
-                        cursor: "pointer",
-                        fontSize: "var(--text-body)",
-                        fontWeight: "var(--font-weight-bold)",
-                      }}
-                    >
-                      Remove Filter
-                    </button>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                    {[
-                      { key: "all", label: "All" },
-                      { key: "last7", label: "Last 7 days" },
-                      { key: "last30", label: "Last 30 days" },
-                      { key: "custom", label: "Custom date" },
-                    ].map((opt) => (
-                      <label
-                        key={opt.key}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                          cursor: "pointer",
-                          fontSize: "var(--text-title-3)",
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          checked={dateFilterType === opt.key}
-                          onChange={() => setDateFilterType(opt.key)}
-                        />
-                        <span>{opt.label}</span>
-                      </label>
-                    ))}
-                    {dateFilterType === "custom" ? (
-                      <DateRangeInputControl
-                        value={customDateRange}
-                        onChange={(e) => setCustomDateRange(e.target.value)}
-                      />
-                    ) : null}
-                  </div>
-                </div>
-              </>
-            ) : null}
-          </div>
+          <FilterMenu
+            label="Invoice Date"
+            searchable={false}
+            options={[
+              { value: "last7", label: "Last 7 days" },
+              { value: "last30", label: "Last 30 days" },
+            ]}
+            value={dateFilterType}
+            onChange={setDateFilterType}
+            allValue="all"
+            customDateEnabled
+            customDateFrom={customDateFrom}
+            customDateTo={customDateTo}
+            onCustomDateChange={(from, to) => {
+              setCustomDateFrom(from);
+              setCustomDateTo(to);
+            }}
+          />
           <TableSearchField
             value={invoiceSearch}
             onChange={(e) => setInvoiceSearch(e.target.value)}

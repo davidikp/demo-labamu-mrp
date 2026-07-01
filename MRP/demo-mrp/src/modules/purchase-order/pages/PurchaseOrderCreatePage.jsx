@@ -154,7 +154,6 @@ import {
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
 import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { ListStatusCounterCard } from "../../../components/common/ListStatusCounterCard.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
@@ -1121,26 +1120,6 @@ const poReferenceTableEmptyStateStyle = {
   color: "var(--neutral-on-surface-tertiary)",
   background: "var(--neutral-surface-primary)",
 };
-
-const tabButtonStyle = (isActive) => ({
-  height: "40px",
-  padding: "0 18px",
-  borderRadius: "100px",
-  border: isActive
-    ? "1px solid var(--feature-brand-primary)"
-    : "1px solid transparent",
-  background: isActive
-    ? "var(--neutral-surface-primary)"
-    : "rgba(255,255,255,0.56)",
-  color: isActive
-    ? "var(--feature-brand-primary)"
-    : "var(--neutral-on-surface-secondary)",
-  fontSize: "var(--text-title-3)",
-  fontWeight: isActive
-    ? "var(--font-weight-bold)"
-    : "var(--font-weight-regular)",
-  cursor: "pointer",
-});
 
 const summaryMetricLabelStyle = {
   fontSize: "var(--text-title-3)",

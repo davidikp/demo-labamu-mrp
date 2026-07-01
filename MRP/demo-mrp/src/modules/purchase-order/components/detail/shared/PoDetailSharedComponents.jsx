@@ -1332,23 +1332,3 @@ export const poReferenceTableEmptyStateStyle = {
   background: "var(--neutral-surface-primary)",
 };
 
-export const tabButtonStyle = (isActive) => ({
-  height: "48px",
-  padding: "0 28px",
-  borderRadius: "100px",
-  border: isActive
-    ? "1px solid var(--feature-brand-primary)"
-    : "1px solid transparent",
-  background: isActive ? "#EAF1FF" : "var(--neutral-surface-primary)",
-  color: isActive ? "var(--feature-brand-primary)" : "#7F7F7F",
-  fontSize: "var(--text-title-2)",
-  fontWeight: isActive
-    ? "var(--font-weight-bold)"
-    : "var(--font-weight-regular)",
-  cursor: "pointer",
-  transition: "all 0.18s ease",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  whiteSpace: "nowrap",
-});

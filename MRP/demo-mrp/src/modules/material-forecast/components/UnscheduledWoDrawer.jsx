@@ -3,8 +3,7 @@ import { CloseIcon } from "../../../components/icons/Icons.jsx";
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
-import { FilterPopoverCheckbox } from "../../../components/molecules/FilterPopoverCheckbox.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { MOCK_UNSCHEDULED_WOS, MOCK_CUSTOMER_PIC_MAP, MOCK_PRODUCT_SKU_MAP } from "../mock/materialForecastMocks.js";
 import { formatNumberWithCommas } from "../../../utils/format/formatUtils.js";
 
@@ -63,8 +62,6 @@ export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData, pageFilters
   const [filterCustomer, setFilterCustomer] = useState([]);
   const [filterOrderId, setFilterOrderId] = useState([]);
   const [filterWoId, setFilterWoId] = useState([]);
-  const [openFilterKey, setOpenFilterKey] = useState(null);
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
@@ -118,7 +115,7 @@ export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData, pageFilters
 
   const handleClose = () => {
     setFilterProduct([]); setFilterCustomer([]); setFilterOrderId([]); setFilterWoId([]);
-    setOpenFilterKey(null); setCurrentPage(1); onClose();
+    setCurrentPage(1); onClose();
   };
 
   const leftShadow  = scrollShadows.left  ? "4px 0 8px -4px rgba(0,0,0,0.12)"  : "none";
@@ -160,20 +157,10 @@ export const UnscheduledWoDrawer = ({ isOpen, onClose, materialData, pageFilters
         {/* Filter bar */}
         <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "0 24px 12px", flexShrink: 0, borderBottom: ROW_BORDER }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            {[
-              { key: "woId",     label: "WO ID",         value: filterWoId,    options: woIdOptions,    onChange: setFilterWoId    },
-              { key: "orderId",  label: "Order ID",      value: filterOrderId, options: orderIdOptions, onChange: setFilterOrderId },
-              { key: "product",  label: "Product",       value: filterProduct, options: productOptions, onChange: setFilterProduct },
-              { key: "customer", label: "Customer",      value: filterCustomer,options: customerOptions,onChange: setFilterCustomer },
-            ].map(({ key, label, value, options, onChange }) => (
-              <div key={key} onClick={e => { const rect = e.currentTarget.getBoundingClientRect(); setPopoverTriggerRect(rect); setOpenFilterKey(prev => prev === key ? null : key); }}>
-                <FilterPill label={label} active={value.length > 0} isOpen={openFilterKey === key} count={value.length} />
-              </div>
-            ))}
-            {openFilterKey === "woId"     && <FilterPopoverCheckbox title="WO ID" options={woIdOptions}     value={filterWoId}     onChange={setFilterWoId}     onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "orderId"  && <FilterPopoverCheckbox title="Order ID"      options={orderIdOptions}  value={filterOrderId}  onChange={setFilterOrderId}  onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "product"  && <FilterPopoverCheckbox title="Product"       options={productOptions}  value={filterProduct}  onChange={setFilterProduct}  onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
-            {openFilterKey === "customer" && <FilterPopoverCheckbox title="Customer"      options={customerOptions} value={filterCustomer} onChange={setFilterCustomer} onClose={() => setOpenFilterKey(null)} triggerRect={popoverTriggerRect} />}
+            <FilterMenu label="WO ID" multiple options={woIdOptions} values={filterWoId} onChangeMultiple={setFilterWoId} />
+            <FilterMenu label="Order ID" multiple options={orderIdOptions} values={filterOrderId} onChangeMultiple={setFilterOrderId} />
+            <FilterMenu label="Product" multiple options={productOptions.map(o => ({ value: o.value, label: o.label }))} values={filterProduct} onChangeMultiple={setFilterProduct} />
+            <FilterMenu label="Customer" multiple options={customerOptions.map(o => ({ value: o.value, label: o.label }))} values={filterCustomer} onChangeMultiple={setFilterCustomer} />
           </div>
         </div>
 

@@ -2,14 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AddIcon, ChevronDownIcon, Info, Settings } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
-import { Checkbox } from "../../../components/common/Checkbox.jsx";
-import { FilterPill } from "../../../components/common/FilterPill.jsx";
+import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { ListStatusCounterCard } from "../../../components/common/ListStatusCounterCard.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { MOCK_PO_TABLE_DATA } from "../mock/purchaseOrderMocks.js";
-import { DateRangeInputControl } from "../components/DateRangeInputControl.jsx";
 import { cellStyle } from "../utils/purchaseOrderTableUtils.js";
 
 const computePaymentStatus = (invoices, payments) => {
@@ -82,18 +80,14 @@ const PoTitleTooltip = () => {
 export const PurchaseOrderListPage = ({ onNavigate, t }) => {
   const [sortBy, setSortBy] = useState("createdDate");
   const [sortDirection, setSortDirection] = useState("desc");
-  const [openFilterKey, setOpenFilterKey] = useState(null);
   const [filterStatuses, setFilterStatuses] = useState([]);
   const [filterPaymentStatuses, setFilterPaymentStatuses] = useState([]);
   const [dateFilterType, setDateFilterType] = useState("all");
-  const [customDateRange, setCustomDateRange] = useState({
-    start: "",
-    end: "",
-  });
+  const [customDateFrom, setCustomDateFrom] = useState(null);
+  const [customDateTo, setCustomDateTo] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
-  const [popoverTriggerRect, setPopoverTriggerRect] = useState(null);
   const [viewportHeight, setViewportHeight] = useState(() =>
     typeof window !== "undefined" ? window.innerHeight : 900
   );
@@ -181,15 +175,8 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
       const start = new Date(now);
       start.setDate(now.getDate() - 30);
       matchesDate = rowDate >= start && rowDate <= now;
-    } else if (
-      dateFilterType === "custom" &&
-      rowDate &&
-      customDateRange.start &&
-      customDateRange.end
-    ) {
-      const start = parsedDate(customDateRange.start);
-      const end = parsedDate(customDateRange.end);
-      if (start && end) matchesDate = rowDate >= start && rowDate <= end;
+    } else if (dateFilterType === "__custom__" && rowDate && customDateFrom && customDateTo) {
+      matchesDate = rowDate >= customDateFrom && rowDate <= customDateTo;
     }
 
     return matchesStatusFilter && matchesPaymentStatusFilter && matchesSearch && matchesDate;
@@ -219,8 +206,8 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
     filterStatuses.join("|"),
     filterPaymentStatuses.join("|"),
     dateFilterType,
-    customDateRange.start,
-    customDateRange.end,
+    customDateFrom,
+    customDateTo,
     searchQuery,
     rowsPerPage,
   ]);
@@ -323,167 +310,32 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
               position: "relative",
             }}
           >
-            <div
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setPopoverTriggerRect(rect);
-                setOpenFilterKey((prev) =>
-                  prev === "createdDate" ? null : "createdDate"
-                );
+            <FilterMenu
+              label="Created Date"
+              searchable={false}
+              options={[
+                { value: "last7",  label: "Last 7 days" },
+                { value: "last30", label: "Last 30 days" },
+              ]}
+              value={dateFilterType}
+              onChange={setDateFilterType}
+              allValue="all"
+              customDateEnabled
+              customDateFrom={customDateFrom}
+              customDateTo={customDateTo}
+              onCustomDateChange={(from, to) => {
+                setCustomDateFrom(from);
+                setCustomDateTo(to);
               }}
-            >
-              <FilterPill
-                label="Created Date"
-                active={dateFilterType !== "all"}
-                isOpen={openFilterKey === "createdDate"}
-                count={dateFilterType !== "all" ? 1 : 0}
-              />
-            </div>
-
-            <div
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setPopoverTriggerRect(rect);
-                setOpenFilterKey((prev) =>
-                  prev === "paymentStatus" ? null : "paymentStatus"
-                );
-              }}
-            >
-              <FilterPill
-                label="Payment Status"
-                active={filterPaymentStatuses.length > 0}
-                isOpen={openFilterKey === "paymentStatus"}
-                count={filterPaymentStatuses.length}
-              />
-            </div>
-
-            {openFilterKey ? (
-              <>
-                <div
-                  style={{ position: "fixed", inset: 0, zIndex: 80 }}
-                  onClick={() => setOpenFilterKey(null)}
-                />
-                <div
-                  style={{
-                    position: "fixed",
-                    top: popoverTriggerRect
-                      ? `${popoverTriggerRect.bottom + 8}px`
-                      : "160px",
-                    left: popoverTriggerRect ? `${popoverTriggerRect.left}px` : "0",
-                    width: "360px",
-                    background: "var(--neutral-surface-primary)",
-                    border: "1px solid var(--neutral-line-separator-1)",
-                    borderRadius: "var(--radius-card)",
-                    boxShadow: "var(--elevation-sm)",
-                    padding: "16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "16px",
-                    zIndex: 1000,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "var(--text-title-2)",
-                        fontWeight: "var(--font-weight-bold)",
-                      }}
-                    >
-                      {openFilterKey === "paymentStatus" ? "Payment Status" : "Created Date"}
-                    </span>
-                    <button
-                      onClick={() => {
-                        if (openFilterKey === "paymentStatus") {
-                          setFilterPaymentStatuses([]);
-                        } else {
-                          setDateFilterType("all");
-                          setCustomDateRange({ start: "", end: "" });
-                        }
-                        setOpenFilterKey(null);
-                      }}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        padding: 0,
-                        color: "var(--status-red-primary)",
-                        cursor: "pointer",
-                        fontSize: "var(--text-body)",
-                        fontWeight: "var(--font-weight-bold)",
-                      }}
-                    >
-                      Remove Filter
-                    </button>
-                  </div>
-
-                  {openFilterKey === "createdDate" ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                      {[
-                        { key: "all", label: "All" },
-                        { key: "last7", label: "Last 7 days" },
-                        { key: "last30", label: "Last 30 days" },
-                        { key: "custom", label: "Custom date" },
-                      ].map((opt) => (
-                        <label
-                          key={opt.key}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            cursor: "pointer",
-                            fontSize: "var(--text-title-3)",
-                          }}
-                        >
-                          <input
-                            type="radio"
-                            checked={dateFilterType === opt.key}
-                            onChange={() => setDateFilterType(opt.key)}
-                          />
-                          <span>{opt.label}</span>
-                        </label>
-                      ))}
-                      {dateFilterType === "custom" ? (
-                        <DateRangeInputControl
-                          value={customDateRange}
-                          onChange={(e) => setCustomDateRange(e.target.value)}
-                        />
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  {openFilterKey === "paymentStatus" ? (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                      {paymentStatusCards.map((card) => (
-                        <label
-                          key={card.key}
-                          onClick={() => toggleFilterPaymentStatus(card.key)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "12px",
-                            cursor: "pointer",
-                            fontSize: "var(--text-title-3)",
-                            color: "var(--neutral-on-surface-primary)",
-                            textAlign: "left",
-                          }}
-                        >
-                          <Checkbox
-                            checked={filterPaymentStatuses.includes(card.key)}
-                            onChange={() => toggleFilterPaymentStatus(card.key)}
-                          />
-                          <span>{card.label}</span>
-                        </label>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              </>
-            ) : null}
+            />
+            <FilterMenu
+              label="Payment Status"
+              multiple
+              searchable={false}
+              options={paymentStatusCards.map((c) => ({ value: c.key, label: c.label }))}
+              values={filterPaymentStatuses}
+              onChangeMultiple={setFilterPaymentStatuses}
+            />
           </div>
 
           <TableSearchField
