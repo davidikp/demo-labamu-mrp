@@ -230,7 +230,13 @@ const Sidebar = ({
       </div>
 
       {!isCollapsed && (
-        <div style={{ padding: "10px 16px 0 16px", flexShrink: 0 }}>
+        <div
+          style={{
+            padding: "10px 16px 12px 16px",
+            borderBottom: "1px solid var(--neutral-line-separator-1)",
+            flexShrink: 0,
+          }}
+        >
           <TableSearchField
             value={menuSearch}
             onChange={(e) => setMenuSearch(e.target.value)}

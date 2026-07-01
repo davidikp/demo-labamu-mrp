@@ -70,6 +70,7 @@ export const usePoInvoices = ({
   const [showVoidConfirmModal, setShowVoidConfirmModal] = useState(false);
   const [showExceedConfirmModal, setShowExceedConfirmModal] = useState(false);
   const [showItemQtyExceedConfirmModal, setShowItemQtyExceedConfirmModal] = useState(false);
+  const [showZeroAmountConfirmModal, setShowZeroAmountConfirmModal] = useState(false);
   const [exceededItems, setExceededItems] = useState([]);
   const [paymentToVoid, setPaymentToVoid] = useState(null);
   const [lastInvoiceId, setLastInvoiceId] = useState(null);
@@ -417,6 +418,15 @@ export const usePoInvoices = ({
     saveInvoice();
   }, [invoices, isEditingInvoice, addInvoiceFormData, poTotal, saveInvoice]);
 
+  const proceedAfterQtyExceed = useCallback(() => {
+    const invoiceAmount = parseFloat(addInvoiceFormData.amount) || 0;
+    if (invoiceAmount === 0) {
+      setShowZeroAmountConfirmModal(true);
+      return;
+    }
+    checkPoValueAndSave();
+  }, [addInvoiceFormData.amount, checkPoValueAndSave]);
+
   const handleAddInvoice = useCallback(() => {
     let hasError = false;
     const nextErrors = {};
@@ -488,8 +498,8 @@ export const usePoInvoices = ({
       return;
     }
 
-    checkPoValueAndSave();
-  }, [addInvoiceFormData, isEditingInvoice, invoices, payments, currency, checkPoValueAndSave, getRemainingPoQty]);
+    proceedAfterQtyExceed();
+  }, [addInvoiceFormData, isEditingInvoice, invoices, payments, currency, proceedAfterQtyExceed, getRemainingPoQty]);
 
   const handleDeleteInvoice = useCallback(() => {
     if (!selectedInvoiceForDetail) return;
@@ -673,9 +683,12 @@ export const usePoInvoices = ({
     setShowExceedConfirmModal,
     showItemQtyExceedConfirmModal,
     setShowItemQtyExceedConfirmModal,
+    showZeroAmountConfirmModal,
+    setShowZeroAmountConfirmModal,
     exceededItems,
     saveInvoice,
     checkPoValueAndSave,
+    proceedAfterQtyExceed,
     deleteInvoiceReason,
     setDeleteInvoiceReason,
     deleteInvoiceReasonError,

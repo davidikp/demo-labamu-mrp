@@ -207,6 +207,10 @@ const APAgingReportPage = ({ onNavigate, t }) => {
       let aVal, bVal;
       
       switch (sortConfig.key) {
+        case 'invoiceDate':
+          aVal = new Date(a.invoiceDate).getTime();
+          bVal = new Date(b.invoiceDate).getTime();
+          break;
         case 'dueDate':
           aVal = new Date(a.dueDate).getTime();
           bVal = new Date(b.dueDate).getTime();
@@ -250,7 +254,7 @@ const APAgingReportPage = ({ onNavigate, t }) => {
     { label: "PO No", flex: "1.2" },
     { label: "Vendor", flex: "1.8" },
     { label: "Invoice No", flex: "1.4" },
-    { label: "Invoice Date", flex: "1.2" },
+    { label: "Invoice Date", flex: "1.2", key: "invoiceDate", sortable: true },
     { label: "Due Date", flex: "1.6", key: "dueDate", sortable: true },
     { label: "Invoice Amount", flex: "1.4" },
     { label: "Paid Amount", flex: "1.4" },
@@ -395,8 +399,8 @@ const APAgingReportPage = ({ onNavigate, t }) => {
               options={["all", ...new Set(allInvoices.map(inv => inv.vendorName))].map(v => ({ value: v, label: v === "all" ? "Vendor" : v }))}
               onChange={(val) => { setVendorFilter(val); setCurrentPage(1); }}
             />
-            <MultiSelectDropdown 
-              placeholder="Status"
+            <MultiSelectDropdown
+              placeholder="Invoice Status"
               value={invoiceStatusFilter}
               options={[
                 { value: "Open", label: "Open" },

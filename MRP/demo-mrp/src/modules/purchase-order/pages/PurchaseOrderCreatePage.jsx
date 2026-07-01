@@ -2388,8 +2388,8 @@ export const PurchaseOrderCreatePage = ({
         const min = String(now.getMinutes()).padStart(2, "0");
         const formattedTimestamp = `${yyyy}-${mm}-${dd} at ${hh}:${min}`;
 
-        const logTitle = approvalOn 
-          ? "Revise Requested" 
+        const logTitle = approvalOn
+          ? "Revision Submitted"
           : `Revised to Version ${nextVersionNumber}.0`;
 
         payload.formData.receiptLogs.unshift({

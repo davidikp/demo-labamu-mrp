@@ -39,22 +39,28 @@ const makeApprovalLifecycle = (noun, approvedStatus) => ({
       cta: { en: "Review", id: "Tinjau" },
     }),
     email: (c) => {
-      const multi = (c.approverNames || []).length > 1;
+      const names = c.approverNames || [];
+      const multi = names.length > 1;
       const listLine = multi
-        ? ` All listed approvers must approve: ${(c.approverNames || []).join(", ")}.`
+        ? ` All listed approvers must approve: ${names.join(", ")}.`
         : "";
       const listLineId = multi
-        ? ` Semua approver berikut harus menyetujui: ${(c.approverNames || []).join(", ")}.`
+        ? ` Semua approver berikut harus menyetujui: ${names.join(", ")}.`
         : "";
+      // Group email to every approver — greet them collectively when there is
+      // more than one, otherwise greet the single configured approver.
+      const greetEn = multi ? "Hi Approvers" : names[0] ? `Hi ${names[0]}` : "Hi";
+      const greetId = multi ? "Halo Approvers" : names[0] ? `Halo ${names[0]}` : "Halo";
       return {
         subject: {
           en: `${noun.en} ${c.number} needs your approval`,
           id: `${noun.id} ${c.number} memerlukan persetujuan Anda`,
         },
         body: {
-          en: `Hi, ${c.submitterName} submitted ${c.number} for approval.${listLine}`,
-          id: `Halo, ${c.submitterName} mengajukan ${c.number} untuk disetujui.${listLineId}`,
+          en: `${greetEn}, ${c.submitterName} submitted ${c.number} for approval.${listLine}`,
+          id: `${greetId}, ${c.submitterName} mengajukan ${c.number} untuk disetujui.${listLineId}`,
         },
+        cta: { en: `Review ${noun.en}`, id: `Tinjau ${noun.id}` },
       };
     },
   },
@@ -83,6 +89,7 @@ const makeApprovalLifecycle = (noun, approvedStatus) => ({
         en: `Hi ${c.submitterName}, ${c.approverName} has approved ${noun.en} ${c.number}.`,
         id: `Halo ${c.submitterName}, ${c.approverName} telah menyetujui ${noun.id} ${c.number}.`,
       },
+      cta: { en: `View ${noun.en}`, id: `Lihat ${noun.id}` },
     }),
   },
 
@@ -110,6 +117,7 @@ const makeApprovalLifecycle = (noun, approvedStatus) => ({
         en: `Hi ${c.submitterName}, ${noun.en} ${c.number} has been approved by all reviewers. It is now ${approvedStatus.en}.`,
         id: `Halo ${c.submitterName}, ${noun.id} ${c.number} telah disetujui oleh semua peninjau. Status sekarang ${approvedStatus.id}.`,
       },
+      cta: { en: `View ${noun.en}`, id: `Lihat ${noun.id}` },
     }),
   },
 
@@ -137,6 +145,7 @@ const makeApprovalLifecycle = (noun, approvedStatus) => ({
         en: `Hi ${c.submitterName}, ${c.approverName} rejected ${noun.en} ${c.number}. Reason: ${quote(c.reason)}`,
         id: `Halo ${c.submitterName}, ${c.approverName} menolak ${noun.id} ${c.number}. Alasan: ${quoteId(c.reason)}`,
       },
+      cta: { en: `View ${noun.en}`, id: `Lihat ${noun.id}` },
     }),
   },
 
@@ -168,6 +177,7 @@ const makeApprovalLifecycle = (noun, approvedStatus) => ({
         en: `Hi ${c.submitterName}, ${c.approverName} requested changes to ${c.number}. Revision note: ${quote(c.note)}. Please revise and resubmit.`,
         id: `Halo ${c.submitterName}, ${c.approverName} meminta perubahan pada ${c.number}. Catatan revisi: ${quoteId(c.note)}. Mohon revisi dan kirim ulang.`,
       },
+      cta: { en: "Edit & Resubmit", id: "Edit & Kirim Ulang" },
     }),
   },
 });
@@ -199,6 +209,7 @@ const makeCustomerLifecycle = (noun) => ({
         en: `Hi ${c.picName}, ${c.customerPicName} from ${c.customerCompany} has approved ${noun.en} ${c.number}. It is now Approved.`,
         id: `Halo ${c.picName}, ${c.customerPicName} dari ${c.customerCompany} telah menyetujui ${noun.id} ${c.number}. Status sekarang Approved.`,
       },
+      cta: { en: `View ${noun.en}`, id: `Lihat ${noun.id}` },
     }),
   },
   customer_rejected: {
@@ -225,6 +236,7 @@ const makeCustomerLifecycle = (noun) => ({
         en: `Hi ${c.picName}, ${c.customerPicName} from ${c.customerCompany} rejected ${noun.en} ${c.number}. Reason: ${quote(c.reason)}`,
         id: `Halo ${c.picName}, ${c.customerPicName} dari ${c.customerCompany} menolak ${noun.id} ${c.number}. Alasan: ${quoteId(c.reason)}`,
       },
+      cta: { en: `View ${noun.en}`, id: `Lihat ${noun.id}` },
     }),
   },
   customer_revision: {
@@ -255,6 +267,7 @@ const makeCustomerLifecycle = (noun) => ({
         en: `Hi ${c.picName}, ${c.customerPicName} from ${c.customerCompany} requested changes to ${noun.en} ${c.number}. Note: ${quote(c.note)}. Please revise and resubmit.`,
         id: `Halo ${c.picName}, ${c.customerPicName} dari ${c.customerCompany} meminta perubahan pada ${noun.id} ${c.number}. Catatan: ${quoteId(c.note)}. Mohon revisi dan kirim ulang.`,
       },
+      cta: { en: "Edit & Resubmit", id: "Edit & Kirim Ulang" },
     }),
   },
 });
@@ -332,6 +345,7 @@ export const NOTIFICATION_CATALOG = {
           en: `Hi ${c.picName}, ${c.customerPicName} from ${c.customerCompany} uploaded a payment proof for Invoice ${c.number}. Please review.`,
           id: `Halo ${c.picName}, ${c.customerPicName} dari ${c.customerCompany} mengunggah bukti pembayaran untuk Invoice ${c.number}. Mohon tinjau.`,
         },
+        cta: { en: "Review Proof", id: "Tinjau Bukti" },
       }),
     },
     // Admin rejects proof — email only to the customer, reason mandatory.
@@ -349,6 +363,7 @@ export const NOTIFICATION_CATALOG = {
           en: `Hi ${c.customerPicName || "Customer"}, your payment proof for Invoice ${c.number} could not be verified. Reason: ${quote(c.reason)}. Please log in to the portal and re-upload.`,
           id: `Halo ${c.customerPicName || "Customer"}, bukti pembayaran Anda untuk Invoice ${c.number} tidak dapat diverifikasi. Alasan: ${quoteId(c.reason)}. Mohon masuk ke portal dan unggah ulang.`,
         },
+        cta: { en: "Re-upload Payment Proof", id: "Unggah Ulang Bukti Pembayaran" },
       }),
     },
   },
@@ -382,6 +397,7 @@ export const NOTIFICATION_CATALOG = {
           en: `Hi ${c.requesterName}, ${c.preparerName} has transferred materials for ${c.requestId} from ${c.workOrderNo}. Please confirm receipt in Labamu.`,
           id: `Halo ${c.requesterName}, ${c.preparerName} telah mentransfer material untuk ${c.requestId} dari ${c.workOrderNo}. Mohon konfirmasi penerimaan di Labamu.`,
         },
+        cta: { en: "Confirm Receipt", id: "Konfirmasi Penerimaan" },
       }),
     },
     receipt_confirmed: {
@@ -425,6 +441,7 @@ export const NOTIFICATION_CATALOG = {
           en: `Hi ${c.preparerName}, ${c.requesterName} rejected the transferred materials for ${c.requestId}. Reason: ${quote(c.reason)}. The request has been closed.`,
           id: `Halo ${c.preparerName}, ${c.requesterName} menolak material yang ditransfer untuk ${c.requestId}. Alasan: ${quoteId(c.reason)}. Permintaan telah ditutup.`,
         },
+        cta: { en: "View Request", id: "Lihat Permintaan" },
       }),
     },
     cancelled_by_preparer: {

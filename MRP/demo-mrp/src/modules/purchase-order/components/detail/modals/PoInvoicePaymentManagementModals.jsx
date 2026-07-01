@@ -68,9 +68,12 @@ const PoInvoicePaymentManagementModals = ({
   setShowExceedConfirmModal,
   showItemQtyExceedConfirmModal,
   setShowItemQtyExceedConfirmModal,
+  showZeroAmountConfirmModal,
+  setShowZeroAmountConfirmModal,
   exceededItems,
   saveInvoice,
   checkPoValueAndSave,
+  proceedAfterQtyExceed,
   deleteInvoiceReason,
   setDeleteInvoiceReason,
   deleteInvoiceReasonError,
@@ -417,6 +420,10 @@ const PoInvoicePaymentManagementModals = ({
                   const itemError = formErrors.itemLines
                     ? formErrors.itemLines[idx]
                     : null;
+                  const selectedPoName =
+                    (mockLines || []).find(
+                      (it) => String(it.id ?? it.item) === String(itemObj.id)
+                    )?.item || "";
                   return (
                     <div
                       key={idx}
@@ -499,7 +506,7 @@ const PoInvoicePaymentManagementModals = ({
                             onChange={(val) => {
                               const next = [...addInvoiceFormData.itemLines];
                               const selectedPoItem = (mockLines || []).find(
-                                (it) => (it.id || it.item) === val
+                                (it) => String(it.id ?? it.item) === String(val)
                               );
                               const newOcrRef =
                                 next[idx].sameAsPo && selectedPoItem
@@ -564,18 +571,10 @@ const PoInvoicePaymentManagementModals = ({
                               checked={!!itemObj.sameAsPo}
                               onChange={(val) => {
                                 const next = [...addInvoiceFormData.itemLines];
-                                let newOcrRef = itemObj.ocrRef;
-                                if (val) {
-                                  const selectedPoItem = (mockLines || []).find(
-                                    (it) => (it.id || it.item) === itemObj.id
-                                  );
-                                  if (selectedPoItem)
-                                    newOcrRef = selectedPoItem.item;
-                                }
                                 next[idx] = {
                                   ...next[idx],
                                   sameAsPo: val,
-                                  ocrRef: newOcrRef,
+                                  ocrRef: val ? selectedPoName : next[idx].ocrRef,
                                 };
                                 setAddInvoiceFormData({
                                   ...addInvoiceFormData,
@@ -611,7 +610,7 @@ const PoInvoicePaymentManagementModals = ({
                   );
                 })}
                 <Button
-                  variant="outline"
+                  variant="secondary"
                   size="small"
                   leftIcon={Plus}
                   disabled={
@@ -722,7 +721,7 @@ const PoInvoicePaymentManagementModals = ({
               }}
             >
               <Button
-                variant="outline"
+                variant="secondary"
                 size="large"
                 onClick={() => {
                   setShowAddInvoiceDrawer(false);
@@ -1352,7 +1351,7 @@ const PoInvoicePaymentManagementModals = ({
               style={{ width: "100%" }}
               onClick={() => {
                 setShowItemQtyExceedConfirmModal(false);
-                checkPoValueAndSave();
+                proceedAfterQtyExceed();
               }}
             >
               Yes, Confirm
@@ -1364,6 +1363,48 @@ const PoInvoicePaymentManagementModals = ({
               onClick={() => setShowItemQtyExceedConfirmModal(false)}
             >
               Cancel
+            </Button>
+          </div>
+        }
+      />
+
+      {/* Zero Invoice Amount Confirmation Modal */}
+      <GeneralModal
+        isOpen={showZeroAmountConfirmModal}
+        onClose={() => setShowZeroAmountConfirmModal(false)}
+        title="Zero Invoice Amount Detected"
+        width="420px"
+        centeredHeader
+        zIndex={15000}
+        description="This invoice has a total amount of 0. Please review them before saving, or continue if this is intentional."
+        descriptionStyle={{ fontSize: "14px" }}
+        footer={
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              width: "100%",
+            }}
+          >
+            <Button
+              variant="filled"
+              size="large"
+              style={{ width: "100%" }}
+              onClick={() => {
+                setShowZeroAmountConfirmModal(false);
+                checkPoValueAndSave();
+              }}
+            >
+              Continue to Save
+            </Button>
+            <Button
+              variant="outlined"
+              size="large"
+              style={{ width: "100%" }}
+              onClick={() => setShowZeroAmountConfirmModal(false)}
+            >
+              Go Back to Edit
             </Button>
           </div>
         }

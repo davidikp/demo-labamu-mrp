@@ -324,6 +324,7 @@ const INDONESIAN_EXACT_TEXT = {
   "This PO will be automatically approved upon submission.":
     "PO ini akan otomatis disetujui saat diajukan.",
   "Discard changes?": "Batalkan perubahan?",
+  "Yes, Discard": "Ya, Batalkan",
   "You have unsaved changes in this purchase order. Are you sure you want to leave this page?":
     "Anda memiliki perubahan yang belum disimpan pada purchase order ini. Yakin ingin meninggalkan halaman ini?",
   "Discard Changes": "Buang Perubahan",
@@ -555,6 +556,16 @@ const INDONESIAN_EXACT_TEXT = {
     "Faktur berhasil ditandai sebagai Faktur Terakhir.",
   "Invoice successfully unmarked as the Final Invoice":
     "Penandaan faktur sebagai Faktur Terakhir berhasil dibatalkan.",
+  "Revision Submitted": "Revisi Diajukan",
+  "Zero Unit Price Detected": "Harga Satuan Bernilai Nol",
+  "Some items have a unit price of 0. Please review them before submitting, or continue if this is intentional.":
+    "Beberapa barang memiliki harga satuan sebesar IDR 0. Silakan periksa kembali sebelum mengajukan, atau lanjutkan jika data tersebut sudah benar.",
+  "Continue to Submit": "Lanjut Ajukan",
+  "Go Back to Edit": "Kembali Untuk Mengubah",
+  "Zero Invoice Amount Detected": "Jumlah Faktur Bernilai Nol",
+  "This invoice has a total amount of 0. Please review them before saving, or continue if this is intentional.":
+    "Faktur ini memiliki total sebesar IDR 0. Silakan periksa kembali sebelum menyimpan, atau lanjutkan jika data tersebut sudah benar.",
+  "Continue to Save": "Lanjut Simpan",
   "No payments added yet.": "Belum ada pembayaran yang ditambahkan.",
   "Notes & Attachments": "Catatan & Lampiran",
   "Attachments": "Lampiran",
@@ -798,6 +809,7 @@ const INDONESIAN_FRAGMENT_REPLACEMENTS = [
   ["Drag file or ", "Tarik file atau "],
   ["browse file", "telusuri file"],
   [": Received ", ": Diterima "],
+  ["Version ", "Versi "],
   [
     "automatically unmarked because it is no longer the most recent invoice.",
     "Penandaan sebagai Faktur Terakhir dibatalkan secara otomatis karena bukan lagi faktur terbaru.",
@@ -810,6 +822,10 @@ const INDONESIAN_FRAGMENT_REPLACEMENTS = [
 ];
 
 const INDONESIAN_DYNAMIC_TEXT = [
+  {
+    pattern: /^Revised to Version (\d+)\.0$/i,
+    replacer: (_, num) => `Direvisi ke Versi ${num}.0`,
+  },
   {
     pattern: /^Uploaded by (.+) on (.+)$/i,
     replacer: (_, name, date) => `Diunggah oleh ${name} pada ${date}`,

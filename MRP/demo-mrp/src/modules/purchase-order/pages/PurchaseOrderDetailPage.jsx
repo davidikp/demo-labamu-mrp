@@ -510,9 +510,12 @@ export const PurchaseOrderDetailPage = ({
     setShowExceedConfirmModal,
     showItemQtyExceedConfirmModal,
     setShowItemQtyExceedConfirmModal,
+    showZeroAmountConfirmModal,
+    setShowZeroAmountConfirmModal,
     exceededItems,
     saveInvoice,
     checkPoValueAndSave,
+    proceedAfterQtyExceed,
     deleteInvoiceReason,
     setDeleteInvoiceReason,
     deleteInvoiceReasonError,
@@ -3324,9 +3327,12 @@ export const PurchaseOrderDetailPage = ({
         setShowExceedConfirmModal={setShowExceedConfirmModal}
         showItemQtyExceedConfirmModal={showItemQtyExceedConfirmModal}
         setShowItemQtyExceedConfirmModal={setShowItemQtyExceedConfirmModal}
+        showZeroAmountConfirmModal={showZeroAmountConfirmModal}
+        setShowZeroAmountConfirmModal={setShowZeroAmountConfirmModal}
         exceededItems={exceededItems}
         saveInvoice={saveInvoice}
         checkPoValueAndSave={checkPoValueAndSave}
+        proceedAfterQtyExceed={proceedAfterQtyExceed}
         deleteInvoiceReason={deleteInvoiceReason}
         setDeleteInvoiceReason={setDeleteInvoiceReason}
         deleteInvoiceReasonError={deleteInvoiceReasonError}

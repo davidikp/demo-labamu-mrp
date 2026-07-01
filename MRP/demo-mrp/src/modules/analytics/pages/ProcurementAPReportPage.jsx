@@ -282,7 +282,7 @@ const ProcurementAPReportPage = ({ onNavigate }) => {
         const paidAmount = po.invoices.reduce((s, i) => s + i.payments.reduce((sp, p) => sp + p.amount, 0), 0);
         return invoicedAmount >= po.amount && paidAmount < invoicedAmount;
       }).length },
-      { label: "PO Revised After Issue", count: MOCK_REPORT_POS.filter(po => po.status === "Revised").length },
+      { label: "PO Revised After Issued", count: MOCK_REPORT_POS.filter(po => (po.version || 1) > 1).length },
     ];
   }, []);
 

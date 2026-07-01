@@ -150,6 +150,7 @@ export const buildEvent = ({
       entityRoute,
       subject: content.subject,
       body: content.body,
+      cta: content.cta || null,
       to: recipients.emailTo,
       cc: recipients.emailCc,
     };
