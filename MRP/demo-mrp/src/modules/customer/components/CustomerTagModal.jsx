@@ -86,18 +86,16 @@ export const CustomerTagModal = ({ isOpen, mode = "Add", initialTag, onClose, on
           maxLength={100}
         />
 
-        {mode === "Edit" && (
-          <FormField label="Status">
-            <RadioGroup
-              options={[
-                { value: "Active", label: "Active" },
-                { value: "Inactive", label: "Inactive" },
-              ]}
-              value={status}
-              onChange={setStatus}
-            />
-          </FormField>
-        )}
+        <FormField label="Status">
+          <RadioGroup
+            options={[
+              { value: "Active", label: "Active" },
+              { value: "Inactive", label: "Inactive" },
+            ]}
+            value={status}
+            onChange={setStatus}
+          />
+        </FormField>
       </div>
     </GeneralModal>
   );

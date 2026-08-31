@@ -1,29 +1,34 @@
 import React from "react";
-import { AddIcon, DeleteIcon } from "../../../components/icons/Icons.jsx";
+import { AddIcon, DeleteIcon, Star } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
-import { InputField } from "../../../components/index.js";
+import { IconButton } from "../../../components/common/IconButton.jsx";
+import { InputField, PhoneInputField, Tooltip } from "../../../components/index.js";
 import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
-import { COUNTRY_CODE_OPTIONS } from "../../../constants/appConstants.js";
+import { Table } from "../../../ce-ui";
+
+// Column headers don't get FormField's own required-asterisk treatment, so
+// mirror the same "*Label" look inline for the two mandatory PIC fields.
+const requiredHeader = (label) => (
+  <span style={{ display: "inline-flex", alignItems: "center", gap: "2px" }}>
+    <span style={{ color: "var(--status-red-primary)", fontWeight: "var(--font-weight-bold)" }}>*</span>
+    {label}
+  </span>
+);
 
 const ROLE_OPTIONS = [
   { value: "Viewer", label: "Viewer" },
   { value: "Approver", label: "Approver" },
 ];
 
-const cellStyle = (overrides) => ({
-  minWidth: 0,
-  padding: "8px 12px",
-  display: "flex",
-  alignItems: "center",
-  ...overrides,
-});
-
 let picRowSeq = 0;
 export const nextPicRowId = () => `pic-row-${Date.now()}-${++picRowSeq}`;
 
-// Reusable "Person In Charge" table used by the customer create/edit page.
-// `readOnly` renders it as a plain read-only table (used on the detail page).
-export const PersonInChargeTable = ({ pics, onChange, readOnly = false, errors = {} }) => {
+// Reusable "Person In Charge" table used by the customer create/edit page,
+// built on the shared ce-ui Table component — mirrors the "Additional
+// Output" table pattern from WorkOrderCreateDrawer.jsx (editable cells via
+// render functions, no pagination). `readOnly` renders it as a plain
+// read-only table (used on the detail page).
+export const PersonInChargeTable = ({ pics, onChange, readOnly = false, primaryError, fieldErrors = {} }) => {
   const setPics = (next) => onChange(next);
 
   const addRow = () => {
@@ -35,8 +40,7 @@ export const PersonInChargeTable = ({ pics, onChange, readOnly = false, errors =
         name: "",
         email: "",
         role: "Approver",
-        phoneCode: "+62",
-        phone: "",
+        phone: "+62",
       },
     ]);
   };
@@ -58,166 +62,163 @@ export const PersonInChargeTable = ({ pics, onChange, readOnly = false, errors =
     setPics(remaining);
   };
 
-  const columns = readOnly
-    ? [
-        { label: "Primary", flex: "0.6" },
-        { label: "Name", flex: "1.4" },
-        { label: "Email", flex: "1.6" },
-        { label: "Role", flex: "1" },
-        { label: "Phone", flex: "1.2" },
-      ]
-    : [
-        { label: "Primary", flex: "0.6" },
-        { label: "Name", flex: "1.4" },
-        { label: "Email", flex: "1.6" },
-        { label: "Role", flex: "1" },
-        { label: "Phone", flex: "1.2" },
-        { label: "Actions", flex: "0.6" },
-      ];
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      <div
-        style={{
-          border: "1px solid var(--neutral-line-separator-1)",
-          borderRadius: "12px",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            background: "var(--neutral-surface-grey-lighter)",
-            borderBottom: "1px solid var(--neutral-line-separator-1)",
-          }}
-        >
-          {columns.map((col, idx) => (
-            <div
-              key={idx}
-              style={cellStyle({
-                flex: col.flex,
-                height: "44px",
-                fontSize: "var(--text-title-3)",
-                fontWeight: "var(--font-weight-bold)",
-                color: "var(--neutral-on-surface-primary)",
-              })}
-            >
-              {col.label}
-            </div>
-          ))}
-        </div>
-
-        {pics.length === 0 ? (
-          <div
-            style={{
-              padding: "24px",
-              textAlign: "center",
-              fontSize: "var(--text-title-3)",
-              color: "var(--neutral-on-surface-tertiary)",
-            }}
-          >
-            No person in charge added yet.
-          </div>
-        ) : (
-          pics.map((row) => (
-            <div
-              key={row.id}
-              style={{
-                display: "flex",
-                borderBottom: "1px solid var(--neutral-line-separator-1)",
-                alignItems: "center",
-              }}
-            >
-              <div style={cellStyle({ flex: columns[0].flex, justifyContent: "center" })}>
+  const columns = [
+    ...(readOnly
+      ? []
+      : [
+          {
+            key: "primary",
+            header: "Primary",
+            width: 90,
+            render: (_value, row) => (
+              <div style={{ height: "48px", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <input
                   type="checkbox"
                   checked={!!row.primary}
-                  disabled={readOnly}
-                  onChange={() => !readOnly && setPrimary(row.id)}
-                  style={{ width: "18px", height: "18px", cursor: readOnly ? "default" : "pointer" }}
+                  onChange={() => setPrimary(row.id)}
+                  style={{ width: "18px", height: "18px", cursor: "pointer" }}
                 />
               </div>
-              <div style={cellStyle({ flex: columns[1].flex })}>
-                {readOnly ? (
-                  row.name || "-"
-                ) : (
-                  <InputField
-                    value={row.name}
-                    onChange={(e) => updateRow(row.id, { name: e.target.value })}
-                    placeholder="Input Name"
-                    errorState={!!errors[`${row.id}_name`]}
-                  />
-                )}
+            ),
+          },
+        ]),
+    {
+      key: "name",
+      header: readOnly ? "Name" : requiredHeader("Name"),
+      width: 200,
+      render: (_value, row) =>
+        readOnly ? (
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+            {row.name || "-"}
+            {row.primary && (
+              <Tooltip content="Primary PIC">
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: "20px",
+                    height: "20px",
+                    borderRadius: "6px",
+                    background: "var(--status-yellow-primary)",
+                  }}
+                >
+                  <Star size={12} fill="white" color="white" />
+                </span>
+              </Tooltip>
+            )}
+          </span>
+        ) : (
+          <InputField
+            value={row.name}
+            onChange={(e) => updateRow(row.id, { name: e.target.value })}
+            placeholder="Input Name"
+            error={fieldErrors[`${row.id}_name`]}
+          />
+        ),
+    },
+    {
+      key: "email",
+      header: readOnly ? "Email" : requiredHeader("Email"),
+      width: 240,
+      render: (_value, row) =>
+        readOnly ? (
+          row.email || "-"
+        ) : (
+          <InputField
+            value={row.email}
+            onChange={(e) => updateRow(row.id, { email: e.target.value })}
+            placeholder="Input Email"
+            error={fieldErrors[`${row.id}_email`]}
+          />
+        ),
+    },
+    {
+      key: "phone",
+      header: "Phone",
+      width: 220,
+      render: (_value, row) =>
+        readOnly ? (
+          row.phone || "-"
+        ) : (
+          <PhoneInputField
+            value={row.phone}
+            onChange={(val) => updateRow(row.id, { phone: val })}
+            error={fieldErrors[`${row.id}_phone`]}
+          />
+        ),
+    },
+    {
+      key: "role",
+      header: "Role",
+      width: 160,
+      render: (_value, row) =>
+        readOnly ? (
+          row.role || "-"
+        ) : (
+          <DropdownSelect
+            value={row.role}
+            onChange={(val) => updateRow(row.id, { role: val })}
+            options={ROLE_OPTIONS}
+            placeholder="Select role"
+            clearable={false}
+          />
+        ),
+    },
+    ...(readOnly
+      ? []
+      : [
+          {
+            key: "actions",
+            header: "",
+            align: "center",
+            width: 64,
+            render: (_value, row) => (
+              <div style={{ height: "48px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <IconButton
+                  icon={DeleteIcon}
+                  size="small"
+                  // Only tint the icon red when the action is actually
+                  // available — IconButton applies `color` unconditionally
+                  // via inline style, which would otherwise override the
+                  // disabled/greyed-out look with red.
+                  color={pics.length === 1 ? undefined : "var(--status-red-primary)"}
+                  disabled={pics.length === 1}
+                  onClick={() => removeRow(row.id)}
+                />
               </div>
-              <div style={cellStyle({ flex: columns[2].flex })}>
-                {readOnly ? (
-                  row.email || "-"
-                ) : (
-                  <InputField
-                    value={row.email}
-                    onChange={(e) => updateRow(row.id, { email: e.target.value })}
-                    placeholder="Input Email"
-                  />
-                )}
-              </div>
-              <div style={cellStyle({ flex: columns[3].flex })}>
-                {readOnly ? (
-                  row.role || "-"
-                ) : (
-                  <DropdownSelect
-                    value={row.role}
-                    onChange={(val) => updateRow(row.id, { role: val })}
-                    options={ROLE_OPTIONS}
-                    placeholder="Select role"
-                  />
-                )}
-              </div>
-              <div style={cellStyle({ flex: columns[4].flex })}>
-                {readOnly ? (
-                  `${row.phoneCode || ""} ${row.phone || ""}`.trim() || "-"
-                ) : (
-                  <div style={{ display: "flex", gap: "8px", width: "100%" }}>
-                    <div style={{ width: "104px" }}>
-                      <DropdownSelect
-                        value={row.phoneCode}
-                        onChange={(val) => updateRow(row.id, { phoneCode: val })}
-                        options={COUNTRY_CODE_OPTIONS.map((c) => ({
-                          value: c.code,
-                          label: `${c.flag} ${c.code}`,
-                        }))}
-                        placeholder="+62"
-                      />
-                    </div>
-                    <InputField
-                      value={row.phone}
-                      onChange={(e) => updateRow(row.id, { phone: e.target.value })}
-                      placeholder="Phone number"
-                    />
-                  </div>
-                )}
-              </div>
-              {!readOnly && (
-                <div style={cellStyle({ flex: columns[5].flex, justifyContent: "center" })}>
-                  <button
-                    type="button"
-                    onClick={() => removeRow(row.id)}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      padding: "4px",
-                    }}
-                  >
-                    <DeleteIcon size={18} color="var(--status-red-primary)" />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))
-        )}
+            ),
+          },
+        ]),
+  ];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <style>{`
+        /* Top-align every cell so a row stays visually aligned across all its
+           fields once one of them grows taller from an inline error message
+           below it — center-aligned cells would otherwise bob up/down
+           relative to their neighbors. Primary/Actions get their own 48px
+           centering band (see render fns) to match the ~48px field height. */
+        .pic-table table td { height: auto; vertical-align: top; padding-top: 12px; padding-bottom: 12px; }
+        .pic-table div[class*="min-h-[60px]"] { display: none; }
+      `}</style>
+      <div className="pic-table">
+        <Table
+          columns={columns}
+          data={readOnly ? [...pics].sort((a, b) => (b.primary ? 1 : 0) - (a.primary ? 1 : 0)) : pics}
+          totalRows={pics.length}
+          showPagination={false}
+          footerTotal=""
+          className="!h-auto"
+          selectedRowId={null}
+          emptyStateTitle="No person in charge added yet."
+        />
       </div>
+
+      {primaryError ? (
+        <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>{primaryError}</span>
+      ) : null}
 
       {!readOnly && (
         <Button variant="outlined" size="small" leftIcon={AddIcon} onClick={addRow} style={{ alignSelf: "flex-start" }}>

@@ -26,10 +26,10 @@ export const FormField = ({
       >
         <div style={{ display: "flex", alignItems: "center", gap: "2px" }}>
           {required ? (
-            <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--status-red-primary)" }}>*</span>
+            <span style={{ fontSize: "14px", lineHeight: "20px", fontWeight: "bold", color: "var(--status-red-primary)" }}>*</span>
           ) : null}
           {label && (
-            <span style={{ fontSize: "12px", lineHeight: "18px", color: "var(--neutral-on-surface-primary)" }}>
+            <span style={{ fontSize: "12px", lineHeight: "20px", color: "var(--neutral-on-surface-primary)" }}>
               {label}
             </span>
           )}

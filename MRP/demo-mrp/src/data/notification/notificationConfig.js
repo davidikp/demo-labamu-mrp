@@ -104,6 +104,13 @@ export const NOTIFICATION_MODULES = {
     route: "materials/bulk-upload-list",
     color: "#0D9488",
   },
+  compliance: {
+    key: "compliance",
+    label: { en: "Compliance", id: "Kepatuhan" },
+    noun: { en: "Compliance", id: "Kepatuhan" },
+    route: "quotes",
+    color: "#DC2626",
+  },
 };
 
 // Default approver lists per module. Natasha is everywhere so the demo always

@@ -78,7 +78,7 @@ export const InputField = ({
         }}
         disabled={disabled}
         maxLength={maxLength}
-        errorText={label ? error : undefined}
+        errorText={error}
         helperText={label ? helperText : undefined}
         state={disabled ? "disabled" : !error && errorState ? "error" : undefined}
         leftIcon={leftIcon}
@@ -130,7 +130,7 @@ export const InputField = ({
       maxLength={maxLength}
       showCount={!!(showCounter && maxLength)}
       multiline={multiline}
-      errorText={label ? error : undefined}
+      errorText={error}
       helperText={label ? helperText : undefined}
       state={disabled ? "disabled" : !error && errorState ? "error" : undefined}
       leftIcon={leftIcon}

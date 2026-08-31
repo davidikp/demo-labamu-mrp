@@ -3,9 +3,25 @@ import { ChevronLeftIcon, EditIcon, DeleteIcon } from "../../../components/icons
 import { Button } from "../../../components/common/Button.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
-import { SectionCard, LabelValue } from "../../purchase-order/components/detail/shared/PoDetailSharedComponents.jsx";
+import { LabelValue } from "../../purchase-order/components/detail/shared/PoDetailSharedComponents.jsx";
 import { PersonInChargeTable } from "../components/PersonInChargeTable.jsx";
-import { deleteCustomer, getCustomerTagLabel } from "../mock/customerMocks.js";
+import { deleteCustomer, getCustomerTagLabel, getScreeningBadgeVariant } from "../mock/customerMocks.js";
+
+// Plain bold section title (no blue accent bar) — matches "Vendor
+// Information"/"Recipient Information" on PurchaseOrderDetailPage, as
+// distinct from the accent-bar `sectionHeader` used on the create page.
+const plainSectionCardStyle = {
+  background: "var(--neutral-surface-primary)",
+  borderRadius: "16px",
+  border: "1px solid var(--neutral-line-separator-1)",
+  overflow: "hidden",
+};
+
+const plainSectionTitle = (title) => (
+  <div style={{ padding: "24px 24px 0 24px", display: "flex", alignItems: "center", gap: "10px" }}>
+    <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)" }}>{title}</span>
+  </div>
+);
 
 export const CustomerDetailPage = ({ customer, onNavigate, showSnackbar, t }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -60,9 +76,6 @@ export const CustomerDetailPage = ({ customer, onNavigate, showSnackbar, t }) =>
         </div>
 
         <div style={{ display: "flex", gap: "12px" }}>
-          <Button variant="outlined" leftIcon={EditIcon} onClick={() => onNavigate("create", customer)}>
-            Edit
-          </Button>
           <Button
             variant="outlined"
             leftIcon={DeleteIcon}
@@ -71,45 +84,60 @@ export const CustomerDetailPage = ({ customer, onNavigate, showSnackbar, t }) =>
           >
             Delete
           </Button>
+          <Button variant="outlined" leftIcon={EditIcon} onClick={() => onNavigate("create", customer)}>
+            Edit
+          </Button>
         </div>
       </div>
 
-      <SectionCard title="Screening Status">
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <StatusBadge variant={customer.screeningStatus === "Pass" ? "green-light" : "red-light"}>
-            {customer.screeningStatus || "Pending"}
-          </StatusBadge>
-          <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>
-            {customer.lastScreenedAt ? `Last screened: ${customer.lastScreenedAt}` : "Not screened yet"}
+      {/* Merges what were separate "Screening Status" and "Customer
+          Information" cards into one, matching PoDetailHeader's top
+          info-card: primary identity text + status badge inline at the top,
+          divider, then the rest of the fields in a grid below. */}
+      <div style={plainSectionCardStyle}>
+        <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: "var(--text-headline)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+            {customer.name}
           </span>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-secondary)" }}>
+              {customer.lastScreenedAt ? `Last screened: ${customer.lastScreenedAt}` : "Not screened yet"}
+            </span>
+            <StatusBadge variant={getScreeningBadgeVariant(customer.screeningStatus)}>
+              {customer.screeningStatus || "Not Screened"}
+            </StatusBadge>
+          </div>
         </div>
-      </SectionCard>
 
-      <SectionCard title="Customer Information">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
-          <LabelValue label="Customer Name" value={customer.name || "-"} />
-          <LabelValue label="Customer Email" value={customer.email || "-"} />
-          <LabelValue label="Customer Phone" value={customer.phone ? `${customer.phoneCode || ""} ${customer.phone}`.trim() : "-"} />
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
-          <LabelValue
-            label="Customer Tag"
-            value={customer.tags?.length ? customer.tags.map(getCustomerTagLabel).join(", ") : "-"}
-          />
-          <LabelValue label="Customer Country" value={customer.country || "-"} />
-        </div>
-        <LabelValue label="Customer Address" value={customer.address || "-"} />
-      </SectionCard>
+        <div style={{ margin: "0 24px", borderTop: "1px solid var(--neutral-line-separator-1)" }} />
 
-      <SectionCard title="Person In Charge">
-        <PersonInChargeTable pics={customer.pics || []} onChange={() => {}} readOnly />
-      </SectionCard>
+        <div style={{ padding: "16px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+            <LabelValue label="Customer Email" value={customer.email || "-"} />
+            <LabelValue label="Customer Phone" value={customer.phone || "-"} />
+            <LabelValue
+              label="Customer Tag"
+              value={customer.tags?.length ? customer.tags.map(getCustomerTagLabel).join(", ") : "-"}
+            />
+            <LabelValue label="Customer Country" value={customer.country || "-"} />
+          </div>
+          <LabelValue label="Customer Address" value={customer.address || "-"} />
+        </div>
+      </div>
+
+      <div style={plainSectionCardStyle}>
+        {plainSectionTitle("Person In Charge")}
+        <div style={{ padding: "20px 24px 24px 24px" }}>
+          <PersonInChargeTable pics={customer.pics || []} onChange={() => {}} readOnly />
+        </div>
+      </div>
 
       <GeneralModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
         title="Delete Customer?"
         width="440px"
+        hideFooterDivider
         footer={
           <div style={{ display: "flex", gap: "12px", width: "100%" }}>
             <Button variant="outlined" size="large" onClick={() => setIsDeleteModalOpen(false)} style={{ flex: 1 }}>
@@ -126,8 +154,8 @@ export const CustomerDetailPage = ({ customer, onNavigate, showSnackbar, t }) =>
           </div>
         }
       >
-        <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-secondary)" }}>
-          This action cannot be undone. Are you sure you want to delete "{customer.name}"?
+        <span style={{ display: "block", textAlign: "center", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-secondary)" }}>
+          Are you sure you want to delete "{customer.name}"? This action cannot be undone.
         </span>
       </GeneralModal>
     </div>

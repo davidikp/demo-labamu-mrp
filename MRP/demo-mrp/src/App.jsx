@@ -26,6 +26,11 @@ import { BomCreatePage } from "./modules/bill-of-materials/pages/BomCreatePage.j
 import { OrderListPage } from "./modules/orders/pages/OrderListPage.jsx";
 import { OrderDetailPage } from "./modules/orders/pages/OrderDetailPage.jsx";
 import { OrderSettingsPage } from "./modules/orders/pages/OrderSettingsPage.jsx";
+import { QuoteListPage } from "./modules/quote/pages/QuoteListPage.jsx";
+import { QuoteDetailPage } from "./modules/quote/pages/QuoteDetailPage.jsx";
+import { QuoteCreatePage } from "./modules/quote/pages/QuoteCreatePage.jsx";
+import { QuoteSettingsPage } from "./modules/quote/pages/QuoteSettingsPage.jsx";
+import { SuspendedAccountPage } from "./modules/administration/pages/SuspendedAccountPage.jsx";
 import { CustomProductRequestListPage } from "./modules/custom-product-request/pages/CustomProductRequestListPage.jsx";
 import { CustomProductRequestDetailPage } from "./modules/custom-product-request/pages/CustomProductRequestDetailPage.jsx";
 import { CustomProductRequestCreatePage } from "./modules/custom-product-request/pages/CustomProductRequestCreatePage.jsx";
@@ -427,6 +432,9 @@ const ModuleRenderer = ({
   setWoSettings,
   orderApprovalSettings,
   setOrderApprovalSettings,
+  quoteApprovalSettings,
+  setQuoteApprovalSettings,
+  onSuspendAccount,
   showPoSnackbar,
   notificationSettings,
   setNotificationSettings,
@@ -910,6 +918,47 @@ const ModuleRenderer = ({
     }
   }
 
+  if (activeModule === "quotes") {
+    if (viewState.view === "settings") {
+      return (
+        <QuoteSettingsPage
+          onNavigate={onNavigate}
+          isSidebarCollapsed={isSidebarCollapsed}
+          quoteApprovalSettings={quoteApprovalSettings}
+          onSaveSettings={(settings) => {
+            setQuoteApprovalSettings(settings);
+            showPoSnackbar("Quote settings successfully saved", "success");
+            onNavigate("list");
+          }}
+        />
+      );
+    }
+    if (viewState.view === "create") {
+      return (
+        <QuoteCreatePage
+          onNavigate={onNavigate}
+          showSnackbar={showPoSnackbar}
+          isSidebarCollapsed={isSidebarCollapsed}
+          initialData={viewState.data}
+        />
+      );
+    }
+    if (viewState.view === "detail") {
+      return (
+        <QuoteDetailPage
+          onNavigate={onNavigate}
+          isSidebarCollapsed={isSidebarCollapsed}
+          initialData={viewState.data}
+          showSnackbar={showPoSnackbar}
+          quoteApprovalSettings={quoteApprovalSettings}
+          onSuspendAccount={onSuspendAccount}
+          language={language}
+        />
+      );
+    }
+    return <QuoteListPage onNavigate={onNavigate} t={t} />;
+  }
+
   if (activeModule === "custom_product_request") {
     if (viewState.view === "list") {
       return <CustomProductRequestListPage onNavigate={onNavigate} />;
@@ -1039,6 +1088,7 @@ const ModuleRenderer = ({
           showSnackbar={showPoSnackbar}
           t={t}
           initialData={viewState.data}
+          isSidebarCollapsed={isSidebarCollapsed}
         />
       );
     }
@@ -1126,6 +1176,20 @@ export default function App() {
     requireComment: false,
     approvers: [],
   });
+  const [quoteApprovalSettings, setQuoteApprovalSettings] = useState({
+    isApprovalActive: false,
+    requireComment: false,
+    approvers: [],
+  });
+  // Simulated manufacturer-account status (PRD: Failed Sanctions Screening
+  // Handling / Suspended Account Experience). In-memory only — there is no
+  // real account/company/session model in this demo.
+  const [manufacturerAccountStatus, setManufacturerAccountStatus] = useState("Active");
+  const [suspensionContext, setSuspensionContext] = useState(null);
+  const onSuspendAccount = (context) => {
+    setManufacturerAccountStatus("Suspended");
+    setSuspensionContext(context || null);
+  };
   const [notificationSettings, setNotificationSettings] = useState(() =>
     buildDefaultCompanySettings()
   );
@@ -1265,8 +1329,11 @@ export default function App() {
         } else if (data?.cprNumber && typeof data.cprNumber === "string" && data.cprNumber.startsWith("CPR-")) {
           id = data.cprNumber;
           targetModule = "custom-product-request";
+        } else if (data?.quoteNo && typeof data.quoteNo === "string" && data.quoteNo.startsWith("QUO-")) {
+          id = data.quoteNo;
+          targetModule = "quotes";
         } else {
-          id = (data?.orderNo || data?.sku || data?.poNumber || data?.wo || data?.cprNumber || data?.id || "detail");
+          id = (data?.orderNo || data?.sku || data?.poNumber || data?.wo || data?.cprNumber || data?.quoteNo || data?.id || "detail");
           if (typeof id === "string" && id.startsWith("PO-")) {
             targetModule = "purchase-order";
           } else if (typeof id === "string" && id.startsWith("ORD-")) {
@@ -1275,6 +1342,8 @@ export default function App() {
             targetModule = "work-order";
           } else if (typeof id === "string" && id.startsWith("CPR-")) {
             targetModule = "custom-product-request";
+          } else if (typeof id === "string" && id.startsWith("QUO-")) {
+            targetModule = "quotes";
           }
         }
         
@@ -1282,7 +1351,7 @@ export default function App() {
         return;
       }
       if (view === "create" || view === "settings") {
-        const id = data?.poNumber || data?.wo || data?.sku || data?.id;
+        const id = data?.poNumber || data?.wo || data?.sku || data?.quoteNo || data?.id;
         if (view === "create" && id) {
           navigate(`/${currentModuleRoute}/${id}/edit`, { state: data, ...options });
         } else {
@@ -1347,6 +1416,15 @@ export default function App() {
       <BulkUploadNotifier />
       <MaterialUploadNotifier />
       {currentActiveModule === "dashboard" ? <SimulateEventPanel /> : null}
+      {manufacturerAccountStatus === "Suspended" ? (
+        <SuspendedAccountPage
+          suspensionContext={suspensionContext}
+          onReactivate={() => {
+            setManufacturerAccountStatus("Active");
+            setSuspensionContext(null);
+          }}
+        />
+      ) : (
       <div style={{ display: "flex", flex: 1, width: "100%" }}>
         <Sidebar
           isCollapsed={isSidebarCollapsed}
@@ -1457,6 +1535,9 @@ export default function App() {
                 setWoSettings={setWoSettings}
                 orderApprovalSettings={orderApprovalSettings}
                 setOrderApprovalSettings={setOrderApprovalSettings}
+                quoteApprovalSettings={quoteApprovalSettings}
+                setQuoteApprovalSettings={setQuoteApprovalSettings}
+                onSuspendAccount={onSuspendAccount}
                 showPoSnackbar={showPoSnackbar}
                 notificationSettings={notificationSettings}
                 setNotificationSettings={setNotificationSettings}
@@ -1482,6 +1563,9 @@ export default function App() {
                 setWoSettings={setWoSettings}
                 orderApprovalSettings={orderApprovalSettings}
                 setOrderApprovalSettings={setOrderApprovalSettings}
+                quoteApprovalSettings={quoteApprovalSettings}
+                setQuoteApprovalSettings={setQuoteApprovalSettings}
+                onSuspendAccount={onSuspendAccount}
                 showPoSnackbar={showPoSnackbar}
                 notificationSettings={notificationSettings}
                 setNotificationSettings={setNotificationSettings}
@@ -1507,6 +1591,9 @@ export default function App() {
                 setWoSettings={setWoSettings}
                 orderApprovalSettings={orderApprovalSettings}
                 setOrderApprovalSettings={setOrderApprovalSettings}
+                quoteApprovalSettings={quoteApprovalSettings}
+                setQuoteApprovalSettings={setQuoteApprovalSettings}
+                onSuspendAccount={onSuspendAccount}
                 showPoSnackbar={showPoSnackbar}
                 notificationSettings={notificationSettings}
                 setNotificationSettings={setNotificationSettings}
@@ -1529,6 +1616,7 @@ export default function App() {
           </Routes>
         </div>
       </div>
+      )}
     </div>
     </LocaleProvider>
     </NotificationProvider>

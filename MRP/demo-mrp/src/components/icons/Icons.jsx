@@ -39,6 +39,7 @@ import {
   ShoppingCart,
   TrendingUp,
   CircleDollarSign,
+  Star,
 } from "lucide-react";
 
 import labamuMarkSrc from "../../labamu-mark.svg";
@@ -524,6 +525,7 @@ const CancelledCircleIcon = XCircle;
 export {
   Bell,
   Box,
+  Star,
   Building2,
   Calendar,
   Check,

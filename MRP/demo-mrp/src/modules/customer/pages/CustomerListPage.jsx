@@ -4,7 +4,8 @@ import { EmptyState } from "../../../ce-ui";
 import { Button } from "../../../components/common/Button.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
-import { MOCK_CUSTOMERS } from "../mock/customerMocks.js";
+import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
+import { MOCK_CUSTOMERS, getScreeningBadgeVariant } from "../mock/customerMocks.js";
 
 const cellStyle = (overrides) => ({
   minWidth: 0,
@@ -27,6 +28,7 @@ const tableColumns = [
   { label: "Customer Email", key: "email", flex: "1.6" },
   { label: "Customer Phone", key: "phone", flex: "1.2" },
   { label: "Customer Country", key: "country", flex: "1" },
+  { label: "Screening Status", key: "screeningStatus", flex: "1" },
 ];
 
 export const CustomerListPage = ({ onNavigate, showSnackbar, t }) => {
@@ -172,12 +174,15 @@ export const CustomerListPage = ({ onNavigate, showSnackbar, t }) => {
                     <span style={wrapTextStyle}>{row.email || "-"}</span>
                   </div>
                   <div style={cellStyle({ flex: tableColumns[2].flex })}>
-                    <span style={wrapTextStyle}>
-                      {row.phone ? `${row.phoneCode || ""} ${row.phone}`.trim() : "-"}
-                    </span>
+                    <span style={wrapTextStyle}>{row.phone || "-"}</span>
                   </div>
                   <div style={cellStyle({ flex: tableColumns[3].flex })}>
                     <span style={wrapTextStyle}>{row.country || "-"}</span>
+                  </div>
+                  <div style={cellStyle({ flex: tableColumns[4].flex })}>
+                    <StatusBadge variant={getScreeningBadgeVariant(row.screeningStatus)}>
+                      {row.screeningStatus || "Not Screened"}
+                    </StatusBadge>
                   </div>
                 </div>
               ))}

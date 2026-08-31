@@ -5,6 +5,7 @@ import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
+import { ChipTabBar } from "../../../components/molecules/ChipTabBar.jsx";
 import { CustomerTagModal } from "../components/CustomerTagModal.jsx";
 import { MOCK_CUSTOMER_TAGS, nextCustomerTagId } from "../mock/customerMocks.js";
 
@@ -59,7 +60,7 @@ export const CustomerManagePage = ({ onNavigate, showSnackbar, t }) => {
 
   const handleSave = (form) => {
     if (modalMode === "Add") {
-      setTags((prev) => [{ id: nextCustomerTagId(), name: form.name, status: "Active" }, ...prev]);
+      setTags((prev) => [{ id: nextCustomerTagId(), name: form.name, status: form.status }, ...prev]);
       showSnackbar?.("Customer tag successfully added", "success");
     } else {
       setTags((prev) => prev.map((t) => (t.id === selectedTag.id ? { ...t, ...form } : t)));
@@ -118,16 +119,11 @@ export const CustomerManagePage = ({ onNavigate, showSnackbar, t }) => {
       </div>
 
       <div style={{ marginBottom: "12px" }}>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: "var(--text-title-1)",
-            fontWeight: "var(--font-weight-bold)",
-            color: "var(--neutral-on-surface-primary)",
-          }}
-        >
-          Customer Tag
-        </h2>
+        {/* Section selector matches MaterialManagePage's Category/UOM
+            ChipTabBar — a single always-active chip since there's only one
+            entity type here today (room to add more tag-like categories
+            later without changing this pattern). */}
+        <ChipTabBar tabs={[{ id: "customer_tag", label: "Customer Tag" }]} activeTab="customer_tag" onChange={() => {}} />
       </div>
 
       <div

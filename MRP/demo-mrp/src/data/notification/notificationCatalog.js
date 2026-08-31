@@ -1364,5 +1364,29 @@ NOTIFICATION_CATALOG.material_bulk_upload = {
   },
 };
 
+// Compliance — Sanctions Screening (PRD: Customer Sanctions Screening).
+// Single trigger: a Failed screening result during Quote approval suspends
+// the manufacturer account and emails the Account Owner + the user who
+// attempted the approval. In this single-user demo both are the same
+// CURRENT_USER, so only one email is produced — matching the PRD's
+// "duplicate recipients are removed" rule without extra plumbing.
+NOTIFICATION_CATALOG.compliance = {
+  account_suspended: {
+    recipientRule: "requester",
+    channels: { inApp: false, email: true },
+    todo: null,
+    email: (c) => ({
+      subject: {
+        en: "Your Labamu Manufacturing account has been suspended",
+        id: "Akun Labamu Manufacturing Anda telah ditangguhkan",
+      },
+      body: {
+        en: `Your Labamu Manufacturing account has been suspended because customer ${c.customerName} failed sanctions screening for Quote ${c.number}.\n\nThe Quote has been rejected and all users under the company can no longer access Labamu Manufacturing.\n\nTo submit an appeal, contact Labamu Customer Support at cs@labamu.co.id and provide the required supporting documents.\n\nYour account will remain suspended while the appeal is reviewed.`,
+        id: `Akun Labamu Manufacturing Anda telah ditangguhkan karena pelanggan ${c.customerName} gagal dalam pemeriksaan sanksi untuk Quote ${c.number}.\n\nQuote telah ditolak dan semua pengguna di bawah perusahaan ini tidak dapat lagi mengakses Labamu Manufacturing.\n\nUntuk mengajukan banding, hubungi Layanan Pelanggan Labamu di cs@labamu.co.id dan sertakan dokumen pendukung yang diperlukan.\n\nAkun Anda akan tetap ditangguhkan selama banding ditinjau.`,
+      },
+    }),
+  },
+};
+
 export const getCatalogEntry = (moduleKey, triggerKey) =>
   NOTIFICATION_CATALOG[moduleKey]?.[triggerKey] || null;
