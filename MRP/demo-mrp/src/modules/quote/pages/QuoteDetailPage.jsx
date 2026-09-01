@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -64,6 +64,9 @@ const SCENARIO_FORCED_RESULT = {
   stale_failed: "Failed",
 };
 
+// How long the simulated Sanctions.io call "runs" behind the loading modal.
+const SCREENING_DURATION_MS = 2000;
+
 const getStatusBadgeVariant = (status) => {
   switch (status) {
     case "Approved":
@@ -96,14 +99,6 @@ const SCREENING_MESSAGES = {
     en: "Quote successfully approved. Sanctions screening passed.",
     id: "Penawaran berhasil disetujui. Pelanggan lolos pemeriksaan sanksi.",
   },
-  failed: {
-    en: "Sanctions screening failed. The quote was rejected and the customer account was suspended.",
-    id: "Pemeriksaan sanksi gagal. Penawaran ditolak dan akun pelanggan ditangguhkan.",
-  },
-  technical_error: {
-    en: "Failed to complete sanctions screening. Try approving the quote again.",
-    id: "Pemeriksaan sanksi belum dapat diselesaikan. Coba setujui penawaran lagi.",
-  },
   country_saved: {
     en: "Customer country saved. Continuing sanctions screening.",
     id: "Negara pelanggan tersimpan. Melanjutkan pemeriksaan sanksi.",
@@ -125,6 +120,41 @@ const COUNTRY_MODAL_COPY = {
   required: { en: "Field cannot be empty", id: "Kolom tidak boleh kosong" },
   cancel: { en: "Cancel", id: "Batal" },
   save: { en: "Save & Continue", id: "Simpan & Lanjutkan" },
+};
+
+// Loading + result modals for the screening call itself. The screening runs
+// "in the background" behind a blocking loading modal; a non-passed outcome
+// then surfaces as a result modal rather than a snackbar, so the user gets
+// the full explanation before anything else happens (a Failed result also
+// suspends the account once the modal is dismissed).
+const SCREENING_MODAL_COPY = {
+  loadingTitle: {
+    en: "Running sanctions screening",
+    id: "Menjalankan pemeriksaan sanksi",
+  },
+  loadingBody: {
+    en: "Checking the customer against applicable sanctions lists. This may take a moment.",
+    id: "Memeriksa pelanggan terhadap daftar sanksi yang berlaku. Proses ini mungkin memerlukan beberapa saat.",
+  },
+  failedTitle: {
+    en: "Customer did not pass sanctions screening",
+    id: "Pelanggan tidak lolos pemeriksaan sanksi",
+  },
+  failedBody: {
+    en: "The customer did not pass the required sanctions screening. As a result, the quote has been automatically rejected and your Labamu Manufacturing account has been suspended. Contact Customer Support at cs@labamu.co.id to submit an appeal.",
+    id: "Pelanggan tidak lolos pemeriksaan sanksi yang diwajibkan. Akibatnya, penawaran ditolak secara otomatis dan akun Labamu Manufacturing Anda telah ditangguhkan. Hubungi Layanan Pelanggan di cs@labamu.co.id untuk mengajukan banding.",
+  },
+  failedAction: { en: "Understood", id: "Mengerti" },
+  errorTitle: {
+    en: "Unable to approve quote",
+    id: "Tidak dapat menyetujui penawaran",
+  },
+  errorBody: {
+    en: "The sanctions screening could not be completed due to a technical issue. Please try approving the quote again.",
+    id: "Pemeriksaan sanksi tidak dapat diselesaikan karena kendala teknis. Silakan coba setujui penawaran lagi.",
+  },
+  errorAction: { en: "Close", id: "Tutup" },
+  errorRetry: { en: "Try Again", id: "Coba Lagi" },
 };
 
 // Internal review decision modal (Submitted → Reject / Ask for Revision /
@@ -158,6 +188,7 @@ export const QuoteDetailPage = ({
 }) => {
   const sm = (key) => SCREENING_MESSAGES[key]?.[language === "id" ? "id" : "en"] || "";
   const cm = (key) => COUNTRY_MODAL_COPY[key]?.[language === "id" ? "id" : "en"] || "";
+  const srm = (key) => SCREENING_MODAL_COPY[key]?.[language === "id" ? "id" : "en"] || "";
 
   const [activeTab, setActiveTab] = useState("customer_info");
   const [quoteData, setQuoteData] = useState(initialData || {});
@@ -182,11 +213,25 @@ export const QuoteDetailPage = ({
   const [decisionType, setDecisionType] = useState(null);
   const [decisionComment, setDecisionComment] = useState("");
   const [decisionError, setDecisionError] = useState("");
+  // Screening runs behind a blocking loading modal; a non-passed outcome then
+  // opens a result modal ("failed" | "technical_error"). For a Failed result
+  // the account suspension is held back until that modal is dismissed.
+  const [isScreeningLoading, setIsScreeningLoading] = useState(false);
+  const [screeningResult, setScreeningResult] = useState(null);
+  const pendingSuspensionRef = useRef(null);
+  const screeningTimerRef = useRef(null);
   const { notify, currentUser: notifUser } = useNotifications();
 
   useEffect(() => {
     if (initialData) setQuoteData(initialData);
   }, [initialData]);
+
+  useEffect(
+    () => () => {
+      if (screeningTimerRef.current) clearTimeout(screeningTimerRef.current);
+    },
+    []
+  );
 
   const linkedCustomer = useMemo(
     () => getCustomerById(quoteData.customerId),
@@ -253,8 +298,32 @@ export const QuoteDetailPage = ({
       requesterUser: notifUser,
     });
 
-    onSuspendAccount?.({ customerName: customer.name, quoteNumber: quoteData.quoteNo });
-    showSnackbar?.(sm("failed"), "error");
+    // Hold the app-wide suspension takeover back until the user has read and
+    // dismissed the result modal — otherwise the takeover would replace the
+    // page before they ever see what happened.
+    pendingSuspensionRef.current = {
+      customerName: customer.name,
+      quoteNumber: quoteData.quoteNo,
+    };
+    setScreeningResult("failed");
+  };
+
+  const handleCloseScreeningResult = () => {
+    const resolved = screeningResult;
+    setScreeningResult(null);
+    if (resolved === "failed" && pendingSuspensionRef.current) {
+      const context = pendingSuspensionRef.current;
+      pendingSuspensionRef.current = null;
+      onSuspendAccount?.(context);
+    }
+  };
+
+  // Technical-error retry: the PRD treats each retry as a brand new screening
+  // request, so this re-runs the gate with no forced outcome (i.e. it will
+  // pass) — re-check a Simulate scenario first to make it fail again.
+  const handleRetryScreening = () => {
+    setScreeningResult(null);
+    runScreeningCheck();
   };
 
   const runScreeningCheck = (forcedResult) => {
@@ -283,26 +352,34 @@ export const QuoteDetailPage = ({
     }
 
     // Customer has never been screened, or the previous Passed result is
-    // stale (name/country changed since) — this is the actual screening
-    // trigger point. `forcedResult` simulates what Sanctions.io returns.
+    // stale (name/country changed since) — this is the only path that
+    // actually "calls Sanctions.io", so it is the only one that shows the
+    // loading modal. `forcedResult` simulates what the call returns.
     const result = forcedResult || "Passed";
-    if (result === "TechnicalError") {
-      showSnackbar?.(sm("technical_error"), "error");
-      return;
-    }
-    if (result === "Failed") {
-      handleScreeningFailed(customer);
-      return;
-    }
+    setIsActionMenuOpen(false);
+    setIsScreeningLoading(true);
+    screeningTimerRef.current = setTimeout(() => {
+      screeningTimerRef.current = null;
+      setIsScreeningLoading(false);
 
-    updateCustomerRecord(customer.id, {
-      screeningStatus: "Passed",
-      lastScreenedName: customer.name,
-      lastScreenedCountry: customer.country,
-      lastScreenedAt: new Date().toISOString().slice(0, 16).replace("T", " "),
-    });
-    setCustomerVersion((v) => v + 1);
-    finalizeApproval();
+      if (result === "TechnicalError") {
+        setScreeningResult("technical_error");
+        return;
+      }
+      if (result === "Failed") {
+        handleScreeningFailed(customer);
+        return;
+      }
+
+      updateCustomerRecord(customer.id, {
+        screeningStatus: "Passed",
+        lastScreenedName: customer.name,
+        lastScreenedCountry: customer.country,
+        lastScreenedAt: new Date().toISOString().slice(0, 16).replace("T", " "),
+      });
+      setCustomerVersion((v) => v + 1);
+      finalizeApproval();
+    }, SCREENING_DURATION_MS);
   };
 
   const handleSaveCustomerCountry = () => {
@@ -1107,6 +1184,92 @@ export const QuoteDetailPage = ({
           ) : null}
         </div>
       </GeneralModal>
+
+      <GeneralModal isOpen={isScreeningLoading} onClose={() => {}} width="400px">
+        {/* No title/description props on purpose: GeneralModal only renders
+            its close "X" alongside a header, so leaving them off keeps this
+            modal non-dismissible while the screening call is in flight. */}
+        <style>{`@keyframes quoteScreeningSpin { to { transform: rotate(360deg); } }`}</style>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "16px",
+            padding: "12px 8px 4px 8px",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              border: "3px solid var(--neutral-line-separator-1)",
+              borderTopColor: "var(--feature-brand-primary)",
+              animation: "quoteScreeningSpin 0.8s linear infinite",
+            }}
+          />
+          <span
+            style={{
+              fontSize: "var(--text-title-1)",
+              fontWeight: "var(--font-weight-bold)",
+              color: "var(--neutral-on-surface-primary)",
+            }}
+          >
+            {srm("loadingTitle")}
+          </span>
+          <span
+            style={{
+              fontSize: "var(--text-title-3)",
+              color: "var(--neutral-on-surface-secondary)",
+              lineHeight: 1.6,
+            }}
+          >
+            {srm("loadingBody")}
+          </span>
+        </div>
+      </GeneralModal>
+
+      <GeneralModal
+        isOpen={!!screeningResult}
+        onClose={handleCloseScreeningResult}
+        title={screeningResult === "failed" ? srm("failedTitle") : srm("errorTitle")}
+        description={screeningResult === "failed" ? srm("failedBody") : srm("errorBody")}
+        width="440px"
+        hideFooterDivider
+        footer={
+          screeningResult === "failed" ? (
+            <Button
+              variant="filled"
+              size="large"
+              style={{ width: "100%" }}
+              onClick={handleCloseScreeningResult}
+            >
+              {srm("failedAction")}
+            </Button>
+          ) : (
+            <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+              <Button
+                variant="outlined"
+                size="large"
+                style={{ flex: 1 }}
+                onClick={handleCloseScreeningResult}
+              >
+                {srm("errorAction")}
+              </Button>
+              <Button
+                variant="filled"
+                size="large"
+                style={{ flex: 1 }}
+                onClick={handleRetryScreening}
+              >
+                {srm("errorRetry")}
+              </Button>
+            </div>
+          )
+        }
+      />
 
       <SimulateScreeningPanel
         customer={linkedCustomer}

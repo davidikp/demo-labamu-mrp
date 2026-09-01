@@ -2,15 +2,22 @@ import React from "react";
 import { CancelledCircleIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 
+const SUPPORT_EMAIL = "cs@labamu.co.id";
+
 // Full-screen takeover shown app-wide whenever the (simulated) manufacturer
 // account status is "Suspended" — mirrors the PRD's "Suspended Account
 // Experience" requirement: it replaces the entire Manufacturing workspace,
-// cannot be dismissed/bypassed by navigation, and only clears on reactivation.
-// There is no real backend/session model in this demo, so reactivation is a
-// clearly-labeled simulate-only affordance rather than the real manual-appeal
-// workflow described in the PRD.
-export const SuspendedAccountPage = ({ suspensionContext, onReactivate }) => {
+// cannot be dismissed/bypassed by navigation, and only clears on reactivation
+// (which, per the PRD, Labamu performs manually after an appeal review — there
+// is no in-app path back out).
+export const SuspendedAccountPage = ({ suspensionContext }) => {
   const { customerName, quoteNumber } = suspensionContext || {};
+
+  const mailtoHref = quoteNumber
+    ? `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
+        `Suspension appeal — Quote ${quoteNumber}`
+      )}`
+    : `mailto:${SUPPORT_EMAIL}`;
 
   return (
     <div
@@ -23,6 +30,7 @@ export const SuspendedAccountPage = ({ suspensionContext, onReactivate }) => {
         alignItems: "center",
         justifyContent: "center",
         padding: "24px",
+        overflowY: "auto",
       }}
     >
       <div
@@ -56,55 +64,70 @@ export const SuspendedAccountPage = ({ suspensionContext, onReactivate }) => {
         </div>
 
         <h1 style={{ margin: 0, fontSize: "var(--text-large-title)", fontWeight: "var(--font-weight-bold)" }}>
-          Your Labamu Manufacturing account has been suspended
+          Your Labamu Manufacturing account is suspended
         </h1>
 
-        <p style={{ margin: 0, fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-secondary)", lineHeight: 1.6 }}>
-          Your Labamu Manufacturing account has been suspended following a failed sanctions screening
-          {customerName ? <> for customer <strong>{customerName}</strong></> : null}
-          {quoteNumber ? <> on Quote <strong>{quoteNumber}</strong></> : null}. Please contact Labamu and
-          provide the requested information and supporting documents for review.
+        <p
+          style={{
+            margin: 0,
+            fontSize: "var(--text-title-3)",
+            color: "var(--neutral-on-surface-secondary)",
+            lineHeight: 1.6,
+          }}
+        >
+          Customer <strong>{customerName || "-"}</strong> did not pass the sanctions screening for quote{" "}
+          <strong>{quoteNumber || "-"}</strong>. As a result, your account has been suspended and access to
+          Labamu Manufacturing is temporarily restricted.
         </p>
 
         <div
           style={{
             width: "100%",
+            marginTop: "8px",
             background: "var(--neutral-surface-grey-lighter, #F5F5F7)",
             borderRadius: "12px",
-            padding: "16px 20px",
+            padding: "20px",
             textAlign: "left",
-            fontSize: "var(--text-body)",
-            color: "var(--neutral-on-surface-secondary)",
-            lineHeight: 1.6,
-          }}
-        >
-          To submit an appeal, contact Labamu Customer Support at{" "}
-          <a href="mailto:cs@labamu.co.id" style={{ color: "var(--feature-brand-primary)" }}>
-            cs@labamu.co.id
-          </a>{" "}
-          and provide the required supporting documents. Your account will remain suspended while the
-          appeal is reviewed.
-        </div>
-
-        <div
-          style={{
-            width: "100%",
-            marginTop: "8px",
-            paddingTop: "20px",
-            borderTop: "1px dashed var(--neutral-line-separator-1)",
             display: "flex",
             flexDirection: "column",
             gap: "8px",
-            alignItems: "center",
           }}
         >
-          <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-tertiary)" }}>
-            Demo only — reactivation is normally handled manually by Labamu after an appeal review.
+          <span
+            style={{
+              fontSize: "var(--text-title-2)",
+              fontWeight: "var(--font-weight-bold)",
+              color: "var(--neutral-on-surface-primary)",
+            }}
+          >
+            Appeal this suspension
           </span>
-          <Button variant="outlined" onClick={onReactivate}>
-            Simulate: Appeal Approved → Reactivate Account
-          </Button>
+          <span
+            style={{
+              fontSize: "var(--text-body)",
+              color: "var(--neutral-on-surface-secondary)",
+              lineHeight: 1.6,
+            }}
+          >
+            Contact Labamu Customer Support at{" "}
+            <a href={`mailto:${SUPPORT_EMAIL}`} style={{ color: "var(--feature-brand-primary)" }}>
+              {SUPPORT_EMAIL}
+            </a>{" "}
+            to submit an appeal and provide the requested supporting documents. Your account will remain
+            suspended while your appeal is being reviewed.
+          </span>
         </div>
+
+        <Button
+          variant="filled"
+          size="large"
+          style={{ width: "100%", marginTop: "8px" }}
+          onClick={() => {
+            window.location.href = mailtoHref;
+          }}
+        >
+          Contact Customer Support
+        </Button>
       </div>
     </div>
   );

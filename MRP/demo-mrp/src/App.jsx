@@ -1417,13 +1417,7 @@ export default function App() {
       <MaterialUploadNotifier />
       {currentActiveModule === "dashboard" ? <SimulateEventPanel /> : null}
       {manufacturerAccountStatus === "Suspended" ? (
-        <SuspendedAccountPage
-          suspensionContext={suspensionContext}
-          onReactivate={() => {
-            setManufacturerAccountStatus("Active");
-            setSuspensionContext(null);
-          }}
-        />
+        <SuspendedAccountPage suspensionContext={suspensionContext} />
       ) : (
       <div style={{ display: "flex", flex: 1, width: "100%" }}>
         <Sidebar

@@ -701,8 +701,12 @@ export const PurchaseOrderDetailPage = ({
   const hasReceiptHistory =
     receiptLogs.some((log) => !!log.receiptNumber) ||
     (formData?.receiptLogs || []).some((log) => !!log.receiptNumber);
+  // Once any line on this PO has been released to a vendor (from the linked
+  // Work Order's "Release to Vendor" action), it can no longer be cancelled
+  // or revised — same permanent lock as receipt history.
+  const hasReleaseHistory = !!MOCK_PO_TABLE_DATA.find((p) => p.poNumber === poNumber)?.hasReleaseHistory;
   const showFooterIssuedCancel =
-    currentStatus === "Issued" && !hasReceiptHistory;
+    currentStatus === "Issued" && !hasReceiptHistory && !hasReleaseHistory;
   const resolvePoStatusKey = (status) => {
     if (status === "Waiting for Approval") return "ready_to_send";
     if (status === "Issued") return "issued";
