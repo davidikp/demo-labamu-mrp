@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(node --input-type=module)",
+      "Bash(xargs ls -la)",
+      "Bash(node --input-type=module --eval \"import\\('./src/modules/material-forecast/components/MaterialBreakdownDrawer.jsx'\\)\")",
+      "Bash(node --input-type=module --eval \"import\\('./src/modules/material-forecast/components/DemandUrgencyDrawer.jsx'\\)\")",
+      "Bash(echo \"=== mpr-handover dir ===\" && ls -la /Users/davidikp/Documents/mpr-handover/ 2>/dev/null; echo \"=== demo-mrp dir ===\" && ls -la /Users/davidikp/Documents/demo-mrp/ 2>/dev/null)",
+      "Read(//Users/davidikp/Documents/mpr-handover/**)",
+      "Bash(cd /Users/davidikp/Documents *)",
+      "Read(//Users/davidikp/Documents/**)",
+      "Bash(cp /Users/davidikp/Documents/mpr-handover/src/utils/localization/localizationUtils.js /Users/davidikp/Documents/demo-mrp/src/utils/localization/localizationUtils.js *)",
+      "Bash(awk '/const StatusBadge|StatusBadge =/{f=1} f{print NR\": \"$0} f&&/^};|^\\\\\\)/{c++; if\\(c>=1 && /return|^\\\\}/\\) }' src/modules/purchase-order/components/detail/shared/PoDetailSharedComponents.jsx)",
+      "Bash(node --input-type=module -e \"import\\('./src/utils/localization/localizationUtils.js'\\).then\\(\\(\\)=>console.log\\('localization OK'\\)\\).catch\\(e=>console.log\\('ERR',e.message\\)\\)\")",
+      "Bash(timeout 120 npx vite build)",
+      "Read(//tmp/**)",
+      "Bash(npx vite *)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(grep -n \"scrollY\\\\|rect.bottom\\\\|getBoundingClientRect\\\\|position: \\\\\"fixed\\\\\"\\\\|top: \\\\\"100%\\\\\"\\\\|top: \\\\`\" src/modules/purchase-order/components/detail/PoInvoicePaymentTab.jsx)",
+      "Bash(cd /Users/davidikp/Documents/demo-mrp *)",
+      "Bash(grep -n \"Request Material\\\\|>No<\\\\|Required Qty\\\\|Requested Qty\\\\|Remaining Qty\\\\|Received Qty\\\\|{\\\\[$\\\\|\\\\].map\\(\\(row, i\\)\" src/modules/work-order/pages/WorkOrderDetailPage.jsx)"
+    ],
+    "additionalDirectories": [
+      "/Users/davidikp/Documents/mpr-handover/src/utils/localization",
+      "/private/tmp"
+    ]
+  }
+}
