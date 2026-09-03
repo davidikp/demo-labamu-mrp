@@ -275,11 +275,70 @@ const NOUNS = {
   invoice: { en: "Invoice", id: "Invoice" },
 };
 
+// Built once here so the Need To Do title overrides below can reuse each
+// lifecycle's recipientRule/channels/todo/body/email without touching the
+// generic copy shared with other stages/modules (e.g. Quote's and Invoice's
+// customer_revision share one factory; rfq's other stages share one factory
+// with its submitted/need_revision).
+const RFQ_APPROVAL_LIFECYCLE = makeApprovalLifecycle(NOUNS.rfq, { en: "Approved", id: "Approved" });
+const QUOTE_CUSTOMER_LIFECYCLE = makeCustomerLifecycle(NOUNS.quote);
+const INVOICE_CUSTOMER_LIFECYCLE = makeCustomerLifecycle(NOUNS.invoice);
+
 export const NOTIFICATION_CATALOG = {
-  rfq: makeApprovalLifecycle(NOUNS.rfq, { en: "Approved", id: "Approved" }),
+  rfq: {
+    ...RFQ_APPROVAL_LIFECYCLE,
+    // Need To Do title override: spell out "Request for Quote" instead of
+    // the "RFQ" abbreviation, matching the full-name pattern used by the
+    // other modules (Invoice, Material Request, etc).
+    submitted: {
+      ...RFQ_APPROVAL_LIFECYCLE.submitted,
+      inApp: (c) => ({
+        title: {
+          en: `Request for Quote ${c.number} needs your approval`,
+          id: `Request for Quote ${c.number} memerlukan persetujuan Anda`,
+        },
+        body: {
+          en: `Submitted by ${c.submitterName} is waiting for your review.`,
+          id: `Diajukan oleh ${c.submitterName} dan sedang menunggu peninjauan Anda.`,
+        },
+        cta: { en: "Review", id: "Tinjau" },
+      }),
+    },
+    need_revision: {
+      ...RFQ_APPROVAL_LIFECYCLE.need_revision,
+      inApp: (c) => ({
+        title: {
+          en: `Request for Quote ${c.number} needs revision`,
+          id: `Request for Quote ${c.number} memerlukan revisi`,
+        },
+        body: {
+          en: `${c.approverName} requested changes. Note: ${quote(c.note)}`,
+          id: `${c.approverName} meminta perubahan. Catatan: ${quoteId(c.note)}`,
+        },
+        cta: { en: "Edit & Resubmit", id: "Edit & Kirim Ulang" },
+      }),
+    },
+  },
   quote: {
     ...makeApprovalLifecycle(NOUNS.quote, { en: "Issued", id: "Issued" }),
-    ...makeCustomerLifecycle(NOUNS.quote),
+    ...QUOTE_CUSTOMER_LIFECYCLE,
+    // Need To Do title override: generic customer_revision copy reads
+    // "Customer requested changes on Quote {number}" — align with the same
+    // "{Module} {number} needs revision" pattern used elsewhere.
+    customer_revision: {
+      ...QUOTE_CUSTOMER_LIFECYCLE.customer_revision,
+      inApp: (c) => ({
+        title: {
+          en: `Quote ${c.number} needs revision`,
+          id: `Quote ${c.number} perlu revisi`,
+        },
+        body: {
+          en: `${c.customerPicName} from ${c.customerCompany} requested changes. Note: ${quote(c.note)}`,
+          id: `${c.customerPicName} dari ${c.customerCompany} meminta perubahan. Catatan: ${quoteId(c.note)}`,
+        },
+        cta: { en: "Edit & Resubmit", id: "Edit & Kirim Ulang" },
+      }),
+    },
   },
   order: makeApprovalLifecycle(NOUNS.order, { en: "Confirmed", id: "Confirmed" }),
   purchase_order: {
@@ -322,7 +381,25 @@ export const NOTIFICATION_CATALOG = {
   }),
 
   invoice: {
-    ...makeCustomerLifecycle(NOUNS.invoice),
+    ...INVOICE_CUSTOMER_LIFECYCLE,
+    // Need To Do title override: generic customer_revision copy reads
+    // "Customer requested changes on Invoice {number}" — Invoice-specific
+    // wording leads with the entity instead, matching proof_uploaded below.
+    // Body/cta/email/todo stay the shared ones from makeCustomerLifecycle.
+    customer_revision: {
+      ...INVOICE_CUSTOMER_LIFECYCLE.customer_revision,
+      inApp: (c) => ({
+        title: {
+          en: `Invoice ${c.number} needs revision`,
+          id: `Invoice ${c.number} perlu revisi`,
+        },
+        body: {
+          en: `${c.customerPicName} from ${c.customerCompany} requested changes. Note: ${quote(c.note)}`,
+          id: `${c.customerPicName} dari ${c.customerCompany} meminta perubahan. Catatan: ${quoteId(c.note)}`,
+        },
+        cta: { en: "Edit & Resubmit", id: "Edit & Kirim Ulang" },
+      }),
+    },
     // Payment proof — portal upload notifies the invoice owner (PIC).
     proof_uploaded: {
       recipientRule: "entity_pic",
@@ -334,8 +411,8 @@ export const NOTIFICATION_CATALOG = {
       },
       inApp: (c) => ({
         title: {
-          en: `Payment proof uploaded — Invoice ${c.number}`,
-          id: `Bukti pembayaran telah diunggah — Invoice ${c.number}`,
+          en: `Invoice ${c.number} needs payment proof review`,
+          id: `Invoice ${c.number} perlu peninjauan bukti pembayaran`,
         },
         body: {
           en: `${c.customerPicName} from ${c.customerCompany} uploaded a payment proof. Please review and confirm.`,
@@ -386,8 +463,8 @@ export const NOTIFICATION_CATALOG = {
       },
       inApp: (c) => ({
         title: {
-          en: `Materials transferred — confirm receipt for ${c.requestId}`,
-          id: `Material telah ditransfer — konfirmasi penerimaan untuk ${c.requestId}`,
+          en: `Material Request ${c.requestId} needs receipt confirmation`,
+          id: `Permintaan Material ${c.requestId} perlu konfirmasi penerimaan`,
         },
         body: {
           en: `${c.preparerName} has transferred materials for your request from ${c.workOrderNo}. Please confirm you have received the items.`,

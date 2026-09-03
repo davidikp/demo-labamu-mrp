@@ -886,6 +886,32 @@ const STOCK_BY_SKU = {
   "GLU-400500600": [{ batch: "BAT-260126-000202", available: 12 }],
   "VAR-700800900": [{ batch: "BAT-260126-000203", available: 6 }],
   "SND-110220330": [{ batch: "BAT-260126-000204", available: 40 }],
+  // Backs new material-request simulations for WO-202604-007 (Custom Bracket
+  // B1, BOM-000007) and WO-2026-04-00099 (Demo Full Log Cabinet, the
+  // FULL_DEMO_LOG_WO — see WorkOrderDetailPage.jsx). Quantities sit above
+  // what those work orders' existing requests already consumed, so there's
+  // spare stock to allocate when requesting more.
+  "VEN-TEAK-12": [
+    { batch: "BAT-260501-000001", available: 500 },
+    { batch: "BAT-260501-000002", available: 250 },
+  ],
+  "FOM-ROL-04": [{ batch: "BAT-260501-000003", available: 300 }],
+  "MRB-ITL-CAR-01": [{ batch: "BAT-260501-000004", available: 120 }],
+  "PLY-18-001": [{ batch: "BAT-260501-000005", available: 200 }],
+  "MTL-001": [{ batch: "BAT-260501-000006", available: 150 }],
+  // Remaining catalog materials (materials/mock/materialsMocks.js) that had no
+  // stock here — any of their BOMs would show "No stock available" in Material
+  // Preparation. Quantities mirror each material's onHandStock so the module
+  // and the Materials catalog agree. COP-W-15 is deliberately left out: its
+  // onHandStock is 0 (an intentional "Out of Stock" demo case).
+  "ALU-SH-2MM": [{ batch: "BAT-260501-000007", available: 150 }],
+  "STL-PIPE-05": [{ batch: "BAT-260501-000008", available: 45 }],
+  "PLAS-HDPE-GR": [{ batch: "BAT-260501-000009", available: 1200 }],
+  "FAST-M6-HEX": [{ batch: "BAT-260501-000010", available: 5000 }],
+  "GLU-5KG-009": [{ batch: "BAT-260501-000011", available: 30 }],
+  "STL-BOLT-M8": [{ batch: "BAT-260501-000012", available: 120 }],
+  "MTL-002": [{ batch: "BAT-260501-000013", available: 40 }],
+  "MTL-003": [{ batch: "BAT-260501-000014", available: 200 }],
 };
 
 // Fresh copies so callers can't mutate the shared mock stock.

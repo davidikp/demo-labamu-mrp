@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { Settings, ChevronDownIcon, SearchNotFoundIllustration } from "../../../components/icons/Icons.jsx";
+import { Tooltip } from "../../../components/atoms/Tooltip.jsx";
 import { EmptyState } from "../../../ce-ui";
 import { Button } from "../../../components/common/Button.jsx";
 import { FilterMenu } from "../../../components/molecules/FilterMenu.jsx";
@@ -96,6 +98,16 @@ export const WorkOrderListPage = ({ onNavigate, t, showSnackbar }) => {
     return Number.isNaN(d.getTime()) ? null : d;
   };
   const referenceNow = new Date("2026-03-31");
+  // A work order's planned end date only counts as "overdue" while the work
+  // is still ongoing — a Completed/Cancelled WO's planned date being in the
+  // past is just history, not something still slipping.
+  const isPlannedEndOverdue = (row) => {
+    if (row.statusKey === "completed" || row.statusKey === "cancelled") return false;
+    if (!row.end) return false;
+    const end = parsedDate(row.end);
+    if (!end) return false;
+    return end < new Date();
+  };
   const matchesDateFilter = (rowDateValue, filterType, customDateFrom, customDateTo) => {
     if (filterType === "all") return true;
     const rowDate = parsedDate(rowDateValue);
@@ -505,6 +517,16 @@ export const WorkOrderListPage = ({ onNavigate, t, showSnackbar }) => {
                   <div style={cellStyle({ flex: tableColumns[5].flex })}>
                       <span style={wrapTextStyle}>
                       {row.start || row.end ? `${row.start || "-"} → ${row.end || "-"}` : "-"}
+                      {isPlannedEndOverdue(row) ? (
+                        <Tooltip content="Deadline overdue">
+                          <AlertTriangle
+                            size={16}
+                            color="var(--neutral-surface-primary)"
+                            fill="var(--status-red-primary)"
+                            style={{ flexShrink: 0, verticalAlign: "middle", marginLeft: "6px" }}
+                          />
+                        </Tooltip>
+                      ) : null}
                       </span>
                   </div>
                   <div style={cellStyle({ flex: tableColumns[6].flex })}>

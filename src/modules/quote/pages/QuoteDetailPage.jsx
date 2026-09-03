@@ -18,8 +18,8 @@ import { COUNTRY_OPTIONS } from "../../../constants/appConstants.js";
 import {
   MOCK_QUOTES,
   updateQuote,
-  getQuoteProductTotal,
-  getQuoteSubtotal,
+  getStatusBadgeVariant,
+  subscribeToQuoteSync,
 } from "../mock/quoteMocks.js";
 import {
   getCustomerById,
@@ -31,6 +31,11 @@ import {
   updateCustomer as updateCustomerRecord,
 } from "../../customer/mock/customerMocks.js";
 import { SimulateScreeningPanel } from "../components/SimulateScreeningPanel.jsx";
+import { CustomerPortalLauncher } from "../components/CustomerPortalLauncher.jsx";
+import { QuoteProductTable } from "../components/QuoteProductTable.jsx";
+import { QuoteTotalsSummary } from "../components/QuoteTotalsSummary.jsx";
+import { QuoteDecisionModal } from "../components/QuoteDecisionModal.jsx";
+import { useQuoteDecisionFlow } from "../hooks/useQuoteDecisionFlow.js";
 
 const sectionCardStyle = {
   background: "var(--neutral-surface-primary)",
@@ -46,9 +51,6 @@ const sectionTitle = (title) => (
     </span>
   </div>
 );
-
-const formatCurrency = (value, currency = "IDR") =>
-  `${currency} ${Number(value || 0).toLocaleString("en-US")}`;
 
 const CUSTOMER_ACTION_OPTIONS = [
   { key: "approve", label: "Approve" },
@@ -74,23 +76,6 @@ const SCREENING_DURATION_MS = 2000;
 
 // "YYYY-MM-DD HH:mm" — the format screening dates are stored in.
 const nowStamp = () => new Date().toISOString().slice(0, 16).replace("T", " ");
-
-const getStatusBadgeVariant = (status) => {
-  switch (status) {
-    case "Approved":
-      return "green";
-    case "Issued":
-      return "orange";
-    case "Submitted":
-      return "blue";
-    case "Rejected":
-      return "red";
-    case "Need Revision":
-      return "yellow";
-    default:
-      return "grey";
-  }
-};
 
 // Bilingual snackbar copy for the Customer Action → Approve sanctions
 // screening gate.
@@ -219,11 +204,6 @@ export const QuoteDetailPage = ({
   // What the country modal should resume once a country is saved:
   // "screening" (Customer Action → Approve) or "submit" (footer Submit).
   const [pendingCountryAction, setPendingCountryAction] = useState("screening");
-  // Internal review decision modal (Submitted status footer).
-  const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
-  const [decisionType, setDecisionType] = useState(null);
-  const [decisionComment, setDecisionComment] = useState("");
-  const [decisionError, setDecisionError] = useState("");
   // Screening runs behind a blocking loading modal; a non-passed outcome then
   // opens a result modal ("failed" | "technical_error"). For a Failed result
   // the account suspension is held back until that modal is dismissed.
@@ -244,10 +224,45 @@ export const QuoteDetailPage = ({
     []
   );
 
+  // Cross-tab sync: a Customer Portal tab mutates its own copy of
+  // MOCK_QUOTES, so if this quote is being viewed here at the same time, mirror
+  // any change it broadcasts into this page's local quoteData state.
+  useEffect(
+    () =>
+      subscribeToQuoteSync((updated) => {
+        if (updated.quoteNo === quoteData.quoteNo) setQuoteData(updated);
+      }),
+    [quoteData.quoteNo]
+  );
+
   const linkedCustomer = useMemo(
     () => getCustomerById(quoteData.customerId),
     [quoteData.customerId, customerVersion]
   );
+
+  // Internal review decision modal (Submitted → Reject / Ask for Revision /
+  // Approve). Reject/Ask for Revision always require a comment; Approve's
+  // comment requirement follows Quote Settings' "Require Comment for
+  // Approval" toggle.
+  const {
+    isDecisionModalOpen,
+    decisionType,
+    decisionComment,
+    setDecisionComment,
+    decisionError,
+    setDecisionError,
+    getDecisionMeta,
+    openDecisionModal,
+    closeDecisionModal,
+  } = useQuoteDecisionFlow({
+    getMeta: (type) => ({
+      ...(INTERNAL_DECISION_META[type] || {}),
+      mandatory:
+        type === "reject" || type === "revision"
+          ? true
+          : !!(quoteApprovalSettings?.isApprovalActive && quoteApprovalSettings?.requireComment),
+    }),
+  });
 
   if (!quoteData?.quoteNo) {
     return (
@@ -561,37 +576,9 @@ export const QuoteDetailPage = ({
     submitQuoteForApproval();
   };
 
-  // Internal review decision modal (Submitted → Reject / Ask for Revision /
-  // Approve). Reject/Ask for Revision always require a comment; Approve's
-  // comment requirement follows Quote Settings' "Require Comment for
-  // Approval" toggle.
-  const isDecisionCommentMandatory =
-    decisionType === "reject" || decisionType === "revision"
-      ? true
-      : !!(quoteApprovalSettings?.isApprovalActive && quoteApprovalSettings?.requireComment);
-
-  const getDecisionMeta = () => ({
-    ...(INTERNAL_DECISION_META[decisionType] || {}),
-    mandatory: isDecisionCommentMandatory,
-  });
-
-  const openDecisionModal = (type) => {
-    setDecisionType(type);
-    setDecisionComment("");
-    setDecisionError("");
-    setIsDecisionModalOpen(true);
-  };
-
-  const closeDecisionModal = () => {
-    setIsDecisionModalOpen(false);
-    setDecisionType(null);
-    setDecisionComment("");
-    setDecisionError("");
-  };
-
   const handleSubmitDecision = () => {
     const trimmedComment = decisionComment.trim();
-    if (isDecisionCommentMandatory && !trimmedComment) {
+    if (getDecisionMeta().mandatory && !trimmedComment) {
       setDecisionError("Field cannot be empty");
       return;
     }
@@ -640,9 +627,6 @@ export const QuoteDetailPage = ({
   };
 
   const products = quoteData.products || [];
-  const subtotal = getQuoteSubtotal(products);
-  const taxAmount = subtotal * ((quoteData.taxRatePercent || 0) / 100);
-  const total = subtotal + taxAmount + (quoteData.shippingFee || 0) + (quoteData.otherFee || 0);
 
   const dynamicActivityLogs = useMemo(() => {
     const logs = [];
@@ -864,89 +848,21 @@ export const QuoteDetailPage = ({
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           <div style={sectionCardStyle}>
             {sectionTitle("Products")}
-            <div style={{ padding: "20px 24px 24px 24px", overflowX: "auto" }}>
-              <div style={{ minWidth: "900px", display: "flex", flexDirection: "column" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    paddingBottom: "12px",
-                    borderBottom: "1px solid var(--neutral-line-separator-1)",
-                    fontWeight: "var(--font-weight-bold)",
-                    fontSize: "var(--text-title-3)",
-                  }}
-                >
-                  <div style={{ width: "72px" }}>Image</div>
-                  <div style={{ flex: "1.6" }}>Product Name</div>
-                  <div style={{ flex: "1.2" }}>Notes</div>
-                  <div style={{ flex: "1.2" }}>Attachments</div>
-                  <div style={{ width: "90px" }}>Qty</div>
-                  <div style={{ flex: "1" }}>Unit Price</div>
-                  <div style={{ width: "90px" }}>Discount</div>
-                  <div style={{ flex: "1" }}>Total Price</div>
-                </div>
-
-                {products.length === 0 ? (
-                  <div style={{ padding: "24px 0", color: "var(--neutral-on-surface-tertiary)" }}>No products added yet.</div>
-                ) : (
-                  products.map((p, idx) => (
-                    <div
-                      key={p.id || idx}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "16px 0",
-                        borderBottom: idx === products.length - 1 ? "none" : "1px solid var(--neutral-line-separator-1)",
-                        fontSize: "var(--text-title-3)",
-                      }}
-                    >
-                      <div style={{ width: "72px" }}>
-                        {p.image ? (
-                          <img src={p.image} alt={p.name} style={{ width: "48px", height: "48px", borderRadius: "8px", objectFit: "cover" }} />
-                        ) : (
-                          <div style={{ width: "48px", height: "48px", borderRadius: "8px", background: "var(--neutral-surface-grey-lighter)" }} />
-                        )}
-                      </div>
-                      <div style={{ flex: "1.6", display: "flex", flexDirection: "column", gap: "2px" }}>
-                        <span style={{ color: "var(--neutral-on-surface-primary)" }}>{p.name}</span>
-                        <span style={{ fontSize: "var(--text-body)", color: "var(--neutral-on-surface-tertiary)" }}>{p.sku}</span>
-                      </div>
-                      <div style={{ flex: "1.2", color: "var(--neutral-on-surface-secondary)" }}>{p.notes || "—"}</div>
-                      <div style={{ flex: "1.2", color: "var(--neutral-on-surface-secondary)" }}>{p.attachments || "—"}</div>
-                      <div style={{ width: "90px" }}>{p.qty} {p.uom || ""}</div>
-                      <div style={{ flex: "1" }}>{formatCurrency(p.unitPrice, quoteData.currency)}</div>
-                      <div style={{ width: "90px" }}>{p.discountPercent ? `${p.discountPercent}%` : "-"}</div>
-                      <div style={{ flex: "1", fontWeight: "var(--font-weight-bold)" }}>{formatCurrency(getQuoteProductTotal(p), quoteData.currency)}</div>
-                    </div>
-                  ))
-                )}
-              </div>
+            <div style={{ padding: "20px 24px 24px 24px" }}>
+              <QuoteProductTable products={products} currency={quoteData.currency} />
             </div>
           </div>
 
           <div style={sectionCardStyle}>
             {sectionTitle("Total Amount")}
-            <div style={{ padding: "20px 24px 24px 24px", display: "flex", flexDirection: "column", gap: "12px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--neutral-on-surface-secondary)", fontSize: "14px" }}>
-                <span>Subtotal</span>
-                <span>{formatCurrency(subtotal, quoteData.currency)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--neutral-on-surface-secondary)", fontSize: "14px" }}>
-                <span>Tax Rate ({quoteData.taxRatePercent || 0}%)</span>
-                <span>{formatCurrency(taxAmount, quoteData.currency)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--neutral-on-surface-secondary)", fontSize: "14px" }}>
-                <span>Shipping Fee</span>
-                <span>{formatCurrency(quoteData.shippingFee, quoteData.currency)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", color: "var(--neutral-on-surface-secondary)", fontSize: "14px" }}>
-                <span>Other Fee</span>
-                <span>{formatCurrency(quoteData.otherFee, quoteData.currency)}</span>
-              </div>
-              <div style={{ borderTop: "1px solid var(--neutral-line-separator-1)", margin: "4px 0" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "var(--font-weight-bold)", fontSize: "var(--text-title-1)" }}>
-                <span>Total</span>
-                <span style={{ color: "var(--neutral-on-surface-primary)" }}>{formatCurrency(total, quoteData.currency)}</span>
-              </div>
+            <div style={{ padding: "20px 24px 24px 24px" }}>
+              <QuoteTotalsSummary
+                products={products}
+                currency={quoteData.currency}
+                taxRatePercent={quoteData.taxRatePercent}
+                shippingFee={quoteData.shippingFee}
+                otherFee={quoteData.otherFee}
+              />
             </div>
           </div>
         </div>
@@ -1172,72 +1088,18 @@ export const QuoteDetailPage = ({
         </div>
       ) : null}
 
-      <GeneralModal
+      <QuoteDecisionModal
         isOpen={isDecisionModalOpen}
         onClose={closeDecisionModal}
-        title={getDecisionMeta().title}
-        width="440px"
-        footer={
-          <div style={{ display: "flex", gap: "12px", width: "100%" }}>
-            <Button variant="outlined" size="large" style={{ flex: 1 }} onClick={closeDecisionModal}>
-              Back
-            </Button>
-            <Button variant="filled" size="large" style={{ flex: 1 }} onClick={handleSubmitDecision}>
-              Submit
-            </Button>
-          </div>
-        }
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              {getDecisionMeta().mandatory ? (
-                <span style={{ color: "var(--status-red-primary)", fontSize: "var(--text-body)" }}>*</span>
-              ) : null}
-              <span
-                style={{
-                  fontSize: "var(--text-title-3)",
-                  fontWeight: "var(--font-weight-bold)",
-                  color: "var(--neutral-on-surface-primary)",
-                }}
-              >
-                Comment
-              </span>
-            </div>
-            <span style={{ fontSize: "var(--text-desc)", color: "var(--neutral-on-surface-tertiary)" }}>
-              {decisionComment.length}/400
-            </span>
-          </div>
-          <textarea
-            value={decisionComment}
-            maxLength={400}
-            onChange={(e) => {
-              setDecisionComment(e.target.value);
-              if (decisionError) setDecisionError("");
-            }}
-            placeholder={getDecisionMeta().helper}
-            style={{
-              minHeight: "120px",
-              border: decisionError
-                ? "1px solid var(--status-red-primary)"
-                : "1px solid var(--neutral-line-separator-2)",
-              borderRadius: "12px",
-              padding: "12px 16px",
-              background: "var(--neutral-surface-primary)",
-              fontSize: "var(--text-subtitle-1)",
-              color: "var(--neutral-on-surface-primary)",
-              width: "100%",
-              outline: "none",
-              fontFamily: "Lato, sans-serif",
-              resize: "vertical",
-              boxSizing: "border-box",
-            }}
-          />
-          {decisionError ? (
-            <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>{decisionError}</span>
-          ) : null}
-        </div>
-      </GeneralModal>
+        meta={getDecisionMeta()}
+        comment={decisionComment}
+        onCommentChange={(e) => {
+          setDecisionComment(e.target.value);
+          if (decisionError) setDecisionError("");
+        }}
+        error={decisionError}
+        onSubmit={handleSubmitDecision}
+      />
 
       <GeneralModal isOpen={isScreeningLoading} onClose={() => {}} width="400px">
         {/* No title/description props on purpose: GeneralModal only renders
@@ -1323,6 +1185,12 @@ export const QuoteDetailPage = ({
             </div>
           )
         }
+      />
+
+      <CustomerPortalLauncher
+        quoteNo={quoteData.quoteNo}
+        // Stack directly above SimulateScreeningPanel's own trigger.
+        bottomOffset={(isEditableStatus || isSubmittedStatus || isIssuedStatus ? 88 : 24) + 64}
       />
 
       <SimulateScreeningPanel

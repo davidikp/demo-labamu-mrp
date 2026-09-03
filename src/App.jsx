@@ -6,6 +6,7 @@ import {
   Routes,
   Route,
   Navigate,
+  matchPath,
 } from "react-router-dom";
 import {
   Check,
@@ -31,6 +32,8 @@ import { QuoteDetailPage } from "./modules/quote/pages/QuoteDetailPage.jsx";
 import { QuoteCreatePage } from "./modules/quote/pages/QuoteCreatePage.jsx";
 import { QuoteSettingsPage } from "./modules/quote/pages/QuoteSettingsPage.jsx";
 import { SuspendedAccountPage } from "./modules/administration/pages/SuspendedAccountPage.jsx";
+import { CustomerPortalQuotePage } from "./modules/customer-portal/pages/CustomerPortalQuotePage.jsx";
+import { PortalRevisionRequestedPage } from "./modules/customer-portal/pages/PortalRevisionRequestedPage.jsx";
 import { CustomProductRequestListPage } from "./modules/custom-product-request/pages/CustomProductRequestListPage.jsx";
 import { CustomProductRequestDetailPage } from "./modules/custom-product-request/pages/CustomProductRequestDetailPage.jsx";
 import { CustomProductRequestCreatePage } from "./modules/custom-product-request/pages/CustomProductRequestCreatePage.jsx";
@@ -1391,6 +1394,20 @@ export default function App() {
   const currentModuleRoute = pathParts[0] || "work-order";
   const currentActiveModule = ROUTE_TO_MODULE[currentModuleRoute] || currentModuleRoute.replace(/-/g, '_');
   const currentView = (pathParts[1] || "list").replace(/-/g, '_');
+
+  // Customer Portal: a shell-less, public-style surface (no sidebar/top
+  // header, no notification/locale context) — intercepted here, before the
+  // authenticated app shell below even mounts, mirroring how
+  // SuspendedAccountPage short-circuits the same shell for its own takeover.
+  const portalRevisionMatch = matchPath("/portal/quote/:quoteNo/revision-requested", location.pathname);
+  const portalQuoteMatch = matchPath("/portal/quote/:quoteNo", location.pathname);
+  if (portalRevisionMatch) {
+    return <PortalRevisionRequestedPage />;
+  }
+  if (portalQuoteMatch) {
+    const portalRole = new URLSearchParams(location.search).get("role") === "viewer" ? "viewer" : "approver";
+    return <CustomerPortalQuotePage quoteNo={portalQuoteMatch.params.quoteNo} role={portalRole} />;
+  }
 
   return (
     <NotificationProvider

@@ -40,6 +40,8 @@ import {
   TrendingUp,
   CircleDollarSign,
   Star,
+  Hourglass,
+  LogOut,
 } from "lucide-react";
 
 import labamuMarkSrc from "../../labamu-mark.svg";
@@ -521,6 +523,8 @@ const CloudUploadIcon = ({
 
 const CheckCircleIcon = CheckCircle;
 const CancelledCircleIcon = XCircle;
+const HourglassIcon = Hourglass;
+const LogOutIcon = LogOut;
 
 export {
   Bell,
@@ -603,4 +607,6 @@ export {
   ShoppingCart,
   TrendingUp,
   CircleDollarSign,
+  HourglassIcon,
+  LogOutIcon,
 };

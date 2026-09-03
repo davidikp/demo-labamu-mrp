@@ -262,17 +262,72 @@ export const createQuote = (data) => {
     otherFee: 0,
     bankAccount: {},
     terms: {},
+    actionLogs: [],
     ...data,
   };
   MOCK_QUOTES.unshift(record);
   return record;
 };
 
-export const updateQuote = (quoteNo, data) => {
+// --- Cross-tab sync -------------------------------------------------------
+// The Customer Portal is opened via `window.open` in a brand new tab, which
+// is a separate JS runtime with its own copy of this module (and therefore
+// its own MOCK_QUOTES array) — mutating one tab's array does not touch the
+// other tab's at all. BroadcastChannel lets `updateQuote` announce a patch
+// so any other tab with this module loaded can apply it to its own array and
+// re-render. Guarded for environments without BroadcastChannel (e.g. SSR).
+const QUOTE_SYNC_CHANNEL = "labamu-quote-sync";
+let syncChannel = null;
+const getSyncChannel = () => {
+  if (typeof window === "undefined" || typeof BroadcastChannel === "undefined") return null;
+  if (!syncChannel) syncChannel = new BroadcastChannel(QUOTE_SYNC_CHANNEL);
+  return syncChannel;
+};
+
+const applyQuotePatch = (quoteNo, patch) => {
   const index = MOCK_QUOTES.findIndex((q) => q.quoteNo === quoteNo);
   if (index === -1) return null;
-  MOCK_QUOTES[index] = { ...MOCK_QUOTES[index], ...data };
+  MOCK_QUOTES[index] = { ...MOCK_QUOTES[index], ...patch };
   return MOCK_QUOTES[index];
+};
+
+export const updateQuote = (quoteNo, data) => {
+  const updated = applyQuotePatch(quoteNo, data);
+  if (updated) getSyncChannel()?.postMessage({ quoteNo, patch: data });
+  return updated;
+};
+
+// Subscribe to quote mutations broadcast by *other* tabs (e.g. a Customer
+// Portal tab). Applies the patch to this tab's own MOCK_QUOTES first (same
+// in-memory-array pattern as every other mutation here), then calls
+// `onUpdate(updatedRecord)` so the caller can re-render / re-sync local
+// state. Returns an unsubscribe function.
+export const subscribeToQuoteSync = (onUpdate) => {
+  const channel = getSyncChannel();
+  if (!channel) return () => {};
+  const handler = (event) => {
+    const { quoteNo, patch } = event.data || {};
+    if (!quoteNo || !patch) return;
+    const updated = applyQuotePatch(quoteNo, patch);
+    if (updated) onUpdate?.(updated);
+  };
+  channel.addEventListener("message", handler);
+  return () => channel.removeEventListener("message", handler);
+};
+
+// Appends one entry to a quote's action log (e.g. a Customer Portal
+// accept/reject/revision action) and persists it via updateQuote so it also
+// syncs across tabs.
+export const appendQuoteActionLog = (quoteNo, { picEmail, action, timestamp }) => {
+  const quote = MOCK_QUOTES.find((q) => q.quoteNo === quoteNo);
+  if (!quote) return null;
+  const entry = {
+    id: `${quoteNo}-log-${(quote.actionLogs?.length || 0) + 1}-${Date.now()}`,
+    picEmail: picEmail || "-",
+    action,
+    timestamp: timestamp || new Date().toISOString().slice(0, 16).replace("T", " "),
+  };
+  return updateQuote(quoteNo, { actionLogs: [...(quote.actionLogs || []), entry] });
 };
 
 export const deleteQuote = (quoteNo) => {
@@ -336,3 +391,25 @@ export const PAYMENT_TERMS_OPTIONS = ["Net 15", "Net 30", "Net 60", "Net 90", "C
 export const INCOTERMS_OPTIONS = ["EXW", "FOB", "CIF", "CFR", "DAP", "DDP"];
 export const SHIPPING_METHOD_OPTIONS = ["Sea Freight", "Air Freight", "Land Freight", "Courier", "Customer Pickup"];
 export const DISPUTE_RESOLUTION_OPTIONS = ["Arbitration", "Mediation", "Litigation", "Negotiation"];
+
+// Shared helpers used by both QuoteDetailPage and the Customer Portal so the
+// two surfaces never drift on currency formatting or status→badge mapping.
+export const formatCurrency = (value, currency = "IDR") =>
+  `${currency} ${Number(value || 0).toLocaleString("en-US")}`;
+
+export const getStatusBadgeVariant = (status) => {
+  switch (status) {
+    case "Approved":
+      return "green";
+    case "Issued":
+      return "orange";
+    case "Submitted":
+      return "blue";
+    case "Rejected":
+      return "red";
+    case "Need Revision":
+      return "yellow";
+    default:
+      return "grey";
+  }
+};

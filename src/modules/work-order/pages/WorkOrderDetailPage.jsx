@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Send, Truck } from "lucide-react";
+import { Send, Truck, AlertTriangle } from "lucide-react";
 import { AddIcon, Box, Building2, CheckIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, CircleDollarSign, CloseIcon, DeleteIcon, DocumentIcon, DownloadIcon, EditIcon, FileText, Info, Minus, Plus, Upload, Users } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
@@ -259,6 +259,33 @@ const initialRequestHistory = (woId) => {
   if (woId === COMPLETED_REQUEST_WO) return COMPLETED_REQUEST_HISTORY;
   if (woId === IN_PROGRESS_REQUEST_WO) return IN_PROGRESS_REQUEST_HISTORY;
   return [];
+};
+
+// Shared by the Activity Log and Costing Log seeding below: for a completed
+// request in a WO's seeded request history, builds what materials/quantities
+// were actually received (mirrors what a live Confirm Receipt records via
+// addWoActivityLog/addWoCostingLog in MaterialRequestDetailPage.jsx).
+// Returns null when the request can't be found or nothing was received.
+const buildReceivedMaterials = (requestId) => {
+  const fullRequest = getRequests().find((r) => r.requestId === requestId);
+  const completedLog = fullRequest?.logs?.find((l) => l.statusKey === "completed");
+  const [logDate, logTime] = (completedLog?.timestamp || "").split("; ");
+  const items = (fullRequest?.items || [])
+    .map((it) => ({
+      name: it.name,
+      unit: it.unit,
+      qty: it.allocation?.fulfillableQty ?? it.requestedQty ?? 0,
+      requestedQty: it.requestedQty ?? 0,
+      unitCost: MOCK_MATERIALS_DATA.find((m) => m.sku === it.sku)?.averageCost || 0,
+      batch: (it.allocation?.batches || []).map((b) => b.batch).filter(Boolean).join(", ") || "N/A",
+    }))
+    .filter((it) => it.qty > 0);
+  if (items.length === 0) return null;
+  return {
+    by: completedLog?.by || null,
+    timestamp: logDate ? `${logDate} at ${logTime || "00:00"}` : null,
+    items,
+  };
 };
 
 const REQUEST_STATUS_VARIANT = {
@@ -664,19 +691,21 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, initialDat
       name: "Natasha Smith", email: "natasha@company.com", title: "Created", timestamp: `${baseCreatedTs} at 08:00`
     });
 
-    // Ongoing work order: record each seeded material request in the activity log.
-    // Material requests happen after the WO is ready to process, so any request
-    // dated at/before "Ready to Process" is placed just after it (keeping order).
-    if (initialData?.wo === ONGOING_REQUEST_WO) {
+    // Work orders with a seeded material request history: record each request
+    // in the activity log. Material requests happen after the WO is ready to
+    // process, so any request dated at/before "Ready to Process" is placed
+    // just after it (keeping order).
+    if (initialData?.wo === ONGOING_REQUEST_WO || initialData?.wo === IN_PROGRESS_REQUEST_WO) {
+      const history = initialData.wo === ONGOING_REQUEST_WO ? ONGOING_REQUEST_HISTORY : IN_PROGRESS_REQUEST_HISTORY;
       const readyDate = new Date(`${startDate} at 09:00`.replace(" at ", "T"));
-      ONGOING_REQUEST_HISTORY.forEach((req, i) => {
+      history.forEach((req, i) => {
         const [datePart, timePart] = (req.date || "").split("; ");
         const [dd, mm, yyyy] = (datePart || "").split("/");
         let ts = yyyy && mm && dd ? `${yyyy}-${mm}-${dd} at ${timePart || "00:00"}` : null;
         const tsDate = ts ? new Date(ts.replace(" at ", "T")) : null;
         if (!tsDate || tsDate <= readyDate) {
           // Sit just after ready-to-process; earlier history rows get later minutes.
-          const minute = ONGOING_REQUEST_HISTORY.length - i;
+          const minute = history.length - i;
           ts = `${startDate} at 09:${String(minute).padStart(2, "0")}`;
         }
         mockLogs.push({
@@ -686,6 +715,24 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, initialDat
           desc: req.id,
           timestamp: ts,
         });
+
+        // Received requests get a matching "Material Received" entry too, mirroring
+        // what addWoActivityLog("Material Received", ...) records for a live Confirm
+        // Receipt action (see MaterialRequestDetailPage.jsx handleConfirmReceipt).
+        // Timestamp comes from that request's own "completed" log so it lines up
+        // with what the Material Request module shows.
+        if (req.status === "Completed") {
+          const received = buildReceivedMaterials(req.id);
+          const receivedBy = received?.by || req.by;
+          const itemLines = (received?.items || []).map((it) => `• ${it.name}: ${it.qty}${it.requestedQty && it.requestedQty !== it.qty ? `/${it.requestedQty}` : ""} ${it.unit} (${it.batch})`).join("\n");
+          mockLogs.push({
+            name: receivedBy,
+            email: `${(receivedBy || "user").trim().split(" ")[0].toLowerCase()}@company.com`,
+            title: "Material Received",
+            desc: itemLines ? `${req.id} received:\n${itemLines}` : req.id,
+            timestamp: received?.timestamp || ts,
+          });
+        }
       });
     }
 
@@ -701,6 +748,16 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, initialDat
           name: "Natasha Smith", email: "natasha@company.com", title: "Material Request",
           desc: "REQ0199099", timestamp: "2026-04-01 at 09:05",
         },
+        // Matches REQ0199099's own "completed" log timestamp in materialRequestMocks.js.
+        (() => {
+          const received = buildReceivedMaterials("REQ0199099");
+          const itemLines = (received?.items || []).map((it) => `• ${it.name}: ${it.qty}${it.requestedQty && it.requestedQty !== it.qty ? `/${it.requestedQty}` : ""} ${it.unit} (${it.batch})`).join("\n");
+          return {
+            name: received?.by || "Natasha Smith", email: "natasha@company.com", title: "Material Received",
+            desc: itemLines ? `REQ0199099 received:\n${itemLines}` : "REQ0199099",
+            timestamp: received?.timestamp || "2026-04-01 at 12:00",
+          };
+        })(),
         {
           name: "Natasha Smith", email: "natasha@company.com", title: "Assignment Created",
           desc: "WOA-9003 for Bintang Sejahtera\nSteps: 3 · Qty: 4", timestamp: "2026-04-04 at 08:00",
@@ -830,8 +887,54 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, initialDat
           desc: `Received 3 unit(s) for assignment WOA-9002 (PT Mitra Sejahtera) via PO PO-202604-0100 at ${formatIDR(250000)}/unit.`,
           timestamp: "2026-04-07 at 11:05",
         },
+        // Mirrors addWoCostingLog("Material Cost Updated", ...) from a live
+        // Confirm Receipt (see MaterialRequestDetailPage.jsx) for REQ0199099,
+        // the request backing this work order.
+        ...(() => {
+          const received = buildReceivedMaterials("REQ0199099");
+          if (!received) return [];
+          const totalCost = received.items.reduce((sum, it) => sum + it.qty * it.unitCost, 0);
+          const costLines = received.items
+            .map((it) => `• ${it.name}: ${formatIDR(it.qty * it.unitCost)} (${it.qty} ${it.unit})`)
+            .join("\n");
+          return [{
+            name: received.by || "Natasha Smith",
+            email: `${(received.by || "natasha").trim().split(" ")[0].toLowerCase()}@company.com`,
+            title: "Material Cost Updated",
+            desc: `REQ0199099 received, adding ${formatIDR(totalCost)} to Actual COGS material cost:\n${costLines}`,
+            timestamp: received.timestamp || "2026-04-01 at 12:00",
+          }];
+        })(),
       ];
     }
+
+    // Work orders with a seeded material request history: a completed request's
+    // receipt also lands a "Material Cost Updated" entry here, since it changes
+    // the Actual COGS material breakdown (mirrors the live Confirm Receipt flow).
+    if (initialData?.wo === ONGOING_REQUEST_WO || initialData?.wo === IN_PROGRESS_REQUEST_WO) {
+      const history = initialData.wo === ONGOING_REQUEST_WO ? ONGOING_REQUEST_HISTORY : IN_PROGRESS_REQUEST_HISTORY;
+      const entries = [];
+      history.forEach((req) => {
+        if (req.status !== "Completed") return;
+        const received = buildReceivedMaterials(req.id);
+        if (!received) return;
+        const totalCost = received.items.reduce((sum, it) => sum + it.qty * it.unitCost, 0);
+        const costLines = received.items
+          .map((it) => `• ${it.name}: ${formatIDR(it.qty * it.unitCost)} (${it.qty} ${it.unit})`)
+          .join("\n");
+        entries.push({
+          name: received.by || req.by,
+          email: `${(received.by || req.by || "user").trim().split(" ")[0].toLowerCase()}@company.com`,
+          title: "Material Cost Updated",
+          desc: `${req.id} received, adding ${formatIDR(totalCost)} to Actual COGS material cost:\n${costLines}`,
+          timestamp: received.timestamp,
+        });
+      });
+      if (entries.length > 0) {
+        return entries.sort((a, b) => new Date(b.timestamp.replace(" at ", "T")) - new Date(a.timestamp.replace(" at ", "T")));
+      }
+    }
+
     return [];
   });
 
@@ -1123,6 +1226,16 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
     initialData?.statusKey || "not_started"
   );
   const isCancelled = woStatus === "cancelled";
+  // A planned end date only counts as "overdue" while the work is still
+  // ongoing — a Completed/Cancelled/Not Started WO's planned date being in
+  // the past isn't something still slipping. Mirrors the same check on the
+  // Work Order list page.
+  const isPlannedEndOverdue =
+    woStatus !== "not_started" &&
+    woStatus !== "completed" &&
+    !isCancelled &&
+    !!displayEndDate &&
+    new Date(displayEndDate) < new Date();
 
   // Costing Status ("Open" → "Ready to Finalize" → "Confirmed") is driven by
   // the global Actual COGS setting (Work Order Settings) — read live here, not
@@ -1227,6 +1340,18 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
     });
     return { requestedQty, receivedQty };
   };
+
+  // Actual material cost for a BOM's material lines: unlike computeMaterialCost
+  // (which prices the BOM's per-unit quantities — a forecast, not scaled to this
+  // WO), this sums each line's unit cost against what was actually received
+  // (getLiveMaterialRequestTotals), matching the Actual COGS material breakdown
+  // table's per-row "Total Cost This WO" figures.
+  const computeActualMaterialCost = (bomMaterials = []) =>
+    bomMaterials.reduce((sum, line) => {
+      const unitPrice = resolveMaterialOption(line.materialId)?.averageCost || 0;
+      const qty = getLiveMaterialRequestTotals(line.sku).receivedQty;
+      return sum + unitPrice * qty;
+    }, 0);
 
   const remainingForMaterial = (name) => {
     const m = materials.find((mat) => mat.type === "BOM" && mat.name === name);
@@ -1627,7 +1752,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
   // compute) — material/labour/packing/shipping/overhead/other cover the
   // common case.
   const linkedBomForCogs = actualCogsBomId ? getBom(actualCogsBomId) : null;
-  const materialCostForCogs = requestHistory.length > 0 ? computeMaterialCost(linkedBomForCogs?.materials || []) : 0;
+  const materialCostForCogs = requestHistory.length > 0 ? computeActualMaterialCost(linkedBomForCogs?.materials || []) : 0;
   const totalActualCogsForModal =
     materialCostForCogs +
     fieldTotal(actualCogs.labour) +
@@ -4768,11 +4893,25 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
             <LabelValue
               label="Actual Start - End Date"
               value={
-                woStatus === "not_started"
-                  ? "-"
-                  : woStatus === "completed"
-                  ? `${displayStartDate || "-"} - ${displayEndDate || "-"}`
-                  : `${displayStartDate || "-"} - Not Defined`
+                woStatus === "not_started" ? (
+                  "-"
+                ) : (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                    {woStatus === "completed"
+                      ? `${displayStartDate || "-"} - ${displayEndDate || "-"}`
+                      : `${displayStartDate || "-"} - Not Defined`}
+                    {isPlannedEndOverdue ? (
+                      <Tooltip content="Deadline overdue">
+                        <AlertTriangle
+                          size={16}
+                          color="var(--neutral-surface-primary)"
+                          fill="var(--status-red-primary)"
+                          style={{ flexShrink: 0 }}
+                        />
+                      </Tooltip>
+                    ) : null}
+                  </span>
+                )
               }
             />
             <LabelValue
@@ -6466,7 +6605,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
 
         {activeTab === "cogs" && woStatus !== "not_started" && (() => {
           const linkedBom = actualCogsBomId ? getBom(actualCogsBomId) : null;
-          const materialCost = requestHistory.length > 0 ? computeMaterialCost(linkedBom?.materials || []) : 0;
+          const materialCost = requestHistory.length > 0 ? computeActualMaterialCost(linkedBom?.materials || []) : 0;
 
           // Only count a vendor's outsourcing cost once its assignment has
           // actually been released (sent) to them — an assigned-but-not-yet-
@@ -6815,7 +6954,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       {formatIDR(materialCost)}
                     </span>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                      <ActualVsForecastBadge actual={materialCost} forecast={computeMaterialCost(linkedBom?.materials || [])} />
+                      <ActualVsForecastBadge actual={materialCost} forecast={computeMaterialCost(linkedBom?.materials || []) * TOTAL_QTY} />
                       <span style={{ fontSize: "14px", color: "var(--neutral-on-surface-secondary)" }}>
                         {formatIDR(TOTAL_QTY > 0 ? materialCost / TOTAL_QTY : 0)} / unit
                       </span>
@@ -6946,7 +7085,10 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <Truck size={16} color="var(--neutral-on-surface-secondary)" style={{ marginTop: "2px" }} />
                         <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span style={{ color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>Outsourcing Cost</span>
+                          <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>
+                            Outsourcing Cost
+                            <StatusBadge variant="grey-light">Auto-calculated</StatusBadge>
+                          </span>
                           <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)" }}>
                             Cost of routing steps assigned to external vendors, updated when the related purchase order is received
                           </span>

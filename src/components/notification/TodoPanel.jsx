@@ -35,6 +35,7 @@ export const TodoPanel = () => {
   const [search, setSearch] = useState("");
   const [moduleFilter, setModuleFilter] = useState([]); // empty = all
   const [statusFilter, setStatusFilter] = useState([]); // empty = all
+  const [sortOrder, setSortOrder] = useState("oldest"); // "oldest" | "newest" — oldest first by default
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [loadingMore, setLoadingMore] = useState(false);
   const loadMoreTimerRef = useRef(null);
@@ -42,9 +43,14 @@ export const TodoPanel = () => {
   const sentinelRef = useRef(null);
 
   const L = {
-    en: { title: "Need To Do", module: "Module", status: "Status", allModule: "All Modules", allStatus: "All Status", search: "Search to-do", empty: "You are all caught up — no actions needed right now.", seeDetail: "See Detail" },
-    id: { title: "Perlu Dikerjakan", module: "Modul", status: "Status", allModule: "Semua Modul", allStatus: "Semua Status", search: "Cari tugas", empty: "Anda sudah selesai — tidak ada tindakan yang diperlukan saat ini.", seeDetail: "Lihat Detail" },
+    en: { title: "Need To Do", module: "Module", status: "Status", allModule: "All Modules", allStatus: "All Status", search: "Search to-do", empty: "You are all caught up — no actions needed right now.", seeDetail: "See Detail", sort: "Sort", oldest: "Oldest", newest: "Newest" },
+    id: { title: "Perlu Dikerjakan", module: "Modul", status: "Status", allModule: "Semua Modul", allStatus: "Semua Status", search: "Cari tugas", empty: "Anda sudah selesai — tidak ada tindakan yang diperlukan saat ini.", seeDetail: "Lihat Detail", sort: "Urutkan", oldest: "Terlama", newest: "Terbaru" },
   }[language === "id" ? "id" : "en"];
+
+  const sortOptions = [
+    { value: "oldest", label: L.oldest },
+    { value: "newest", label: L.newest },
+  ];
 
   // Filter option lists (multi-select; empty selection = all).
   const moduleOptions = [];
@@ -62,19 +68,24 @@ export const TodoPanel = () => {
   const filteredRows = todoItems
     .filter((i) => moduleFilter.length === 0 || moduleFilter.includes(i.module))
     .filter((i) => statusFilter.length === 0 || statusFilter.includes(i.todo?.type))
-    .filter((i) => !q || `${i.entityId} ${t(i.title)} ${t(i.body)}`.toLowerCase().includes(q));
+    .filter((i) => !q || `${i.entityId} ${t(i.title)} ${t(i.body)}`.toLowerCase().includes(q))
+    .sort((a, b) =>
+      sortOrder === "oldest"
+        ? (a.createdAt || "").localeCompare(b.createdAt || "")
+        : (b.createdAt || "").localeCompare(a.createdAt || "")
+    );
   // Default view shows PAGE_SIZE cards; more load as the sentinel scrolls
   // into view instead of rendering the whole filtered list at once.
   const rows = filteredRows.slice(0, visibleCount);
   const hasMore = filteredRows.length > rows.length;
 
-  // Reset back to the first page whenever the filters/search change the
+  // Reset back to the first page whenever the filters/search/sort change the
   // underlying result set, so pagination matches what's actually visible.
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
     setLoadingMore(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, moduleFilter, statusFilter]);
+  }, [search, moduleFilter, statusFilter, sortOrder]);
 
   useEffect(
     () => () => {
@@ -141,7 +152,7 @@ export const TodoPanel = () => {
           animation: todoSkeletonPulse 1.2s ease-in-out infinite;
         }
       `}</style>
-      <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", flex: 1, width: "100%", height: "100%", minHeight: 0 }}>
+      <div style={{ background: "#fff", borderRadius: "16px", border: "1px solid #E5E7EB", display: "flex", flexDirection: "column", flex: 1, width: "100%", maxHeight: "100%", minHeight: 0 }}>
         {/* Title */}
         <div style={{ flexShrink: 0, padding: "20px 24px 0", display: "flex", alignItems: "center", gap: "10px" }}>
           <span style={{ fontSize: "16px", fontWeight: 700, color: "#1A1D23" }}>{L.title}</span>
@@ -164,6 +175,7 @@ export const TodoPanel = () => {
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <FilterPill label={L.module} options={moduleOptions} multiple searchable={false} values={moduleFilter} onChangeMultiple={setModuleFilter} size="sm" />
             <FilterPill label={L.status} options={statusOptions} multiple searchable={false} values={statusFilter} onChangeMultiple={setStatusFilter} size="sm" />
+            <FilterPill label={L.sort} options={sortOptions} searchable={false} value={sortOrder} onChange={(v) => setSortOrder(v || "oldest")} size="sm" />
           </div>
           <div style={{ width: "320px", maxWidth: "100%" }}>
             <SearchBar value={search} onChange={(e) => setSearch(e.target.value)} placeholder={L.search} onClear={() => setSearch("")} />

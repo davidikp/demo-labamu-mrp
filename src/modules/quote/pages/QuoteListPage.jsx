@@ -7,7 +7,7 @@ import { ListStatusCounterCard } from "../../../components/common/ListStatusCoun
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
-import { MOCK_QUOTES } from "../mock/quoteMocks.js";
+import { MOCK_QUOTES, subscribeToQuoteSync } from "../mock/quoteMocks.js";
 import { cellStyle } from "../utils/quoteTableUtils.js";
 
 export const QuoteListPage = ({ onNavigate, t }) => {
@@ -18,6 +18,11 @@ export const QuoteListPage = ({ onNavigate, t }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
+  // MOCK_QUOTES is read directly in render (no local mirror), so a cross-tab
+  // update (e.g. from a Customer Portal tab) just needs to trigger a
+  // re-render — this page will re-read the shared array fresh.
+  const [, forceRerender] = useState(0);
+  useEffect(() => subscribeToQuoteSync(() => forceRerender((n) => n + 1)), []);
 
   const tableColumns = [
     { label: "Quote No", key: "quoteNo", flex: "1.6", sortable: true },

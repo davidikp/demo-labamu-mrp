@@ -892,6 +892,29 @@ export const MOCK_WO_TABLE_DATA = [
       },
     },
   },
+  {
+    // Demo work order with a planned end date already in the past while
+    // still in progress — shows the "Deadline overdue" warning icon/tooltip
+    // on the Work Order list's Planned Date column.
+    wo: "WO-2026-05-00042",
+    ord: "ORD-2026-05-00042",
+    targetType: "Product",
+    fulfillmentType: "CustomerOrder",
+    postedToStock: false,
+    product: "Overdue Oak Cabinet",
+    sku: "OAK-CAB-0042",
+    qty: 30,
+    priority: "High",
+    pColor: "var(--status-red-primary)",
+    pBadge: "red-light",
+    start: "2026-05-01",
+    end: "2026-05-31",
+    createdBy: "Patricia",
+    status: "In Progress",
+    statusKey: "in_progress",
+    sBadge: "yellow",
+    bomId: "BOM-000001",
+  },
 ];
 
 // Costing status derivation — whether Actual COGS gets gated by routing

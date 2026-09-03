@@ -122,9 +122,10 @@ export const DashboardPage = () => {
           ))}
         </div>
 
-        {/* Need To Do — sticks to the top once scrolled into view, then its rows
-            scroll internally (fills the viewport height). */}
-        <div style={{ flexShrink: 0, position: "sticky", top: "24px", height: "calc(100vh - 64px - 48px)", display: "flex" }}>
+        {/* Need To Do — sticks to the top once scrolled into view. Hugs its
+            content when the list is short; caps at the available viewport
+            height and scrolls internally once it grows past that. */}
+        <div style={{ flexShrink: 0, position: "sticky", top: "24px", maxHeight: "calc(100vh - 64px - 48px)", display: "flex" }}>
           <TodoPanel />
         </div>
       </div>
