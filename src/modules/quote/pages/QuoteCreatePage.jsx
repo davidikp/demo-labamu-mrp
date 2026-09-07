@@ -1,15 +1,14 @@
 import React, { useState } from "react";
-import { ChevronLeftIcon, AddIcon, CheckIcon } from "../../../components/icons/Icons.jsx";
+import { ChevronLeftIcon, AddIcon, CheckIcon, ChevronDownIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
 import { Tooltip } from "../../../components/common/Tooltip.jsx";
-import { FormField, InputField, PhoneInputField, UploadDropzone } from "../../../components/index.js";
+import { FormField, InputField, PhoneInputField } from "../../../components/index.js";
 import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
-import { Dropdown as CeDropdown } from "../../../ce-ui";
+import { Dropdown as CeDropdown, DocumentUploadField } from "../../../ce-ui";
 import { COUNTRY_OPTIONS } from "../../../constants/appConstants.js";
-import { UploadDescriptionCard } from "../../purchase-order/components/detail/shared/PoDetailSharedComponents.jsx";
 import { PersonInChargeTable, nextPicRowId } from "../../customer/components/PersonInChargeTable.jsx";
-import { MOCK_CUSTOMER_TAGS } from "../../customer/mock/customerMocks.js";
+import { MOCK_CUSTOMER_TAGS, MOCK_CUSTOMERS } from "../../customer/mock/customerMocks.js";
 import { QuoteProductModal } from "../components/QuoteProductModal.jsx";
 import {
   createQuote,
@@ -22,6 +21,7 @@ import {
   INCOTERMS_OPTIONS,
   SHIPPING_METHOD_OPTIONS,
   DISPUTE_RESOLUTION_OPTIONS,
+  deriveRiskLevel,
 } from "../mock/quoteMocks.js";
 
 const pageSectionStyle = {
@@ -99,15 +99,15 @@ const tableRowStyle = (isLast) => ({
 
 const rowActionButtonStyle = (color) => ({ color, padding: "0 4px" });
 
-const emptyStateBoxStyle = {
+const emptyStateBoxStyle = (hasError) => ({
   padding: "40px 24px",
   textAlign: "center",
   color: "var(--neutral-on-surface-tertiary)",
   fontSize: "var(--text-title-3)",
   background: "var(--neutral-surface-primary)",
-  border: "1.5px dashed var(--neutral-line-separator-1)",
+  border: `1.5px dashed ${hasError ? "var(--status-red-primary)" : "var(--neutral-line-separator-1)"}`,
   borderRadius: "16px",
-};
+});
 
 // --- Summary (mirrors the Purchase Order create form's Summary card) ------
 const summaryMetricLabelStyle = {
@@ -382,13 +382,93 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
       : []
   );
 
+  // Customer Name search/select — mirrors the Purchase Order create form's
+  // Vendor Name field: typing filters existing customers, picking one
+  // prefills + locks the rest of Customer Information (and its PIC list);
+  // typing a name that matches nothing offers "add as new customer", which
+  // clears/unlocks everything else for manual entry.
+  const [customerSearch, setCustomerSearch] = useState(() =>
+    isEditMode ? initialData.customer?.name || initialData.customerName || "" : ""
+  );
+  const [isCustomerLocked, setIsCustomerLocked] = useState(false);
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const [isCustomerFieldFocused, setIsCustomerFieldFocused] = useState(false);
+
   const setField = (patch) => setForm((prev) => ({ ...prev, ...patch }));
-  const setTerm = (patch) => setTerms((prev) => ({ ...prev, ...patch }));
+  // Risk Level is derived, not entered — recompute it whenever a patch touches
+  // either of its inputs, using the post-patch values.
+  const setTerm = (patch) =>
+    setTerms((prev) => {
+      const next = { ...prev, ...patch };
+      if ("paymentTerms" in patch || "incoterms" in patch) {
+        next.riskLevel = deriveRiskLevel(next.paymentTerms, next.incoterms);
+      }
+      return next;
+    });
 
   const tagOptions = MOCK_CUSTOMER_TAGS.filter((tag) => tag.status === "Active").map((tag) => ({
     value: tag.id,
     label: tag.name,
   }));
+
+  const customerSuggestions = MOCK_CUSTOMERS.filter((c) =>
+    c.name.toLowerCase().includes(customerSearch.trim().toLowerCase())
+  );
+  const customerHasExactMatch = MOCK_CUSTOMERS.some(
+    (c) => c.name.toLowerCase() === customerSearch.trim().toLowerCase()
+  );
+
+  // Prefills Customer Information + Person In Charge from an existing
+  // customer record and locks those fields against further edits.
+  const applyCustomerRecord = (customer) => {
+    setField({
+      customerName: customer.name,
+      customerEmail: customer.email || "",
+      customerPhone: customer.phone || "+62",
+      customerCountry: customer.country || "",
+      customerAddress: customer.address || "",
+      customerTags: customer.tags || [],
+    });
+    setPics(
+      customer.pics?.length
+        ? customer.pics.map((p) => ({ ...p }))
+        : [{ id: nextPicRowId(), primary: true, name: "", email: "", role: "Approver", phone: "+62" }]
+    );
+    setIsCustomerLocked(true);
+  };
+
+  const handleCustomerInputChange = (value) => {
+    setCustomerSearch(value);
+    setField({ customerName: value });
+    setShowCustomerSuggestions(true);
+    if (!value.trim()) {
+      setIsCustomerLocked(false);
+      return;
+    }
+    const exact = MOCK_CUSTOMERS.find((c) => c.name.toLowerCase() === value.trim().toLowerCase());
+    if (exact) applyCustomerRecord(exact);
+    else if (isCustomerLocked) setIsCustomerLocked(false);
+  };
+
+  const handleSelectCustomerSuggestion = (customer) => {
+    setCustomerSearch(customer.name);
+    applyCustomerRecord(customer);
+    setShowCustomerSuggestions(false);
+  };
+
+  const handleAddNewCustomerOption = () => {
+    setField({
+      customerName: customerSearch.trim(),
+      customerEmail: "",
+      customerPhone: "+62",
+      customerCountry: "",
+      customerAddress: "",
+      customerTags: [],
+    });
+    setPics([{ id: nextPicRowId(), primary: true, name: "", email: "", role: "Approver", phone: "+62" }]);
+    setIsCustomerLocked(false);
+    setShowCustomerSuggestions(false);
+  };
 
   const saveProductLine = (line) => {
     setProducts((prev) =>
@@ -445,12 +525,20 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
     if (!form.customerName.trim()) errors.customerName = "Field cannot be empty";
     if (!form.customerCountry) errors.customerCountry = "Field cannot be empty";
     if (!form.customerAddress.trim()) errors.customerAddress = "Field cannot be empty";
+
+    const picFieldErrors = {};
+    pics.forEach((row) => {
+      if (!row.name?.trim()) picFieldErrors[`${row.id}_name`] = "Field cannot be empty";
+      if (!row.email?.trim()) picFieldErrors[`${row.id}_email`] = "Field cannot be empty";
+    });
+    if (Object.keys(picFieldErrors).length > 0) errors.picFieldErrors = picFieldErrors;
+
     return errors;
   };
 
   const validateProductsStep = () => {
     const errors = {};
-    if (products.length === 0) errors.products = "Add at least one product";
+    if (products.length === 0) errors.products = "Please add at least one product";
     return errors;
   };
 
@@ -591,7 +679,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
         <div style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", marginLeft: "-4px" }} onClick={handleCancel}>
           <ChevronLeftIcon size={28} color="var(--neutral-on-surface-primary)" />
           <h1 style={{ margin: 0, fontSize: "var(--text-large-title)", fontWeight: "var(--font-weight-bold)" }}>
-            {isEditMode ? "Edit Quote" : "Create Quote"}
+            {isEditMode ? "Edit Quote" : "Add New Quote"}
           </h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "var(--text-title-3)", marginLeft: "32px" }}>
@@ -599,7 +687,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
             Quotes
           </span>
           <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>/</span>
-          <span style={{ color: "var(--neutral-on-surface-secondary)" }}>{isEditMode ? "Edit Quote" : "Create Quote"}</span>
+          <span style={{ color: "var(--neutral-on-surface-secondary)" }}>{isEditMode ? "Edit Quote" : "Add New Quote"}</span>
         </div>
       </div>
 
@@ -655,14 +743,115 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
             <div style={sectionBodyStyle}>
               <div style={{ display: "flex", gap: "16px" }}>
                 <div style={{ flex: 1 }}>
-                  <InputField
-                    label="Customer Name"
-                    required
-                    value={form.customerName}
-                    onChange={(e) => setField({ customerName: e.target.value })}
-                    placeholder="e.g. PT ABC Manufacturing"
-                    error={stepErrors.customerName}
-                  />
+                  <FormField label="Customer Name" required error={stepErrors.customerName}>
+                    <div style={{ position: "relative" }}>
+                      <input
+                        value={customerSearch}
+                        onChange={(e) => handleCustomerInputChange(e.target.value)}
+                        onFocus={() => {
+                          setIsCustomerFieldFocused(true);
+                          setShowCustomerSuggestions(true);
+                        }}
+                        onBlur={() => setTimeout(() => setIsCustomerFieldFocused(false), 120)}
+                        placeholder="e.g. PT ABC Manufacturing"
+                        style={{
+                          width: "100%",
+                          height: "48px",
+                          padding: "0 40px 0 16px",
+                          borderRadius: "10px",
+                          border: `1px solid ${
+                            stepErrors.customerName
+                              ? "var(--status-red-primary)"
+                              : isCustomerFieldFocused
+                              ? "var(--feature-brand-primary)"
+                              : "var(--neutral-line-separator-1)"
+                          }`,
+                          fontSize: "var(--text-subtitle-1)",
+                          color: "var(--neutral-on-surface-primary)",
+                          outline: "none",
+                          boxSizing: "border-box",
+                          background: "var(--neutral-surface-primary)",
+                        }}
+                      />
+                      <ChevronDownIcon
+                        size={18}
+                        color="var(--neutral-on-surface-secondary)"
+                        style={{
+                          position: "absolute",
+                          right: "14px",
+                          top: "50%",
+                          transform: `translateY(-50%) ${showCustomerSuggestions ? "rotate(180deg)" : "rotate(0deg)"}`,
+                          transition: "transform 0.15s ease",
+                          pointerEvents: "none",
+                        }}
+                      />
+                      {showCustomerSuggestions ? (
+                        <>
+                          <div
+                            style={{ position: "fixed", inset: 0, zIndex: 29 }}
+                            onClick={() => setShowCustomerSuggestions(false)}
+                          />
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "52px",
+                              left: 0,
+                              right: 0,
+                              background: "var(--neutral-surface-primary)",
+                              border: "1px solid var(--neutral-line-separator-1)",
+                              borderRadius: "12px",
+                              boxShadow: "0px 8px 20px rgba(27, 27, 27, 0.12)",
+                              overflow: "hidden",
+                              zIndex: 30,
+                              maxHeight: "260px",
+                              overflowY: "auto",
+                            }}
+                          >
+                            {customerSuggestions.map((customer) => (
+                              <div
+                                key={customer.id}
+                                onClick={() => handleSelectCustomerSuggestion(customer)}
+                                style={{
+                                  minHeight: "48px",
+                                  padding: "0 16px",
+                                  cursor: "pointer",
+                                  borderBottom: "1px solid var(--neutral-line-separator-1)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  fontSize: "var(--text-subtitle-1)",
+                                  color: "var(--neutral-on-surface-primary)",
+                                  background: "var(--neutral-surface-primary)",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--neutral-surface-grey-lighter)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = "var(--neutral-surface-primary)")}
+                              >
+                                {customer.name}
+                              </div>
+                            ))}
+                            {!customerHasExactMatch && customerSearch.trim() ? (
+                              <div
+                                onClick={handleAddNewCustomerOption}
+                                style={{
+                                  minHeight: "44px",
+                                  padding: "0 16px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  fontSize: "var(--text-subtitle-1)",
+                                  color: "var(--feature-brand-primary)",
+                                  cursor: "pointer",
+                                  background: "var(--neutral-surface-primary)",
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--feature-brand-container-lighter)")}
+                                onMouseLeave={(e) => (e.currentTarget.style.background = "var(--neutral-surface-primary)")}
+                              >
+                                + Add "{customerSearch.trim()}" as new customer
+                              </div>
+                            ) : null}
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
+                  </FormField>
                 </div>
                 <div style={{ flex: 1 }}>
                   <InputField
@@ -672,6 +861,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     onChange={(e) => setField({ customerEmail: e.target.value })}
                     placeholder="customer@example.com"
                     helperText="Use official company email address"
+                    disabled={isCustomerLocked}
                   />
                 </div>
                 <div style={{ flex: 1 }}>
@@ -681,6 +871,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     onChange={(val) => setField({ customerPhone: val })}
                     helperText="Use main office/HQ phone number"
                     shellStyle={{ minHeight: "48px" }}
+                    disabled={isCustomerLocked}
                   />
                 </div>
               </div>
@@ -697,6 +888,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                       options={tagOptions}
                       value={form.customerTags}
                       onChange={(vals) => setField({ customerTags: vals.slice(0, 5) })}
+                      disabled={isCustomerLocked}
                     />
                   </FormField>
                 </div>
@@ -708,6 +900,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                       options={COUNTRY_OPTIONS.map((c) => ({ value: c.value, label: `${c.flag} ${c.label}` }))}
                       placeholder="Select customer country"
                       hasError={!!stepErrors.customerCountry}
+                      disabled={isCustomerLocked}
                       searchable
                     />
                   </FormField>
@@ -723,6 +916,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     onChange={(e) => setField({ customerAddress: e.target.value })}
                     placeholder="Enter registered company address"
                     error={stepErrors.customerAddress}
+                    disabled={isCustomerLocked}
                   />
                   {/* Rendered manually rather than via `helperText` — ce-ui gives a
                       multiline field the same 4px gap as a single-line one, which
@@ -735,12 +929,19 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                 </div>
               </div>
             </div>
-          </div>
 
-          <div style={pageSectionStyle}>
-            {sectionHeader("Person In Charge")}
-            <div style={{ padding: "18px 20px 20px 20px" }}>
-              <PersonInChargeTable pics={pics} onChange={setPics} />
+            <div style={{ borderTop: "1px solid var(--neutral-line-separator-1)" }} />
+
+            <div style={sectionBodyStyle}>
+              <span style={{ fontSize: "var(--text-title-1)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                Person In Charge
+              </span>
+              <PersonInChargeTable
+                pics={pics}
+                onChange={setPics}
+                fieldErrors={stepErrors.picFieldErrors || {}}
+                readOnly={isCustomerLocked}
+              />
             </div>
           </div>
         </>
@@ -800,7 +1001,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                   </div>
                 </div>
               ) : (
-                <div style={emptyStateBoxStyle}>No products added yet. Click "Add Product" to get started.</div>
+                <div style={emptyStateBoxStyle(!!stepErrors.products)}>No products added yet. Click "Add Product" to get started.</div>
               )}
             </div>
           </div>
@@ -869,34 +1070,20 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
 
       {currentStep === 2 ? (
         <>
-          {/* Attachments — same dropzone + file card as the Purchase Order
-              document upload (PoDocumentModals / UploadDescriptionCard). */}
+          {/* Attachments — ce-ui's DocumentUploadField (drop zone + file list). */}
           <div style={pageSectionStyle}>
             {sectionHeader("Attachments")}
             <div style={sectionBodyStyle}>
-              <FormField label="Upload Documents" helperText={`Max ${MAX_ATTACHMENTS} files, 30MB each`}>
-                <UploadDropzone
-                  multiple
-                  accept="*"
-                  maxFiles={MAX_ATTACHMENTS}
-                  maxText={`Max ${MAX_ATTACHMENTS} files, 30MB each`}
-                  allowedText="Accepts any file type"
-                  disabled={attachments.length >= MAX_ATTACHMENTS}
-                  onFilesSelected={addAttachments}
-                />
-              </FormField>
-              {attachments.length > 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  {attachments.map((file) => (
-                    <UploadDescriptionCard
-                      key={file.id}
-                      file={file}
-                      hideDescriptionField
-                      onRemove={() => removeAttachment(file.id)}
-                    />
-                  ))}
-                </div>
-              ) : null}
+              <DocumentUploadField
+                label="Upload Documents"
+                files={attachments.map((a) => ({ id: a.id, name: a.name, description: "" }))}
+                maxFiles={MAX_ATTACHMENTS}
+                maxSizeMB={30}
+                accept="*"
+                showDescription={false}
+                onAdd={(files) => addAttachments(files)}
+                onRemove={removeAttachment}
+              />
             </div>
           </div>
 
@@ -923,7 +1110,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
               {selectedBank ? (
                 <div
                   style={{
-                    background: "var(--neutral-surface-secondary)",
+                    background: "var(--neutral-surface-grey-lighter)",
                     borderRadius: "12px",
                     padding: "20px 24px",
                     display: "grid",
@@ -979,7 +1166,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                   <DropdownSelect
                     value={terms.incoterms}
                     onChange={(val) => setTerm({ incoterms: val })}
-                    options={toOptions(INCOTERMS_OPTIONS)}
+                    options={INCOTERMS_OPTIONS}
                     placeholder="Select incoterms"
                   />
                 </FormField>
@@ -988,7 +1175,13 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                 {/* Risk Level is derived from the selected Incoterms / screening
                     result rather than entered here, so it stays read-only. */}
                 <FormField label={labelWithHint("Risk Level", TERMS_TOOLTIPS.riskLevel)}>
-                  <DropdownSelect value={terms.riskLevel} onChange={() => {}} options={[]} placeholder="-" disabled />
+                  <DropdownSelect
+                    value={terms.riskLevel}
+                    onChange={() => {}}
+                    options={toOptions(["Low", "Medium", "High"])}
+                    placeholder="-"
+                    disabled
+                  />
                 </FormField>
               </div>
             </div>
@@ -1049,7 +1242,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     <InputField
                       multiline
                       showCounter
-                      maxLength={2000}
+                      maxLength={5000}
                       value={terms[key] || ""}
                       onChange={(e) => setTerm({ [key]: e.target.value })}
                       placeholder={placeholder}

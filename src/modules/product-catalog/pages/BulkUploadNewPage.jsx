@@ -26,6 +26,7 @@ import { SkipNormalizationConfirmModal } from "../components/SkipNormalizationCo
 import { UseTemplateSuggestionModal } from "../components/UseTemplateSuggestionModal.jsx";
 import { AnalyzingFileBlockerModal } from "../components/AnalyzingFileBlockerModal.jsx";
 import { setNavigationGuard, clearNavigationGuard } from "../../../utils/navigationGuard.js";
+import { useNotifications } from "../../../context/NotificationContext.jsx";
 
 const STEPS = [
   { key: "upload", label: "Upload" },
@@ -80,6 +81,7 @@ const Stepper = ({ currentKey }) => {
 };
 
 export const BulkUploadNewPage = ({ onNavigate, showSnackbar, initialData, isSidebarCollapsed }) => {
+  const { resolveTodo } = useNotifications();
   const resumeDraftId = initialData?.resumeDraftId || null;
   const resumeRecord = resumeDraftId ? getBulkUpload(resumeDraftId) : null;
   const resumeAtMapping = resumeRecord?.status === "Mapping";
@@ -395,6 +397,8 @@ export const BulkUploadNewPage = ({ onNavigate, showSnackbar, initialData, isSid
   const handleCancelUpload = (reason) => {
     if (editingDraftId) {
       updateBulkUpload(editingDraftId, { status: "Cancelled", logDesc: reason });
+      // Cancelling the session resolves any pending "Review bulk upload" Todo.
+      resolveTodo("product_catalog", editingDraftId, "bulk_upload");
     }
     showSnackbar?.("Upload cancelled", "info");
     onNavigate("product_catalog_bulk-upload-list");
@@ -450,6 +454,9 @@ export const BulkUploadNewPage = ({ onNavigate, showSnackbar, initialData, isSid
     const record = editingDraftId
       ? updateBulkUpload(editingDraftId, payload)
       : addBulkUpload(payload);
+
+    // Confirming the import resolves any pending "Review bulk upload" Todo.
+    resolveTodo("product_catalog", record.id, "bulk_upload");
 
     setProcessingRecordId(record.id);
     setStep("processing");

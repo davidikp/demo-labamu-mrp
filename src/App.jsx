@@ -1405,8 +1405,10 @@ export default function App() {
     return <PortalRevisionRequestedPage />;
   }
   if (portalQuoteMatch) {
-    const portalRole = new URLSearchParams(location.search).get("role") === "viewer" ? "viewer" : "approver";
-    return <CustomerPortalQuotePage quoteNo={portalQuoteMatch.params.quoteNo} role={portalRole} />;
+    // The role itself is switched live inside CustomerPortalQuotePage (its
+    // own top bar) — an optional ?role= only seeds which one it opens on.
+    const initialPortalRole = new URLSearchParams(location.search).get("role") === "viewer" ? "viewer" : "approver";
+    return <CustomerPortalQuotePage quoteNo={portalQuoteMatch.params.quoteNo} initialRole={initialPortalRole} />;
   }
 
   return (

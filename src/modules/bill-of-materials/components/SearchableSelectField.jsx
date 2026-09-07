@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 // option list is portaled to document.body and positioned with a fixed
 // bounding-box lookup so it always renders above modal content instead of
 // being clipped by the modal's overflow.
-export const SearchableSelectField = ({ label, required, value, onChange, options, placeholder, disabled }) => {
+export const SearchableSelectField = ({ label, required, value, onChange, options, placeholder, disabled, error }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const containerRef = useRef(null);
@@ -70,9 +70,11 @@ export const SearchableSelectField = ({ label, required, value, onChange, option
           style={{
             width: "100%",
             height: "48px",
-            padding: "0 16px",
+            padding: "0 40px 0 16px",
             borderRadius: "8px",
-            border: `1px solid ${open ? "var(--feature-brand-primary)" : "var(--neutral-line-separator-1)"}`,
+            border: `1px solid ${
+              error ? "var(--status-red-primary)" : open ? "var(--feature-brand-primary)" : "var(--neutral-line-separator-1)"
+            }`,
             fontSize: "14px",
             color: "var(--neutral-on-surface-primary)",
             outline: "none",
@@ -80,6 +82,28 @@ export const SearchableSelectField = ({ label, required, value, onChange, option
             background: disabled ? "var(--neutral-surface-grey-lighter)" : "var(--neutral-surface-primary)",
           }}
         />
+        <span
+          style={{
+            position: "absolute",
+            right: "14px",
+            top: "50%",
+            transform: open ? "translateY(-50%) rotate(180deg)" : "translateY(-50%)",
+            transition: "transform 0.15s ease",
+            pointerEvents: "none",
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M4 6l4 4 4-4"
+              stroke={disabled ? "var(--neutral-on-surface-tertiary)" : "var(--neutral-on-surface-secondary)"}
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
       </div>
       {open && !disabled && typeof document !== "undefined"
         ? createPortal(
@@ -110,6 +134,9 @@ export const SearchableSelectField = ({ label, required, value, onChange, option
                       if (opt.value !== value) e.currentTarget.style.background = "transparent";
                     }}
                     style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "2px",
                       padding: "10px 12px",
                       borderRadius: "6px",
                       fontSize: "14px",
@@ -118,7 +145,10 @@ export const SearchableSelectField = ({ label, required, value, onChange, option
                       color: opt.value === value ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-primary)",
                     }}
                   >
-                    {opt.label}
+                    <span>{opt.label}</span>
+                    {opt.secondary ? (
+                      <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-tertiary)" }}>{opt.secondary}</span>
+                    ) : null}
                   </div>
                 ))
               ) : (
@@ -130,6 +160,7 @@ export const SearchableSelectField = ({ label, required, value, onChange, option
             document.body
           )
         : null}
+      {error ? <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>{error}</span> : null}
     </div>
   );
 };

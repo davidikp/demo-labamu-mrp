@@ -1,0 +1,449 @@
+Module,Item,Field,English,Bahasa Indonesia
+Approval,(module),Title,Approval,Persetujuan
+Approval,(module),Description,"Workflow approval events across RFQ, Quote, Order, Purchase Order, and Custom Product Request. Recipients resolve directly from the approval workflow.","Alur persetujuan untuk Permintaan Penawaran, Penawaran, Pesanan, Purchase Order, dan Permintaan Produk Khusus. Penerima notifikasi ditentukan langsung berdasarkan alur persetujuan."
+Approval,Approval Submission,Description,"Notifies all assigned approvers when an RFQ, Quote, Order, Purchase Order, or Custom Product Request is submitted for approval.","Memberi tahu seluruh approver yang ditugaskan ketika Permintaan Penawaran, Penawaran, Pesanan, Purchase Order, atau Permintaan Produk Khusus diajukan untuk persetujuan."
+Approval,Approval Submission,In-app content,"[Entity] [Number] needs your approval
+[Submitter Name] submitted [Entity] [Number] for your approval.
+CTA: See Detail","[Entity] [Number] memerlukan persetujuan Anda
+[Submitter Name] mengirim [Entity] [Number] untuk persetujuan Anda.
+CTA: Lihat Detail"
+Approval,Approval Submission,Email subject,[Entity] [Number] needs your approval,[Entity] [Number] memerlukan persetujuan Anda
+Approval,Approval Submission,Email body,[Submitter Name] submitted [Entity] [Number] for your approval.,[Submitter Name] mengajukan [Entity] [Number] untuk persetujuan Anda.
+Approval,Approval Submission,Email CTA,See Detail,Lihat Detail
+Approval,Approval Progress Update,Description,Notifies the latest submitter when an approver completes their review while other approvals are still pending.,"Memberi tahu pengaju terakhir ketika salah satu approver menyelesaikan peninjauannya, sementara persetujuan dari approver lainnya masih menunggu."
+Approval,Approval Progress Update,In-app content,"[Entity] [Number] approval progressed
+[Approver Name] approved [Entity] [Number]. Awaiting remaining approvers.
+CTA: See Detail","Persetujuan [Entity] [Number] berlanjut
+[Approver Name] menyetujui [Entity] [Number]. Menunggu approver lainnya.
+CTA: Lihat Detail"
+Approval,Approval Progress Update,Email subject,[Entity] [Number] approval progressed,Persetujuan [Entity] [Number] berlanjut
+Approval,Approval Progress Update,Email body,[Approver Name] approved [Entity] [Number]. The request is awaiting the remaining approvers.,[Approver Name] menyetujui [Entity] [Number]. Permintaan sedang menunggu persetujuan dari approver lainnya.
+Approval,Approval Progress Update,Email CTA,See Detail,Lihat Detail
+Approval,Final Approval,Description,Notifies the latest submitter when all required approvers have approved the record.,Memberi tahu pengaju terakhir ketika seluruh approver yang diperlukan telah menyetujui data.
+Approval,Final Approval,In-app content,"[Entity] [Number] has been approved
+[Entity] [Number] has received all required approvals.
+CTA: See Detail","[Entity] [Number] telah disetujui
+[Entity] [Number] telah menerima seluruh persetujuan yang diperlukan.
+CTA: Lihat Detail"
+Approval,Final Approval,Email subject,[Entity] [Number] has been approved,[Entity] [Number] telah disetujui
+Approval,Final Approval,Email body,[Entity] [Number] has received all required approvals.,[Entity] [Number] telah menerima seluruh persetujuan yang diperlukan.
+Approval,Final Approval,Email CTA,See Detail,Lihat Detail
+Approval,Approval Rejected,Description,Notifies the latest submitter when an approver rejects the record.,Memberi tahu pengaju terakhir ketika salah satu approver menolak data.
+Approval,Approval Rejected,In-app content,"[Entity] [Number] was rejected
+[Approver Name] rejected [Entity] [Number]. Reason: [Reason].
+CTA: See Detail","[Entity] [Number] ditolak
+[Approver Name] menolak [Entity] [Number]. Alasan: [Reason].
+CTA: Lihat Detail"
+Approval,Approval Rejected,Email subject,[Entity] [Number] was rejected,[Entity] [Number] ditolak
+Approval,Approval Rejected,Email body,[Approver Name] rejected [Entity] [Number]. Reason: [Reason].,[Approver Name] menolak [Entity] [Number]. Alasan: [Reason].
+Approval,Approval Rejected,Email CTA,See Detail,Lihat Detail
+Approval,Revision Requested,Description,Notifies the latest submitter when an approver requests changes before the record can continue through approval.,Memberi tahu pengaju terakhir ketika approver meminta perubahan sebelum data dapat melanjutkan proses persetujuan.
+Approval,Revision Requested,In-app content,"[Entity] [Number] needs revision
+[Approver Name] requested changes on [Entity] [Number]. Note: [Revision Note].
+CTA: See Detail","[Entity] [Number] perlu revisi
+[Approver Name] meminta perubahan pada [Entity] [Number]. Catatan: [Revision Note].
+CTA: Lihat Detail"
+Approval,Revision Requested,Email subject,[Entity] [Number] needs revision,[Entity] [Number] perlu revisi
+Approval,Revision Requested,Email body,[Approver Name] requested changes on [Entity] [Number]. Note: [Revision Note].,[Approver Name] meminta perubahan pada [Entity] [Number]. Catatan: [Revision Note].
+Approval,Revision Requested,Email CTA,See Detail,Lihat Detail
+Inventory,(module),Title,Inventory,Inventaris
+Inventory,(module),Description,Stock-level and batch-expiry alerts for materials. Sent to eligible users with Inventory access.,Peringatan stok material dan kedaluwarsa batch. Dikirim kepada pengguna yang memiliki Izin Akses Inventaris.
+Inventory,Material Running Low,Description,Notifies eligible users with Materials access when the available quantity reaches or falls below the configured minimum stock level.,Memberi tahu pengguna yang memiliki Izin Akses Materials ketika jumlah stok tersedia mencapai atau berada di bawah batas minimum yang telah dikonfigurasi.
+Inventory,Material Running Low,In-app content,"Material [Material Name] is running low
+Available stock is [Qty] [UOM], at or below the minimum level.
+CTA: See Detail","Stok Material [Material Name] menipis
+Stok tersedia adalah [Qty] [UOM], sama dengan atau di bawah batas minimum.
+CTA: Lihat Detail"
+Inventory,Material Running Low,Email subject,Material [Material Name] is running low,Stok Material [Material Name] menipis
+Inventory,Material Running Low,Email body,"Available stock is [Qty] [UOM], at or below the minimum level.","Stok tersedia adalah [Qty] [UOM], sama dengan atau di bawah batas minimum."
+Inventory,Material Running Low,Email CTA,See Detail,Lihat Detail
+Inventory,Material Out of Stock,Description,Notifies eligible users with Materials access when the available quantity reaches zero.,Memberi tahu pengguna yang memiliki Izin Akses Materials ketika jumlah stok tersedia mencapai nol.
+Inventory,Material Out of Stock,In-app content,"Material [Material Name] is out of stock
+Available stock has reached 0 [UOM].
+CTA: See Detail","Material [Material Name] habis
+Stok tersedia telah mencapai 0 [UOM].
+CTA: Lihat Detail"
+Inventory,Material Out of Stock,Email subject,Material [Material Name] is out of stock,Material [Material Name] habis
+Inventory,Material Out of Stock,Email body,Material [Material Name] has reached zero available stock. Please review the material and replenishment plan.,Material [Material Name] telah mencapai stok nol. Tinjau material dan rencana pengisian ulang.
+Inventory,Material Out of Stock,Email CTA,See Detail,Lihat Detail
+Inventory,Material Expiring Soon,Description,"Notifies eligible users with Batches access before a material batch reaches its expiry date, based on the configured reminder timing.","Memberi tahu pengguna yang memiliki Izin Akses Batches sebelum batch material mencapai tanggal kedaluwarsa, sesuai waktu pengingat yang telah dikonfigurasi."
+Inventory,Material Expiring Soon,In-app content,"Batch [Batch Number] is expiring soon
+Batch [Batch Number] for [Material Name] will expire on [Expiry Date].
+CTA: See Detail","Batch [Batch Number] akan segera kedaluwarsa
+Batch [Batch Number] untuk [Material Name] akan kedaluwarsa pada [Expiry Date].
+CTA: Lihat Detail"
+Inventory,Material Expiring Soon,Email subject,Batch [Batch Number] is expiring soon,Batch [Batch Number] akan segera kedaluwarsa
+Inventory,Material Expiring Soon,Email body,Batch [Batch Number] for [Material Name] will expire on [Expiry Date].,Batch [Batch Number] untuk [Material Name] akan kedaluwarsa pada [Expiry Date].
+Inventory,Material Expiring Soon,Email CTA,See Detail,Lihat Detail
+Inventory,Material Expired,Description,Notifies eligible users with Batches access when a material batch reaches its expiry date.,Memberi tahu pengguna yang memiliki Izin Akses Batches ketika batch material mencapai tanggal kedaluwarsa.
+Inventory,Material Expired,In-app content,"Batch [Batch Number] has expired
+Batch [Batch Number] for [Material Name] expired on [Expiry Date].
+CTA: See Detail","Batch [Batch Number] telah kedaluwarsa
+Batch [Batch Number] untuk [Material Name] kedaluwarsa pada [Expiry Date].
+CTA: Lihat Detail"
+Inventory,Material Expired,Email subject,Batch [Batch Number] has expired,Batch [Batch Number] telah kedaluwarsa
+Inventory,Material Expired,Email body,Batch [Batch Number] for [Material Name] expired on [Expiry Date]. Please review the remaining quantity and take the required action.,Batch [Batch Number] untuk [Material Name] kedaluwarsa pada [Expiry Date]. Tinjau sisa kuantitas dan lakukan tindakan yang diperlukan.
+Inventory,Material Expired,Email CTA,See Detail,Lihat Detail
+Material Request,(module),Title,Material Request,Permintaan Material
+Material Request,(module),Description,Material transfer and receipt workflow. Material Preparation permission is used for preparers; Material Receipt for the requester or receiver.,"Alur transfer dan penerimaan material. Izin Akses Persiapan Material digunakan untuk penyiap material, sedangkan Izin Akses Penerimaan Material digunakan untuk pemohon atau penerima."
+Material Request,New Material Request,Description,Notifies eligible material preparers with access when a new Material Request is created and requires preparation.,Memberi tahu penyiap material yang memiliki akses ketika Material Request baru dibuat dan memerlukan persiapan.
+Material Request,New Material Request,In-app content,"New Material Request [MR Number]
+[Requester Name] created a new Material Request for [Work Order / Purpose].
+CTA: See Detail","Material Request baru [MR Number]
+[Requester Name] membuat Material Request baru untuk [Work Order / Tujuan].
+CTA: Lihat Detail"
+Material Request,New Material Request,Email subject,New Material Request [MR Number],Material Request baru [MR Number]
+Material Request,New Material Request,Email body,[Requester Name] created a new Material Request for [Work Order / Purpose].,[Requester Name] membuat Material Request baru untuk [Work Order / Tujuan].
+Material Request,New Material Request,Email CTA,See Detail,Lihat Detail
+Material Request,Transfer Started,Description,Notifies the requester or material receiver when the requested materials have been transferred and are ready for receipt confirmation.,Memberi tahu pemohon atau penerima material ketika material yang diminta telah ditransfer dan siap untuk dikonfirmasi penerimaannya.
+Material Request,Transfer Started,In-app content,"Material Request [MR Number] transfer started
+[Preparer Name] started the transfer. Please confirm receipt.
+CTA: See Detail","Transfer Material Request [MR Number] dimulai
+[Preparer Name] memulai transfer. Konfirmasi penerimaan.
+CTA: Lihat Detail"
+Material Request,Transfer Started,Email subject,Material Request [MR Number] transfer started,Transfer Material Request [MR Number] dimulai
+Material Request,Transfer Started,Email body,[Preparer Name] started the transfer for Material Request [MR Number]. Please confirm receipt.,[Preparer Name] memulai transfer untuk Material Request [MR Number]. Konfirmasi penerimaan.
+Material Request,Transfer Started,Email CTA,See Detail,Lihat Detail
+Material Request,Receipt Confirmed,Description,Notifies the material preparer when the requester or receiver confirms that the materials were received successfully.,Memberi tahu penyiap material ketika pemohon atau penerima mengonfirmasi bahwa material telah diterima dengan baik.
+Material Request,Receipt Confirmed,In-app content,"Material Request [MR Number] receipt confirmed
+[Receiver Name] confirmed receipt of Material Request [MR Number].
+CTA: See Detail","Penerimaan Material Request [MR Number] dikonfirmasi
+[Receiver Name] mengonfirmasi penerimaan Material Request [MR Number].
+CTA: Lihat Detail"
+Material Request,Receipt Confirmed,Email subject,Material Request [MR Number] receipt confirmed,Penerimaan Material Request [MR Number] dikonfirmasi
+Material Request,Receipt Confirmed,Email body,[Receiver Name] confirmed receipt of Material Request [MR Number].,[Receiver Name] mengonfirmasi penerimaan Material Request [MR Number].
+Material Request,Receipt Confirmed,Email CTA,See Detail,Lihat Detail
+Material Request,Receipt Rejected,Description,Notifies the material preparer when the requester or receiver reports an issue with the received materials.,Memberi tahu penyiap material ketika pemohon atau penerima melaporkan masalah pada material yang diterima.
+Material Request,Receipt Rejected,In-app content,"Material Request [MR Number] receipt rejected
+[Receiver Name] rejected the receipt. Please resolve the issue.
+CTA: See Detail","Penerimaan Material Request [MR Number] ditolak
+[Receiver Name] menolak penerimaan. Selesaikan masalahnya.
+CTA: Lihat Detail"
+Material Request,Receipt Rejected,Email subject,Material Request [MR Number] receipt rejected,Penerimaan Material Request [MR Number] ditolak
+Material Request,Receipt Rejected,Email body,[Receiver Name] rejected the receipt for Material Request [MR Number]. Please resolve the issue.,[Receiver Name] menolak penerimaan untuk Material Request [MR Number]. Selesaikan masalahnya.
+Material Request,Receipt Rejected,Email CTA,See Detail,Lihat Detail
+Material Request,Material Request Cancelled by Preparer,Description,Notifies the requester or material receiver when the material preparer cancels the Material Request.,Memberi tahu pemohon atau penerima material ketika penyiap material membatalkan Material Request.
+Material Request,Material Request Cancelled by Preparer,In-app content,"Material Request [MR Number] was cancelled
+[Preparer Name] cancelled Material Request [MR Number].
+CTA: See Detail","Material Request [MR Number] dibatalkan
+[Preparer Name] membatalkan Material Request [MR Number].
+CTA: Lihat Detail"
+Material Request,Material Request Cancelled by Preparer,Email subject,Material Request [MR Number] was cancelled,Material Request [MR Number] dibatalkan
+Material Request,Material Request Cancelled by Preparer,Email body,[Preparer Name] cancelled Material Request [MR Number].,[Preparer Name] membatalkan Material Request [MR Number].
+Material Request,Material Request Cancelled by Preparer,Email CTA,See Detail,Lihat Detail
+Work Order,(module),Title,Work Order,Work Order
+Work Order,(module),Description,"Work Order deadlines, status changes, new work orders, and outsourced Purchase Order activity. Sent to eligible users with Work Order access.","Pengingat batas waktu, perubahan status, Work Order baru, dan aktivitas Purchase Order outsource. Dikirim kepada pengguna yang memiliki Izin Akses Work Order."
+Work Order,New Work Order,Description,Notifies eligible users with Work Orders access when a new Work Order is created in Not Started status.,Memberi tahu pengguna yang memiliki Izin Akses Work Orders ketika Work Order baru dibuat dengan status Not Started.
+Work Order,New Work Order,In-app content,"New Work Order [WO Number]
+A new Work Order was created for [Product / Order Number] and is currently Not Started.
+CTA: See Detail","Work Order baru [WO Number]
+Work Order baru dibuat untuk [Produk / Nomor Order] dan saat ini berstatus Not Started.
+CTA: Lihat Detail"
+Work Order,New Work Order,Email subject,New Work Order [WO Number],Work Order baru [WO Number]
+Work Order,New Work Order,Email body,A new Work Order was created for [Product / Order Number] and is currently Not Started.,Work Order baru dibuat untuk [Produk / Nomor Order] dan saat ini berstatus Not Started.
+Work Order,New Work Order,Email CTA,See Detail,Lihat Detail
+Work Order,Outsource Purchase Order Issued,Description,Notifies eligible users with access to the related Work Order when a linked Purchase Order is issued to the vendor. A separate notification is generated for each linked Work Order.,Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika Purchase Order yang terkait diterbitkan kepada vendor. Notifikasi terpisah dibuat untuk setiap Work Order yang terkait.
+Work Order,Outsource Purchase Order Issued,In-app content,"Purchase Order [PO Number] for Work Order [WO Number] has been issued
+The Purchase Order for outsourced Work Order [WO Number] has been issued to [Vendor Name].
+CTA: See Detail","Purchase Order [PO Number] untuk Work Order [WO Number] telah diterbitkan
+Purchase Order untuk Work Order outsource [WO Number] telah diterbitkan kepada [Vendor Name].
+CTA: Lihat Detail"
+Work Order,Outsource Purchase Order Issued,Email subject,Purchase Order [PO Number] for Work Order [WO Number] has been issued,Purchase Order [PO Number] untuk Work Order [WO Number] telah diterbitkan
+Work Order,Outsource Purchase Order Issued,Email body,The Purchase Order for outsourced Work Order [WO Number] has been issued to [Vendor Name].,Purchase Order untuk Work Order outsource [WO Number] telah diterbitkan kepada [Vendor Name].
+Work Order,Outsource Purchase Order Issued,Email CTA,See Detail,Lihat Detail
+Work Order,Outsource Purchase Order Receipt Recorded,Description,Notifies eligible users with access to the related Work Order when items are received and the Work Order remains partially received. A separate notification is generated for each affected Work Order.,Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika barang diterima dan Work Order masih berstatus diterima sebagian. Notifikasi terpisah dibuat untuk setiap Work Order yang terdampak.
+Work Order,Outsource Purchase Order Receipt Recorded,In-app content,"Receipt recorded for Work Order [WO Number]
+[Received Qty] was received under Purchase Order [PO Number]. Total received for this Work Order: [Cumulative WO Received Qty] of [WO Ordered Qty].
+CTA: See Detail","Penerimaan dicatat untuk Work Order [WO Number]
+[Received Qty] diterima melalui Purchase Order [PO Number]. Total diterima untuk Work Order ini: [Cumulative WO Received Qty] dari [WO Ordered Qty].
+CTA: Lihat Detail"
+Work Order,Outsource Purchase Order Receipt Recorded,Email subject,Receipt recorded for Work Order [WO Number],Penerimaan dicatat untuk Work Order [WO Number]
+Work Order,Outsource Purchase Order Receipt Recorded,Email body,[Received Qty] was received under Purchase Order [PO Number]. Total received: [Cumulative WO Received Qty] of [WO Ordered Qty].,[Received Qty] diterima melalui Purchase Order [PO Number]. Total diterima: [Cumulative WO Received Qty] dari [WO Ordered Qty].
+Work Order,Outsource Purchase Order Receipt Recorded,Email CTA,See Detail,Lihat Detail
+Work Order,Outsource Purchase Order Fully Received,Description,Notifies eligible users with access to the related Work Order when all outsourced items have been received. A separate notification is generated for each completed Work Order.,Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika seluruh item outsource telah diterima. Notifikasi terpisah dibuat untuk setiap Work Order yang selesai.
+Work Order,Outsource Purchase Order Fully Received,In-app content,"Work Order [WO Number] has been fully received
+All outsourced items for Work Order [WO Number] under Purchase Order [PO Number] have been received.
+CTA: See Detail","Work Order [WO Number] telah diterima seluruhnya
+Seluruh item outsource untuk Work Order [WO Number] melalui Purchase Order [PO Number] telah diterima.
+CTA: Lihat Detail"
+Work Order,Outsource Purchase Order Fully Received,Email subject,Work Order [WO Number] has been fully received,Work Order [WO Number] telah diterima seluruhnya
+Work Order,Outsource Purchase Order Fully Received,Email body,All outsourced items for Work Order [WO Number] under Purchase Order [PO Number] have been received.,Seluruh item outsource untuk Work Order [WO Number] melalui Purchase Order [PO Number] telah diterima.
+Work Order,Outsource Purchase Order Fully Received,Email CTA,See Detail,Lihat Detail
+Work Order,Deadline Approaching,Description,"Reminds eligible users with access to the related Work Order before its deadline, based on the configured reminder timing.","Mengingatkan pengguna yang memiliki akses ke Work Order terkait sebelum batas waktunya, sesuai waktu pengingat yang telah dikonfigurasi."
+Work Order,Deadline Approaching,In-app content,"Work Order [Number] is approaching its deadline
+The deadline is [Deadline Date]. Current status: [Status].
+CTA: See Detail","Work Order [Number] mendekati batas waktu
+Batas waktunya adalah [Deadline Date]. Status saat ini: [Status].
+CTA: Lihat Detail"
+Work Order,Deadline Approaching,Email subject,Work Order [Number] is approaching its deadline,Work Order [Number] mendekati batas waktu
+Work Order,Deadline Approaching,Email body,Work Order [Number] is approaching its deadline on [Deadline Date]. Current status: [Status].,Work Order [Number] mendekati batas waktu pada [Deadline Date]. Status saat ini: [Status].
+Work Order,Deadline Approaching,Email CTA,See Detail,Lihat Detail
+Work Order,Deadline Overdue,Description,Notifies eligible users with access to the related Work Order when it has passed its deadline and remains unresolved.,Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika telah melewati batas waktu dan belum diselesaikan.
+Work Order,Deadline Overdue,In-app content,"Work Order [Number] is overdue
+The deadline was [Deadline Date]. Current status: [Status].
+CTA: See Detail","Work Order [Number] terlambat
+Batas waktunya adalah [Deadline Date]. Status saat ini: [Status].
+CTA: Lihat Detail"
+Work Order,Deadline Overdue,Email subject,Work Order [Number] is overdue,Work Order [Number] terlambat
+Work Order,Deadline Overdue,Email body,Work Order [Number] passed its deadline on [Deadline Date] and remains [Status].,Work Order [Number] melewati batas waktu pada [Deadline Date] dan tetap berstatus [Status].
+Work Order,Deadline Overdue,Email CTA,See Detail,Lihat Detail
+Work Order,Changed to Completed,Description,Notifies eligible users with access to the related Work Order when its status changes to Completed.,Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika statusnya berubah menjadi Completed.
+Work Order,Changed to Completed,In-app content,"Work Order [Number] has been completed
+The Work Order status changed to Completed.
+CTA: See Detail","Work Order [Number] telah selesai
+Status Work Order berubah menjadi Completed.
+CTA: Lihat Detail"
+Work Order,Changed to Completed,Email subject,Work Order [Number] has been completed,Work Order [Number] telah selesai
+Work Order,Changed to Completed,Email body,The Work Order status changed to Completed.,Status Work Order berubah menjadi Completed.
+Work Order,Changed to Completed,Email CTA,See Detail,Lihat Detail
+Work Order,Changed to Cancelled,Description,Notifies eligible users with access to the related Work Order when its status changes to Cancelled.,Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika statusnya berubah menjadi Cancelled.
+Work Order,Changed to Cancelled,In-app content,"Work Order [Number] was cancelled
+The Work Order status changed to Cancelled by [Updated By].
+CTA: See Detail","Work Order [Number] dibatalkan
+Status Work Order berubah menjadi Cancelled oleh [Updated By].
+CTA: Lihat Detail"
+Work Order,Changed to Cancelled,Email subject,Work Order [Number] was cancelled,Work Order [Number] dibatalkan
+Work Order,Changed to Cancelled,Email body,The Work Order status changed to Cancelled by [Updated By].,Status Work Order berubah menjadi Cancelled oleh [Updated By].
+Work Order,Changed to Cancelled,Email CTA,See Detail,Lihat Detail
+Custom Product Request,(module),Title,Custom Product Request,Permintaan Produk Khusus
+Custom Product Request,(module),Description,Custom Product Request creation. Sent to subscribed users with Custom Product Request access.,Pembuatan Permintaan Produk Khusus. Dikirim kepada pengguna yang berlangganan dan memiliki Izin Akses Permintaan Produk Khusus.
+Custom Product Request,New Request,Description,Notifies eligible users with Custom Product Requests access when a new Custom Product Request is created and is ready for review or processing.,Memberi tahu pengguna yang memiliki Izin Akses Custom Product Requests ketika Custom Product Request baru dibuat dan siap untuk ditinjau atau diproses.
+Custom Product Request,New Request,In-app content,"New Custom Product Request [Number]
+Created by [Requester Name] for [Customer Name].
+CTA: See Detail","Custom Product Request baru [Number]
+Dibuat oleh [Requester Name] untuk [Customer Name].
+CTA: Lihat Detail"
+Custom Product Request,New Request,Email subject,New Custom Product Request [Number],Custom Product Request baru [Number]
+Custom Product Request,New Request,Email body,Created by [Requester Name] for [Customer Name].,Dibuat oleh [Requester Name] untuk [Customer Name].
+Custom Product Request,New Request,Email CTA,See Detail,Lihat Detail
+Quotes,(module),Title,Quotes,Penawaran
+Quotes,(module),Description,Quote validity reminders and Customer Portal outcomes. Customer Portal events resolve to the portal sender.,Pengingat masa berlaku Penawaran dan aktivitas Portal Pelanggan. Notifikasi Portal Pelanggan dikirim kepada pengguna yang membagikan Portal Pelanggan.
+Quotes,Quote Valid Until Reminder,Description,"Reminds eligible users with Quotes access before an issued Quote reaches its validity date, based on the configured reminder timing.","Mengingatkan pengguna yang memiliki Izin Akses Quotes sebelum Quote yang diterbitkan mencapai tanggal berakhir masa berlakunya, sesuai waktu pengingat yang telah dikonfigurasi."
+Quotes,Quote Valid Until Reminder,In-app content,"Quote [Number] is approaching its validity date
+The Quote is valid until [Valid Until Date].
+CTA: See Detail","Quote [Number] mendekati tanggal berakhir
+Quote berlaku sampai [Valid Until Date].
+CTA: Lihat Detail"
+Quotes,Quote Valid Until Reminder,Email subject,Quote [Number] is approaching its validity date,Quote [Number] mendekati tanggal berakhir
+Quotes,Quote Valid Until Reminder,Email body,Quote [Number] is valid until [Valid Until Date]. Please review and follow up before it expires.,Quote [Number] berlaku sampai [Valid Until Date]. Tinjau dan tindak lanjuti sebelum masa berlakunya habis.
+Quotes,Quote Valid Until Reminder,Email CTA,See Detail,Lihat Detail
+Quotes,Quote Revision Requested by Customer,Description,Notifies the user who shared the Customer Portal when the customer requests changes to the Quote.,Memberi tahu pengguna yang membagikan Customer Portal ketika pelanggan meminta perubahan pada Quote.
+Quotes,Quote Revision Requested by Customer,In-app content,"Quote [Number] revision requested by the customer
+[Customer Name] requested changes on Quote [Number] through the Customer Portal.
+CTA: See Detail","Revisi Quote [Number] diminta oleh pelanggan
+[Customer Name] meminta perubahan pada Quote [Number] melalui Customer Portal.
+CTA: Lihat Detail"
+Quotes,Quote Revision Requested by Customer,Email subject,Quote [Number] revision requested by the customer,Revisi Quote [Number] diminta oleh pelanggan
+Quotes,Quote Revision Requested by Customer,Email body,[Customer Name] requested changes on Quote [Number] through the Customer Portal.,[Customer Name] meminta perubahan pada Quote [Number] melalui Customer Portal.
+Quotes,Quote Revision Requested by Customer,Email CTA,See Detail,Lihat Detail
+Quotes,Quote Approved by Customer,Description,Notifies the user who shared the Customer Portal when the customer approves the Quote.,Memberi tahu pengguna yang membagikan Customer Portal ketika pelanggan menyetujui Quote.
+Quotes,Quote Approved by Customer,In-app content,"Quote [Number] was approved by the customer
+[Customer Name] approved Quote [Number] through the Customer Portal.
+CTA: See Detail","Quote [Number] disetujui oleh pelanggan
+[Customer Name] menyetujui Quote [Number] melalui Customer Portal.
+CTA: Lihat Detail"
+Quotes,Quote Approved by Customer,Email subject,Quote [Number] was approved by the customer,Quote [Number] disetujui oleh pelanggan
+Quotes,Quote Approved by Customer,Email body,[Customer Name] approved Quote [Number] through the Customer Portal.,[Customer Name] menyetujui Quote [Number] melalui Customer Portal.
+Quotes,Quote Approved by Customer,Email CTA,See Detail,Lihat Detail
+Quotes,Quote Rejected by Customer,Description,Notifies the user who shared the Customer Portal when the customer rejects the Quote.,Memberi tahu pengguna yang membagikan Customer Portal ketika pelanggan menolak Quote.
+Quotes,Quote Rejected by Customer,In-app content,"Quote [Number] was rejected by the customer
+[Customer Name] rejected Quote [Number] through the Customer Portal.
+CTA: See Detail","Quote [Number] ditolak oleh pelanggan
+[Customer Name] menolak Quote [Number] melalui Customer Portal.
+CTA: Lihat Detail"
+Quotes,Quote Rejected by Customer,Email subject,Quote [Number] was rejected by the customer,Quote [Number] ditolak oleh pelanggan
+Quotes,Quote Rejected by Customer,Email body,[Customer Name] rejected Quote [Number] through the Customer Portal.,[Customer Name] menolak Quote [Number] melalui Customer Portal.
+Quotes,Quote Rejected by Customer,Email CTA,See Detail,Lihat Detail
+Orders,(module),Title,Orders,Pesanan
+Orders,(module),Description,"Order deadlines, status changes, new orders, and linked-invoice payment. Sent to eligible users with Order access.","Pengingat batas waktu, perubahan status, Pesanan baru, dan pembayaran Faktur yang terkait. Dikirim kepada pengguna yang memiliki Izin Akses Pesanan."
+Orders,New Order,Description,Notifies eligible users with Orders access when a new Order is created in Not Started status.,Memberi tahu pengguna yang memiliki Izin Akses Orders ketika Order baru dibuat dengan status Not Started.
+Orders,New Order,In-app content,"New Order [Order Number]
+A new Order was created for [Customer Name] and is currently Not Started.
+CTA: See Detail","Order baru [Order Number]
+Order baru dibuat untuk [Customer Name] dan saat ini berstatus Not Started.
+CTA: Lihat Detail"
+Orders,New Order,Email subject,New Order [Order Number],Order baru [Order Number]
+Orders,New Order,Email body,A new Order was created for [Customer Name] and is currently Not Started.,Order baru dibuat untuk [Customer Name] dan saat ini berstatus Not Started.
+Orders,New Order,Email CTA,See Detail,Lihat Detail
+Orders,Order Invoice Paid,Description,Notifies eligible users with access to the related Order when a linked Invoice is fully paid. Partial payments do not trigger this notification.,Memberi tahu pengguna yang memiliki akses ke Order terkait ketika Invoice yang terkait telah dibayar lunas. Pembayaran sebagian tidak memicu notifikasi ini.
+Orders,Order Invoice Paid,In-app content,"Invoice [Invoice Number] for Order [Order Number] has been paid
+The invoice payment has been completed. Paid amount: [Paid Amount].
+CTA: See Detail","Invoice [Invoice Number] untuk Order [Order Number] telah dibayar
+Pembayaran invoice telah selesai. Jumlah dibayar: [Paid Amount].
+CTA: Lihat Detail"
+Orders,Order Invoice Paid,Email subject,Invoice [Invoice Number] for Order [Order Number] has been paid,Invoice [Invoice Number] untuk Order [Order Number] telah dibayar
+Orders,Order Invoice Paid,Email body,Invoice [Invoice Number] linked to Order [Order Number] has been paid. Paid amount: [Paid Amount].,Invoice [Invoice Number] yang terkait dengan Order [Order Number] telah dibayar. Jumlah dibayar: [Paid Amount].
+Orders,Order Invoice Paid,Email CTA,See Detail,Lihat Detail
+Orders,Order Deadline Approaching,Description,"Reminds eligible users with access to the related Order before its deadline, based on the configured reminder timing.","Mengingatkan pengguna yang memiliki akses ke Order terkait sebelum batas waktunya, sesuai waktu pengingat yang telah dikonfigurasi."
+Orders,Order Deadline Approaching,In-app content,"Order [Number] is approaching its deadline
+The deadline is [Deadline Date]. Current status: [Status].
+CTA: See Detail","Order [Number] mendekati batas waktu
+Batas waktunya adalah [Deadline Date]. Status saat ini: [Status].
+CTA: Lihat Detail"
+Orders,Order Deadline Approaching,Email subject,Order [Number] is approaching its deadline,Order [Number] mendekati batas waktu
+Orders,Order Deadline Approaching,Email body,Order [Number] is approaching its deadline on [Deadline Date]. Current status: [Status].,Order [Number] mendekati batas waktu pada [Deadline Date]. Status saat ini: [Status].
+Orders,Order Deadline Approaching,Email CTA,See Detail,Lihat Detail
+Orders,Order Deadline Overdue,Description,Notifies eligible users with access to the related Order when it has passed its deadline and remains unresolved.,Memberi tahu pengguna yang memiliki akses ke Order terkait ketika telah melewati batas waktu dan belum diselesaikan.
+Orders,Order Deadline Overdue,In-app content,"Order [Number] is overdue
+The deadline was [Deadline Date]. Current status: [Status].
+CTA: See Detail","Order [Number] terlambat
+Batas waktunya adalah [Deadline Date]. Status saat ini: [Status].
+CTA: Lihat Detail"
+Orders,Order Deadline Overdue,Email subject,Order [Number] is overdue,Order [Number] terlambat
+Orders,Order Deadline Overdue,Email body,Order [Number] passed its deadline on [Deadline Date] and remains [Status].,Order [Number] melewati batas waktu pada [Deadline Date] dan tetap berstatus [Status].
+Orders,Order Deadline Overdue,Email CTA,See Detail,Lihat Detail
+Orders,Changed to Completed,Description,Notifies eligible users with access to the related Order when its status changes to Completed.,Memberi tahu pengguna yang memiliki akses ke Order terkait ketika statusnya berubah menjadi Completed.
+Orders,Changed to Completed,In-app content,"Order [Number] has been completed
+The Order status changed to Completed.
+CTA: See Detail","Order [Number] telah selesai
+Status Order berubah menjadi Completed.
+CTA: Lihat Detail"
+Orders,Changed to Completed,Email subject,Order [Number] has been completed,Order [Number] telah selesai
+Orders,Changed to Completed,Email body,The Order status changed to Completed.,Status Order berubah menjadi Completed.
+Orders,Changed to Completed,Email CTA,See Detail,Lihat Detail
+Orders,Changed to Cancelled,Description,Notifies eligible users with access to the related Order when its status changes to Cancelled.,Memberi tahu pengguna yang memiliki akses ke Order terkait ketika statusnya berubah menjadi Cancelled.
+Orders,Changed to Cancelled,In-app content,"Order [Number] was cancelled
+The Order status changed to Cancelled by [Updated By].
+CTA: See Detail","Order [Number] dibatalkan
+Status Order berubah menjadi Cancelled oleh [Updated By].
+CTA: Lihat Detail"
+Orders,Changed to Cancelled,Email subject,Order [Number] was cancelled,Order [Number] dibatalkan
+Orders,Changed to Cancelled,Email body,The Order status changed to Cancelled by [Updated By].,Status Order berubah menjadi Cancelled oleh [Updated By].
+Orders,Changed to Cancelled,Email CTA,See Detail,Lihat Detail
+Invoice,(module),Title,Invoice,Faktur
+Invoice,(module),Description,"Invoice due-date reminders, overdue alerts, Customer Portal outcomes, and payment proof review. Invoice has no internal approval/revision flow.","Pengingat tanggal jatuh tempo Faktur, notifikasi keterlambatan, aktivitas Portal Pelanggan, dan peninjauan bukti pembayaran. Faktur tidak memiliki alur persetujuan atau revisi internal."
+Invoice,Invoice Revision Requested by Customer,Description,Notifies the Invoice owner or Customer Portal sender when the customer requests changes to the Invoice.,Memberi tahu pemilik Invoice atau pengirim Customer Portal ketika pelanggan meminta perubahan pada Invoice.
+Invoice,Invoice Revision Requested by Customer,In-app content,"Invoice [Number] revision requested by the customer
+[Customer Name] requested changes on Invoice [Number] through the Customer Portal.
+CTA: See Detail","Revisi Invoice [Number] diminta oleh pelanggan
+[Customer Name] meminta perubahan pada Invoice [Number] melalui Customer Portal.
+CTA: Lihat Detail"
+Invoice,Invoice Revision Requested by Customer,Email subject,Invoice [Number] revision requested by the customer,Revisi Invoice [Number] diminta oleh pelanggan
+Invoice,Invoice Revision Requested by Customer,Email body,[Customer Name] requested changes on Invoice [Number] through the Customer Portal.,[Customer Name] meminta perubahan pada Invoice [Number] melalui Customer Portal.
+Invoice,Invoice Revision Requested by Customer,Email CTA,See Detail,Lihat Detail
+Invoice,Invoice Approved by Customer,Description,Notifies the Invoice owner or Customer Portal sender when the customer approves the Invoice.,Memberi tahu pemilik Invoice atau pengirim Customer Portal ketika pelanggan menyetujui Invoice.
+Invoice,Invoice Approved by Customer,In-app content,"Invoice [Number] was approved by the customer
+[Customer Name] approved Invoice [Number] through the Customer Portal.
+CTA: See Detail","Invoice [Number] disetujui oleh pelanggan
+[Customer Name] menyetujui Invoice [Number] melalui Customer Portal.
+CTA: Lihat Detail"
+Invoice,Invoice Approved by Customer,Email subject,Invoice [Number] was approved by the customer,Invoice [Number] disetujui oleh pelanggan
+Invoice,Invoice Approved by Customer,Email body,[Customer Name] approved Invoice [Number] through the Customer Portal.,[Customer Name] menyetujui Invoice [Number] melalui Customer Portal.
+Invoice,Invoice Approved by Customer,Email CTA,See Detail,Lihat Detail
+Invoice,Invoice Rejected by Customer,Description,Notifies the Invoice owner or Customer Portal sender when the customer rejects the Invoice.,Memberi tahu pemilik Invoice atau pengirim Customer Portal ketika pelanggan menolak Invoice.
+Invoice,Invoice Rejected by Customer,In-app content,"Invoice [Number] was rejected by the customer
+[Customer Name] rejected Invoice [Number] through the Customer Portal.
+CTA: See Detail","Invoice [Number] ditolak oleh pelanggan
+[Customer Name] menolak Invoice [Number] melalui Customer Portal.
+CTA: Lihat Detail"
+Invoice,Invoice Rejected by Customer,Email subject,Invoice [Number] was rejected by the customer,Invoice [Number] ditolak oleh pelanggan
+Invoice,Invoice Rejected by Customer,Email body,[Customer Name] rejected Invoice [Number] through the Customer Portal.,[Customer Name] menolak Invoice [Number] melalui Customer Portal.
+Invoice,Invoice Rejected by Customer,Email CTA,See Detail,Lihat Detail
+Invoice,Due Date Approaching,Description,"Reminds eligible users with Invoices access before an unpaid Invoice reaches its due date, based on the configured reminder timing.","Mengingatkan pengguna yang memiliki Izin Akses Invoices sebelum Invoice yang belum dibayar mencapai tanggal jatuh tempo, sesuai waktu pengingat yang telah dikonfigurasi."
+Invoice,Due Date Approaching,In-app content,"Invoice [Number] is approaching its due date
+The due date is [Due Date]. Outstanding amount: [Amount] [Currency].
+CTA: See Detail","Invoice [Number] mendekati tanggal jatuh tempo
+Tanggal jatuh tempo adalah [Due Date]. Sisa tagihan: [Amount] [Currency].
+CTA: Lihat Detail"
+Invoice,Due Date Approaching,Email subject,Invoice [Number] is approaching its due date,Invoice [Number] mendekati tanggal jatuh tempo
+Invoice,Due Date Approaching,Email body,Invoice [Number] is approaching its due date on [Due Date]. Outstanding amount: [Amount] [Currency].,Invoice [Number] mendekati tanggal jatuh tempo pada [Due Date]. Sisa tagihan: [Amount] [Currency].
+Invoice,Due Date Approaching,Email CTA,See Detail,Lihat Detail
+Invoice,Invoice Overdue,Description,Notifies eligible users with Invoices access when an unpaid Invoice has passed its due date.,Memberi tahu pengguna yang memiliki Izin Akses Invoices ketika Invoice yang belum dibayar telah melewati tanggal jatuh tempo.
+Invoice,Invoice Overdue,In-app content,"Invoice [Number] is overdue
+The invoice was due on [Due Date]. Outstanding amount: [Amount] [Currency].
+CTA: See Detail","Invoice [Number] terlambat
+Invoice jatuh tempo pada [Due Date]. Sisa tagihan: [Amount] [Currency].
+CTA: Lihat Detail"
+Invoice,Invoice Overdue,Email subject,Invoice [Number] is overdue,Invoice [Number] terlambat
+Invoice,Invoice Overdue,Email body,Invoice [Number] passed its due date on [Due Date]. Outstanding amount: [Amount] [Currency].,Invoice [Number] melewati tanggal jatuh tempo pada [Due Date]. Sisa tagihan: [Amount] [Currency].
+Invoice,Invoice Overdue,Email CTA,See Detail,Lihat Detail
+Invoice,Payment Proof Submitted,Description,Notifies the Invoice owner or responsible reviewer when a customer uploads payment proof through the Customer Portal.,Memberi tahu pemilik Invoice atau peninjau yang bertanggung jawab ketika pelanggan mengunggah bukti pembayaran melalui Customer Portal.
+Invoice,Payment Proof Submitted,In-app content,"Payment proof submitted for Invoice [Number]
+[Customer Name] submitted payment proof for Invoice [Number]. Please review.
+CTA: See Detail","Bukti pembayaran dikirim untuk Invoice [Number]
+[Customer Name] mengirim bukti pembayaran untuk Invoice [Number]. Tinjau.
+CTA: Lihat Detail"
+Invoice,Payment Proof Submitted,Email subject,Payment proof submitted for Invoice [Number],Bukti pembayaran dikirim untuk Invoice [Number]
+Invoice,Payment Proof Submitted,Email body,[Customer Name] submitted payment proof for Invoice [Number]. Please review.,[Customer Name] mengirim bukti pembayaran untuk Invoice [Number]. Tinjau.
+Invoice,Payment Proof Submitted,Email CTA,See Detail,Lihat Detail
+Invoice,Payment Proof Rejected,Description,Notifies the customer when their payment proof is rejected and must be uploaded again.,Memberi tahu pelanggan ketika bukti pembayarannya ditolak dan harus diunggah ulang.
+Invoice,Payment Proof Rejected,In-app content,"Payment proof for Invoice [Number] was rejected
+Your payment proof for Invoice [Number] was rejected. Reason: [Reason]. Please re-upload.
+CTA: See Detail","Bukti pembayaran untuk Invoice [Number] ditolak
+Bukti pembayaran Anda untuk Invoice [Number] ditolak. Alasan: [Reason]. Unggah ulang.
+CTA: Lihat Detail"
+Invoice,Payment Proof Rejected,Email subject,Payment proof for Invoice [Number] was rejected,Bukti pembayaran untuk Invoice [Number] ditolak
+Invoice,Payment Proof Rejected,Email body,Your payment proof for Invoice [Number] was rejected. Reason: [Reason]. Please re-upload the payment proof.,Bukti pembayaran Anda untuk Invoice [Number] ditolak. Alasan: [Reason]. Unggah ulang bukti pembayaran.
+Invoice,Payment Proof Rejected,Email CTA,Re-upload payment proof,Unggah ulang bukti pembayaran
+Purchase Order,(module),Title,Purchase Order,Purchase Order
+Purchase Order,(module),Description,Purchase Order payment and expected-end-date tracking. Sent to subscribed users with Purchase Order access.,Pemantauan pembayaran dan estimasi tanggal selesai Purchase Order. Dikirim kepada pengguna yang berlangganan dan memiliki Izin Akses Purchase Order.
+Purchase Order,Expected End Date Approaching,Description,"Reminds eligible users with Purchase Orders access before a Purchase Order reaches its expected end date, based on the configured reminder timing.","Mengingatkan pengguna yang memiliki Izin Akses Purchase Orders sebelum Purchase Order mencapai tanggal selesai yang diperkirakan, sesuai waktu pengingat yang telah dikonfigurasi."
+Purchase Order,Expected End Date Approaching,In-app content,"Purchase Order [Number] is approaching its expected end date
+The expected end date is [Expected End Date]. Current status: [Status].
+CTA: See Detail","Purchase Order [Number] mendekati tanggal selesai yang diperkirakan
+Tanggal selesai yang diharapkan adalah [Expected End Date]. Status saat ini: [Status].
+CTA: Lihat Detail"
+Purchase Order,Expected End Date Approaching,Email subject,Purchase Order [Number] is approaching its expected end date,Purchase Order [Number] mendekati tanggal selesai yang diperkirakan
+Purchase Order,Expected End Date Approaching,Email body,Purchase Order [Number] is approaching its expected end date on [Expected End Date]. Current status: [Status].,Purchase Order [Number] mendekati tanggal selesai yang diperkirakan pada [Expected End Date]. Status saat ini: [Status].
+Purchase Order,Expected End Date Approaching,Email CTA,See Detail,Lihat Detail
+Purchase Order,Expected End Date Overdue,Description,Notifies eligible users with Purchase Orders access when a Purchase Order remains incomplete after its expected end date.,Memberi tahu pengguna yang memiliki Izin Akses Purchase Orders ketika Purchase Order masih belum selesai setelah melewati tanggal selesai yang diperkirakan.
+Purchase Order,Expected End Date Overdue,In-app content,"Purchase Order [Number] is overdue against its expected end date
+The expected end date was [Expected End Date]. Current status: [Status].
+CTA: See Detail","Purchase Order [Number] melewati tanggal selesai yang diharapkan
+Tanggal selesai yang diharapkan adalah [Expected End Date]. Status saat ini: [Status].
+CTA: Lihat Detail"
+Purchase Order,Expected End Date Overdue,Email subject,Purchase Order [Number] is overdue,Purchase Order [Number] terlambat
+Purchase Order,Expected End Date Overdue,Email body,Purchase Order [Number] passed its expected end date on [Expected End Date] and remains [Status].,Purchase Order [Number] melewati tanggal selesai yang diperkirakan pada [Expected End Date] dan tetap berstatus [Status].
+Purchase Order,Expected End Date Overdue,Email CTA,See Detail,Lihat Detail
+Purchase Order,Payment Overdue,Description,Notifies eligible users with Purchase Orders access when a Purchase Order remains unpaid after its payment due date.,Memberi tahu pengguna yang memiliki Izin Akses Purchase Orders ketika Purchase Order masih belum dibayar setelah melewati tanggal jatuh tempo pembayaran.
+Purchase Order,Payment Overdue,In-app content,"Payment for Purchase Order [Number] is overdue
+The payment due date was [Due Date]. Outstanding amount: [Amount] [Currency].
+CTA: See Detail","Pembayaran Purchase Order [Number] terlambat
+Tanggal jatuh tempo pembayaran adalah [Due Date]. Sisa pembayaran: [Amount] [Currency].
+CTA: Lihat Detail"
+Purchase Order,Payment Overdue,Email subject,Payment for Purchase Order [Number] is overdue,Pembayaran Purchase Order [Number] terlambat
+Purchase Order,Payment Overdue,Email body,Payment for Purchase Order [Number] passed its due date on [Due Date]. Outstanding amount: [Amount] [Currency].,Pembayaran Purchase Order [Number] melewati tanggal jatuh tempo pada [Due Date]. Sisa pembayaran: [Amount] [Currency].
+Purchase Order,Payment Overdue,Email CTA,See Detail,Lihat Detail
+Bulk Upload,(module),Title,Bulk Upload,Bulk Upload
+Bulk Upload,(module),Description,Bulk upload lifecycle events for Product Catalog and Materials. Sent only to the user who initiated the upload.,Peristiwa siklus bulk upload untuk Katalog Produk dan Material. Dikirim hanya kepada pengguna yang memulai unggahan.
+Bulk Upload,Bulk Import Ready for Review,Description,Notifies the user who initiated a Product Catalog or Materials bulk upload when AI normalization is completed and the batch is ready for review.,Memberi tahu pengguna yang memulai bulk upload Katalog Produk atau Material ketika normalisasi AI selesai dan batch siap untuk ditinjau.
+Bulk Upload,Bulk Import Ready for Review,In-app content,"Your [Data Type] bulk upload is ready for review
+Your bulk upload data has been processed and is ready for review before confirming the import.
+CTA: Review Bulk Upload","Bulk upload [Data Type] Anda siap untuk ditinjau
+Data bulk upload Anda telah diproses dan siap ditinjau sebelum impor dikonfirmasi.
+CTA: Tinjau Bulk Upload"
+Bulk Upload,Bulk Import Ready for Review,Email subject,Your [Data Type] Bulk Upload is Ready for Review,Bulk Upload [Data Type] Anda Siap untuk Ditinjau
+Bulk Upload,Bulk Import Ready for Review,Email body,"Your [Data Type] bulk upload data is ready for review. You can open the Bulk Upload page to review the normalized data before confirming the import.
+Upload ID: [Upload ID]
+File: [File Name]","Data bulk upload [Data Type] Anda siap untuk ditinjau. Anda dapat melihat halaman Bulk Upload untuk meninjau data yang telah dinormalisasi sebelum mengonfirmasi impor.
+Upload ID: [Upload ID]
+File: [File Name]"
+Bulk Upload,Bulk Import Ready for Review,Email CTA,Review Bulk Upload,Tinjau Bulk Upload
+Bulk Upload,Bulk Import Completed,Description,Notifies the user who initiated a Product Catalog or Materials bulk upload when all batches have been processed and the import is complete.,Memberi tahu pengguna yang memulai bulk upload Katalog Produk atau Material ketika seluruh batch telah diproses dan impor selesai.
+Bulk Upload,Bulk Import Completed,In-app content,"Your [Data Type] bulk upload is complete
+Your bulk upload has been completed. You can open the Bulk Upload page to review the result.
+CTA: View Result","Bulk upload [Data Type] Anda selesai
+Bulk upload Anda telah selesai. Anda dapat melihat hasil impor melalui halaman Bulk Upload.
+CTA: Lihat Hasil"
+Bulk Upload,Bulk Import Completed,Email subject,Your [Data Type] Bulk Upload is Completed,Bulk Upload [Data Type] Anda Selesai
+Bulk Upload,Bulk Import Completed,Email body,"Your [Data Type] bulk upload has been completed. You can open the Bulk Upload page to review the result.
+Upload ID: [Upload ID]
+File: [File Name]","Bulk upload [Data Type] Anda telah selesai. Anda dapat melihat hasil impor melalui halaman Bulk Upload.
+Upload ID: [Upload ID]
+File: [File Name]"
+Bulk Upload,Bulk Import Completed,Email CTA,View Bulk Upload Result,Lihat Hasil Bulk Upload
+Bulk Upload,Bulk Import Canceled,Description,Notifies the user who initiated a Product Catalog or Materials bulk upload when the system cancels the import because of an infrastructure or batch-processing failure.,Memberi tahu pengguna yang memulai bulk upload Katalog Produk atau Material ketika sistem membatalkan impor karena kegagalan infrastruktur atau pemrosesan batch.
+Bulk Upload,Bulk Import Canceled,In-app content,"Your [Data Type] bulk upload was canceled
+Your bulk upload was canceled by the system because an error occurred during processing.
+CTA: View Detail","Bulk upload [Data Type] Anda dibatalkan
+Bulk upload Anda dibatalkan oleh sistem karena terjadi kesalahan saat proses berlangsung.
+CTA: Lihat Detail"
+Bulk Upload,Bulk Import Canceled,Email subject,Your [Data Type] Bulk Upload was Canceled,Bulk Upload [Data Type] Anda Dibatalkan
+Bulk Upload,Bulk Import Canceled,Email body,"Your [Data Type] bulk upload was canceled by the system. An error occurred during batch processing. Please try uploading your file again or contact our support team for assistance.
+Upload ID: [Upload ID]
+File: [File Name]","Bulk upload [Data Type] Anda dibatalkan oleh sistem. Terjadi kesalahan saat pemrosesan batch. Coba unggah kembali file Anda atau hubungi tim dukungan jika masalah berlanjut.
+Upload ID: [Upload ID]
+File: [File Name]"
+Bulk Upload,Bulk Import Canceled,Email CTA,See Detail,Lihat Detail
+(grouped toggle),wo_receipt_status,Label,Receipt Status Updates,Pembaruan Status Penerimaan
+(grouped toggle),wo_receipt_status,Description,Outsourced receipt recorded and fully received updates.,Pembaruan saat penerimaan outsource dicatat dan telah diterima sepenuhnya.

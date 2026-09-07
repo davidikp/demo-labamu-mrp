@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../../components/common/Button.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
@@ -74,20 +74,31 @@ const RISK_BADGE_VARIANT = {
 // customerMocks.js) and blocks Accept Quote with this message otherwise,
 // directing the customer back to the Manufacturing administrator.
 const SCREENING_BLOCKED_MESSAGE =
-  "This quote cannot be accepted yet. Please contact the manufacturing company that issued the quote for assistance.";
+  "This quote can’t be accepted right now. Please contact the company that issued the quote for assistance.";
 
 // "YYYY-MM-DD HH:mm" — the format screening dates are stored in.
 const nowStamp = () => new Date().toISOString().slice(0, 16).replace("T", " ");
+
+// How long the simulated Accept-Quote processing "runs" behind the loading
+// modal — mirrors QuoteDetailPage's Customer Action → Approve loading state
+// (SCREENING_DURATION_MS), scaled to the same 2s so both surfaces feel
+// consistent.
+const ACCEPT_PROCESSING_DURATION_MS = 2000;
 
 // Read-mostly Customer Portal view of a quote (see /portal/quote/:quoteNo),
 // rendered shell-less (no sidebar/top-header) from App.jsx before the
 // authenticated app shell mounts. `role` drives whether the Accept/Reject/
 // Request Revision action bar shows ("approver") or the page is fully
-// read-only with just Download + an Actions log ("viewer").
-export const CustomerPortalQuotePage = ({ quoteNo, role = "approver" }) => {
+// read-only with just Download + an Actions log ("viewer"). There's no real
+// customer auth in this demo, so the role is switchable live from the
+// portal's own top bar (see PortalTopBar) rather than fixed by the link —
+// `initialRole` just seeds it (e.g. from a ?role= query param, if a caller
+// wants to link straight to one variant).
+export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) => {
   const navigate = useNavigate();
   const [quoteData, setQuoteData] = useState(() => MOCK_QUOTES.find((q) => q.quoteNo === quoteNo) || null);
   const [toast, setToast] = useState(null);
+  const [role, setRole] = useState(initialRole);
 
   useEffect(
     () =>
@@ -121,6 +132,18 @@ export const CustomerPortalQuotePage = ({ quoteNo, role = "approver" }) => {
   const [customerVersion, setCustomerVersion] = useState(0);
   const [armedScenario, setArmedScenario] = useState(null);
   const [isScreeningBlockedOpen, setIsScreeningBlockedOpen] = useState(false);
+  // Simulated processing state behind a blocking loading modal, shown after
+  // the customer submits Accept Quote — mirrors QuoteDetailPage's Customer
+  // Action → Approve loading modal.
+  const [isAcceptProcessing, setIsAcceptProcessing] = useState(false);
+  const acceptTimerRef = useRef(null);
+
+  useEffect(
+    () => () => {
+      if (acceptTimerRef.current) clearTimeout(acceptTimerRef.current);
+    },
+    []
+  );
 
   const linkedCustomer = useMemo(
     () => getCustomerById(quoteData?.customerId),
@@ -220,13 +243,21 @@ export const CustomerPortalQuotePage = ({ quoteNo, role = "approver" }) => {
   // Quote only proceeds when the linked customer already has a valid Passed
   // result; otherwise acceptance is blocked and the customer is told to
   // contact the Manufacturing administrator (screening itself is never
-  // initiated from the Customer Portal).
+  // initiated from the Customer Portal). The eligibility check runs behind a
+  // blocking loading modal (mirrors QuoteDetailPage's Customer Action →
+  // Approve loading state) so clicking Accept Quote always shows visible
+  // processing before either the decision modal or the blocked modal opens.
   const handleAcceptClick = () => {
-    if (!isScreeningValid(linkedCustomer)) {
-      setIsScreeningBlockedOpen(true);
-      return;
-    }
-    openDecisionModal("accept");
+    setIsAcceptProcessing(true);
+    acceptTimerRef.current = setTimeout(() => {
+      acceptTimerRef.current = null;
+      setIsAcceptProcessing(false);
+      if (!isScreeningValid(linkedCustomer)) {
+        setIsScreeningBlockedOpen(true);
+        return;
+      }
+      openDecisionModal("accept");
+    }, ACCEPT_PROCESSING_DURATION_MS);
   };
 
   const handleSubmitDecision = () => {
@@ -269,6 +300,9 @@ export const CustomerPortalQuotePage = ({ quoteNo, role = "approver" }) => {
     }
 
     if (decisionType === "accept") {
+      // The processing loading modal already ran once, in handleAcceptClick,
+      // to check eligibility before this decision modal was even opened — so
+      // submitting here (eligibility already confirmed) applies immediately.
       updateQuote(quoteData.quoteNo, {
         status: "Approved",
         sBadge: getStatusBadgeVariant("Approved"),
@@ -302,7 +336,11 @@ export const CustomerPortalQuotePage = ({ quoteNo, role = "approver" }) => {
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--neutral-background-primary, #F5F5F7)" }}>
-      <PortalTopBar email={actingPic?.email || quoteData.customer?.email || "dev@mail.com"} />
+      <PortalTopBar
+        email={actingPic?.email || quoteData.customer?.email || "dev@mail.com"}
+        role={role}
+        onRoleChange={setRole}
+      />
 
       {toast ? (
         <PortalToast variant={toast.variant} message={toast.message} onDismiss={() => setToast(null)} />
@@ -553,12 +591,64 @@ export const CustomerPortalQuotePage = ({ quoteNo, role = "approver" }) => {
         title="Unable to Accept Quote"
         description={SCREENING_BLOCKED_MESSAGE}
         width="440px"
+        hideFooterDivider
+        footerPaddingTop={24}
         footer={
           <Button variant="filled" size="large" style={{ width: "100%" }} onClick={() => setIsScreeningBlockedOpen(false)}>
-            Okay
+            Understood
           </Button>
         }
       />
+
+      <GeneralModal isOpen={isAcceptProcessing} onClose={() => {}} width="400px">
+        {/* No title/description props on purpose: GeneralModal only renders
+            its close "X" alongside a header, so leaving them off keeps this
+            modal non-dismissible while the (simulated) acceptance is
+            processing — mirrors QuoteDetailPage's Customer Action → Approve
+            loading modal. */}
+        <style>{`@keyframes portalAcceptSpin { to { transform: rotate(360deg); } }`}</style>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "16px",
+            padding: "12px 8px 4px 8px",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              width: "40px",
+              height: "40px",
+              borderRadius: "50%",
+              border: "3px solid var(--neutral-line-separator-1)",
+              borderTopColor: "var(--feature-brand-primary)",
+              animation: "portalAcceptSpin 0.8s linear infinite",
+            }}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <span
+              style={{
+                fontSize: "var(--text-title-1)",
+                fontWeight: "var(--font-weight-bold)",
+                color: "var(--neutral-on-surface-primary)",
+              }}
+            >
+              Accepting your quote
+            </span>
+            <span
+              style={{
+                fontSize: "var(--text-title-3)",
+                color: "var(--neutral-on-surface-secondary)",
+                lineHeight: 1.6,
+              }}
+            >
+              This may take a moment. Please keep this page open.
+            </span>
+          </div>
+        </div>
+      </GeneralModal>
     </div>
   );
 };

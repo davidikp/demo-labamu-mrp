@@ -24,6 +24,7 @@ import { NoDataToImportConfirmModal } from "../components/NoDataToImportConfirmM
 import { InputDataConfirmModal } from "../components/InputDataConfirmModal.jsx";
 import { SkipNormalizationConfirmModal } from "../components/SkipNormalizationConfirmModal.jsx";
 import { UseTemplateSuggestionModal } from "../components/UseTemplateSuggestionModal.jsx";
+import { useNotifications } from "../../../context/NotificationContext.jsx";
 
 const STEPS = [
   { key: "upload", label: "Upload" },
@@ -78,6 +79,7 @@ const Stepper = ({ currentKey }) => {
 };
 
 export const MaterialUploadNewPage = ({ onNavigate, showSnackbar, initialData, isSidebarCollapsed }) => {
+  const { resolveTodo } = useNotifications();
   const resumeDraftId = initialData?.resumeDraftId || null;
   const resumeRecord = resumeDraftId ? getMaterialUpload(resumeDraftId) : null;
   const resumeAtMapping = resumeRecord?.status === "Mapping";
@@ -372,6 +374,8 @@ export const MaterialUploadNewPage = ({ onNavigate, showSnackbar, initialData, i
   const handleCancelUpload = (reason) => {
     if (editingDraftId) {
       updateMaterialUpload(editingDraftId, { status: "Cancelled", logDesc: reason });
+      // Cancelling the session resolves any pending "Review bulk upload" Todo.
+      resolveTodo("material_bulk_upload", editingDraftId, "bulk_upload");
     }
     showSnackbar?.("Upload cancelled", "info");
     onNavigate("materials_bulk-upload-list");
@@ -427,6 +431,9 @@ export const MaterialUploadNewPage = ({ onNavigate, showSnackbar, initialData, i
     const record = editingDraftId
       ? updateMaterialUpload(editingDraftId, payload)
       : addMaterialUpload(payload);
+
+    // Confirming the import resolves any pending "Review bulk upload" Todo.
+    resolveTodo("material_bulk_upload", record.id, "bulk_upload");
 
     setProcessingRecordId(record.id);
     setStep("processing");

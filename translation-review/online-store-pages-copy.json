@@ -1,0 +1,662 @@
+[
+  {
+    "key": "onlineStore.pages.scheduled",
+    "source": "PagesManagement.jsx",
+    "en": "Scheduled",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.hidden",
+    "source": "PagesManagement.jsx",
+    "en": "Hidden",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.visible",
+    "source": "PagesManagement.jsx",
+    "en": "Visible",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.bulkVisibilitySuccess",
+    "source": "PagesManagement.jsx",
+    "en": "Visibility for {{count}} pages successfully updated",
+    "id": "Visibilitas untuk {{count}} halaman berhasil diperbarui"
+  },
+  {
+    "key": "onlineStore.pages.bulkVisibilityFailed",
+    "source": "PagesManagement.jsx",
+    "en": "Failed to update page visibility",
+    "id": "Gagal memperbarui visibilitas halaman"
+  },
+  {
+    "key": "onlineStore.pages.bulkVisibilityPartialSuccess",
+    "source": "PagesManagement.jsx",
+    "en": "Visibility updated for {{successCount}} of {{totalCount}} pages. Please try again for the rest",
+    "id": "Visibilitas telah diperbarui untuk {{successCount}} dari {{totalCount}} halaman. Silakan coba lagi untuk sisanya"
+  },
+  {
+    "key": "onlineStore.pages.scheduleRequired",
+    "source": "PagesManagement.jsx",
+    "en": "Select a publish date and time.",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.scheduleMustBeFuture",
+    "source": "PagesManagement.jsx",
+    "en": "Choose a date and time in the future.",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.bulkDeleteSuccess",
+    "source": "PagesManagement.jsx",
+    "en": "{{count}} pages successfully deleted",
+    "id": "{{count}} halaman berhasil dihapus"
+  },
+  {
+    "key": "onlineStore.pages.bulkDeleteFailed",
+    "source": "PagesManagement.jsx",
+    "en": "Failed to delete pages",
+    "id": "Gagal menghapus halaman"
+  },
+  {
+    "key": "onlineStore.pages.bulkDeletePartialSuccess",
+    "source": "PagesManagement.jsx",
+    "en": "{{successCount}} of {{totalCount}} pages deleted. Some pages couldn’t be deleted. Please try again",
+    "id": "{{successCount}} dari {{totalCount}} halaman berhasil dihapus. Beberapa halaman tidak dapat dihapus. Silakan coba lagi"
+  },
+  {
+    "key": "onlineStore.pages.columnTitle",
+    "source": "PagesManagement.jsx",
+    "en": "Title",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.columnVisibility",
+    "source": "PagesManagement.jsx",
+    "en": "Visibility",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.columnUrl",
+    "source": "PagesManagement.jsx",
+    "en": "URL",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.columnContent",
+    "source": "PagesManagement.jsx",
+    "en": "Content",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.columnUpdated",
+    "source": "PagesManagement.jsx",
+    "en": "Updated",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.simulateLoadError",
+    "source": "PagesManagement.jsx",
+    "en": "Simulate load error",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.simulateNotFound",
+    "source": "PagesManagement.jsx",
+    "en": "Simulate page not found",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.simulateBulkDelete",
+    "source": "PagesManagement.jsx",
+    "en": "Bulk delete",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.simulateNone",
+    "source": "PagesManagement.jsx",
+    "en": "None",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.simulatePartialFailure",
+    "source": "PagesManagement.jsx",
+    "en": "Partial failure",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.simulateTotalFailure",
+    "source": "PagesManagement.jsx",
+    "en": "Total failure",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.simulateBulkVisibility",
+    "source": "PagesManagement.jsx",
+    "en": "Change visibility",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.notFoundTitle",
+    "source": "PagesManagement.jsx",
+    "en": "Page not found",
+    "id": "Halaman Tidak Ditemukan"
+  },
+  {
+    "key": "onlineStore.pageEditor.notFoundDescription",
+    "source": "PagesManagement.jsx",
+    "en": "This page may have been deleted or is no longer available.",
+    "id": "Halaman ini mungkin telah dihapus atau tidak lagi tersedia."
+  },
+  {
+    "key": "onlineStore.pageEditor.notFoundGoToList",
+    "source": "PagesManagement.jsx",
+    "en": "Go to Page List",
+    "id": "Buka Daftar Halaman"
+  },
+  {
+    "key": "onlineStore.pageEditor.loadErrorTitle",
+    "source": "PagesManagement.jsx",
+    "en": "Couldn’t load this page",
+    "id": "Halaman ini tidak dapat dimuat"
+  },
+  {
+    "key": "onlineStore.pageEditor.loadErrorDescription",
+    "source": "PagesManagement.jsx",
+    "en": "Something went wrong while loading the page. Please try again.",
+    "id": "Terjadi kesalahan saat memuat halaman. Silakan coba lagi."
+  },
+  {
+    "key": "onlineStore.pageEditor.loadErrorReload",
+    "source": "PagesManagement.jsx",
+    "en": "Reload Page",
+    "id": "Muat Ulang Halaman"
+  },
+  {
+    "key": "editor.pagesPanel.heading",
+    "source": "PagesManagement.jsx",
+    "en": "Pages",
+    "id": "Halaman"
+  },
+  {
+    "key": "onlineStore.pages.addPage",
+    "source": "PagesManagement.jsx",
+    "en": "New Page",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.bulkSelectedCount",
+    "source": "PagesManagement.jsx",
+    "en": "{{count}} selected",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.setVisible",
+    "source": "PagesManagement.jsx",
+    "en": "Set as visible",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.setHidden",
+    "source": "PagesManagement.jsx",
+    "en": "Set as hidden",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.setSchedule",
+    "source": "PagesManagement.jsx",
+    "en": "Set schedule visibility",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.bulkMoreActions",
+    "source": "PagesManagement.jsx",
+    "en": "More actions",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.deletePages",
+    "source": "PagesManagement.jsx",
+    "en": "Delete pages",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.searchPlaceholder",
+    "source": "PagesManagement.jsx",
+    "en": "Search by page title",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.filterVisibility",
+    "source": "PagesManagement.jsx",
+    "en": "Visibility",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.noPages",
+    "source": "PagesManagement.jsx",
+    "en": "No pages yet",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.bulkDeleteConfirmTitle",
+    "source": "PagesManagement.jsx",
+    "en": "Delete {{count}} pages?",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.bulkDeleteConfirmDescription",
+    "source": "PagesManagement.jsx",
+    "en": "This can’t be undone.",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.scheduleModalTitle",
+    "source": "PagesManagement.jsx",
+    "en": "Set schedule visibility",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.scheduleModalDescription",
+    "source": "PagesManagement.jsx",
+    "en": "{{count}} pages will become visible at this date and time.",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.scheduleConfirm",
+    "source": "PagesManagement.jsx",
+    "en": "Schedule",
+    "id": null
+  },
+  {
+    "key": "editor.common.cancel",
+    "source": "PagesManagement.jsx",
+    "en": "Cancel",
+    "id": "Batal"
+  },
+  {
+    "key": "onlineStore.pages.scheduleDateLabel",
+    "source": "PagesManagement.jsx",
+    "en": "Publish date and time",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.titleRequired",
+    "source": "PageEditor.jsx",
+    "en": "Field cannot be empty",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.saveFailedBanner",
+    "source": "PageEditor.jsx",
+    "en": "Failed to save page",
+    "id": "Gagal menyimpan halaman"
+  },
+  {
+    "key": "onlineStore.pageEditor.scheduleRequired",
+    "source": "PageEditor.jsx",
+    "en": "Select a publish date and time in the future.",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.urlHandleTaken",
+    "source": "PageEditor.jsx",
+    "en": "This URL handle is already in use by another page.",
+    "id": "Handle URL ini sudah digunakan oleh halaman lain."
+  },
+  {
+    "key": "onlineStore.pageEditor.savedSnackbar",
+    "source": "PageEditor.jsx",
+    "en": "Page successfully saved",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.duplicatedSnackbar",
+    "source": "PageEditor.jsx",
+    "en": "Page successfully duplicated",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.addNewPageTitle",
+    "source": "PageEditor.jsx",
+    "en": "Add New Page",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.editPageTitle",
+    "source": "PageEditor.jsx",
+    "en": "Edit Page",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.simulateSaveError",
+    "source": "PageEditor.jsx",
+    "en": "Simulate save error",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.simulateLoadError",
+    "source": "PageEditor.jsx",
+    "en": "Simulate load error",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.simulateNotFound",
+    "source": "PageEditor.jsx",
+    "en": "Simulate page not found",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.simulateGenerateFailed",
+    "source": "PageEditor.jsx",
+    "en": "Simulate generation failed",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.simulateAiUnavailable",
+    "source": "PageEditor.jsx",
+    "en": "Simulate AI unavailable",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pages.heading",
+    "source": "PageEditor.jsx",
+    "en": "Pages",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.titleLabel",
+    "source": "PageEditor.jsx",
+    "en": "Title",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.generateText",
+    "source": "PageEditor.jsx",
+    "en": "Generate text",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.titlePlaceholder",
+    "source": "PageEditor.jsx",
+    "en": "e.g. About us",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.contentLabel",
+    "source": "PageEditor.jsx",
+    "en": "Content",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.seoHeading",
+    "source": "PageEditor.jsx",
+    "en": "Search engine listing",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.storeName",
+    "source": "PageEditor.jsx",
+    "en": "Your store",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.untitled",
+    "source": "PageEditor.jsx",
+    "en": "Untitled page",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.noDescription",
+    "source": "PageEditor.jsx",
+    "en": "Add a description to see how this page might appear in search results.",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.metaTitle",
+    "source": "PageEditor.jsx",
+    "en": "Page title",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.metaDescription",
+    "source": "PageEditor.jsx",
+    "en": "Meta description",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.urlHandle",
+    "source": "PageEditor.jsx",
+    "en": "URL handle",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.redirectOldHandle",
+    "source": "PageEditor.jsx",
+    "en": "Create a redirect from the old URL ({{old}})",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.visibilityHeading",
+    "source": "PageEditor.jsx",
+    "en": "Visibility",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.visibleImmediately",
+    "source": "PageEditor.jsx",
+    "en": "Visible",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.scheduleLabel",
+    "source": "PageEditor.jsx",
+    "en": "Schedule",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.visibleAsOf",
+    "source": "PageEditor.jsx",
+    "en": "Publish date and time",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.templateHeading",
+    "source": "PageEditor.jsx",
+    "en": "Template",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.delete",
+    "source": "PageEditor.jsx",
+    "en": "Delete",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.duplicate",
+    "source": "PageEditor.jsx",
+    "en": "Duplicate",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.preview",
+    "source": "PageEditor.jsx",
+    "en": "Preview",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.editInEditor",
+    "source": "PageEditor.jsx",
+    "en": "Edit in Editor",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.saveChanges",
+    "source": "PageEditor.jsx",
+    "en": "Save changes",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.save",
+    "source": "PageEditor.jsx",
+    "en": "Save",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.deleteConfirmTitle",
+    "source": "PageEditor.jsx",
+    "en": "Delete this page?",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.deleteConfirmDescription",
+    "source": "PageEditor.jsx",
+    "en": "This page and its content will be permanently deleted.",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.duplicateConfirmTitle",
+    "source": "PageEditor.jsx",
+    "en": "Duplicate page?",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.cancel",
+    "source": "PageEditor.jsx",
+    "en": "Cancel",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.duplicatePageTitleLabel",
+    "source": "PageEditor.jsx",
+    "en": "Page title",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.unsavedEditorTitle",
+    "source": "PageEditor.jsx",
+    "en": "You have unsaved changes",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.unsavedEditorDescription",
+    "source": "PageEditor.jsx",
+    "en": "Save your changes before opening the section editor, or keep editing here.",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.saveAndContinue",
+    "source": "PageEditor.jsx",
+    "en": "Save changes",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.keepEditing",
+    "source": "PageEditor.jsx",
+    "en": "Keep editing",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.discardChangesTitle",
+    "source": "PageEditor.jsx",
+    "en": "Discard changes?",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.discardChangesDescription",
+    "source": "PageEditor.jsx",
+    "en": "You have unsaved changes that will be lost if you leave this page.",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.discardChangesConfirm",
+    "source": "PageEditor.jsx",
+    "en": "Yes, Discard",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.generateError",
+    "source": "GenerateTextModal.jsx",
+    "en": "Failed to generate content",
+    "id": "Gagal menghasilkan konten"
+  },
+  {
+    "key": "onlineStore.pageEditor.generateUnavailable",
+    "source": "GenerateTextModal.jsx",
+    "en": "AI generation is currently unavailable",
+    "id": "Pembuatan konten AI saat ini tidak tersedia."
+  },
+  {
+    "key": "onlineStore.pageEditor.generateTitleHeading",
+    "source": "GenerateTextModal.jsx",
+    "en": "Generate a title with Labamu AI",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.generateContentHeading",
+    "source": "GenerateTextModal.jsx",
+    "en": "Generate content with Labamu AI",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.generateReplace",
+    "source": "GenerateTextModal.jsx",
+    "en": "Replace content",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.generateUse",
+    "source": "GenerateTextModal.jsx",
+    "en": "Use this text",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.generating",
+    "source": "GenerateTextModal.jsx",
+    "en": "Generating…",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.generate",
+    "source": "GenerateTextModal.jsx",
+    "en": "Generate",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.generateInsert",
+    "source": "GenerateTextModal.jsx",
+    "en": "Insert alongside",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.generatePromptLabel",
+    "source": "GenerateTextModal.jsx",
+    "en": "Describe what you want",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.generateRegenerate",
+    "source": "GenerateTextModal.jsx",
+    "en": "Regenerate",
+    "id": "Buat ulang"
+  },
+  {
+    "key": "onlineStore.pageEditor.generateTitlePlaceholder",
+    "source": "GenerateTextModal.jsx",
+    "en": "e.g. A warm about-us page for a family bakery",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.generateContentPlaceholder",
+    "source": "GenerateTextModal.jsx",
+    "en": "e.g. Explain our shipping and return policy",
+    "id": null
+  },
+  {
+    "key": "onlineStore.pageEditor.generateResultLabel",
+    "source": "GenerateTextModal.jsx",
+    "en": "Labamu AI generated",
+    "id": null
+  }
+]

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "../../../components/common/Button.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { ToggleSwitch } from "../../../components/common/ToggleSwitch.jsx";
+import { Tooltip } from "../../../components/atoms/Tooltip.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
 import { ChipTabs } from "../../../ce-ui";
@@ -54,6 +55,55 @@ const LOCKED_ON_TOGGLE_CLASS = "!bg-[#9AA0A6]";
 // toggle.
 const DISABLED_OFF_TOGGLE_CLASS = "!bg-[#D0D3D8]";
 
+const REQUIRED_TOOLTIP = { en: "Required", id: "Wajib" };
+const DISABLED_FROM_ADMIN_TOOLTIP = {
+  en: "Disabled from Admin",
+  id: "Dinonaktifkan dari Admin",
+};
+// {days} is filled in below; Indonesian has no day/days plural distinction.
+const REMINDER_CHIP_TEXT = {
+  en: "Reminder: {days} {dayWord} before",
+  id: "Pengingat: {days} hari sebelumnya",
+};
+
+// Pseudo-module id for the "All" tab — shows every module's notifications in
+// one list, with a big-variant divider + header between each module's group.
+const ALL_TAB_ID = "all";
+const ALL_TAB_LABEL = { en: "All", id: "Semua" };
+// The divider is a normal (non-sticky) element — it scrolls away with the
+// previous module's cards instead of following the header. It bleeds
+// edge-to-edge past the scroll container's 20px side padding via negative
+// margins, so it isn't inset like the notification cards.
+const sectionDividerStyle = {
+  height: "4px",
+  background: "var(--neutral-line-separator-2)",
+  margin: "4px -20px",
+  flexShrink: 0,
+};
+// Sticks to the top of the scrollable list (classic sectioned-list header):
+// stays pinned while its module's cards scroll past, then the next module's
+// header slides up and takes its place once it reaches the top.
+const sectionHeaderWrapperStyle = {
+  position: "sticky",
+  top: 0,
+  zIndex: 2,
+  background: "var(--neutral-surface-primary)",
+  // Bleeds edge-to-edge past the scroll container's 20px side padding (same
+  // as the divider) so the white background fully covers that gutter while
+  // stuck — otherwise the divider scrolling underneath peeks out at the
+  // sides instead of being fully hidden behind the sticky header.
+  margin: "0 -20px",
+  padding: "0 20px",
+};
+const sectionHeaderStyle = {
+  padding: "8px 0 4px",
+  fontSize: "14px",
+  fontWeight: "var(--font-weight-bold)",
+  color: "var(--neutral-on-surface-secondary)",
+  textTransform: "uppercase",
+  letterSpacing: "0.02em",
+};
+
 // Collapse grouped admin toggles (e.g. "Receipt Status Updates") into one row.
 const buildDisplayUnits = (items, language) => {
   const units = [];
@@ -73,7 +123,7 @@ const buildDisplayUnits = (items, language) => {
       memberIds,
       rule: {
         id: rule.groupId,
-        name: group?.label ? pickLocalized(group.label, language) : rule.name,
+        name: group?.label ? pickLocalized(group.label, language) : pickLocalized(rule.name, language),
         description: group?.description || {
           en: "Outsourced receipt recorded and fully received updates.",
           id: "Pembaruan saat penerimaan outsource dicatat dan telah diterima sepenuhnya.",
@@ -109,9 +159,7 @@ const NotificationPreferencesPage = ({
 }) => {
   const company = companySettings || buildDefaultCompanySettings();
 
-  const [activeModule, setActiveModule] = useState(
-    DEFAULT_NOTIFICATION_SETTINGS[0]?.id
-  );
+  const [activeModule, setActiveModule] = useState(ALL_TAB_ID);
   const [searchQuery, setSearchQuery] = useState("");
   const [prefs, setPrefs] = useState(() =>
     clonePersonalPreferences(personalPreferences || buildDefaultPersonalPreferences())
@@ -224,23 +272,45 @@ const NotificationPreferencesPage = ({
       action.proceed?.();
       return;
     }
-    if (action?.type === "module") {
-      setActiveModule(action.id);
-      setSearchQuery("");
-    }
     showToast("Changes discarded");
   };
 
-  const chipTabs = DEFAULT_NOTIFICATION_SETTINGS.map((section) => ({
-    id: section.id,
-    label: pickLocalized(section.title, language),
-    count: buildDisplayUnits(
-      section.items.filter(
-        (item) => canAccess(item.permission) && isEnabledByCompany(item, company)
+  // Modules sorted ascending by their displayed label — recomputed per
+  // language since the EN/ID titles don't share the same alphabetical order.
+  const sortedSections = useMemo(
+    () =>
+      [...DEFAULT_NOTIFICATION_SETTINGS].sort((a, b) =>
+        pickLocalized(a.title, language).localeCompare(pickLocalized(b.title, language))
       ),
-      language
-    ).length,
-  }));
+    [language]
+  );
+
+  const visibleItems = (section) =>
+    section.items.filter(
+      (item) => canAccess(item.permission) && isEnabledByCompany(item, company)
+    );
+
+  const chipTabs = useMemo(
+    () => [
+      {
+        id: ALL_TAB_ID,
+        label: pickLocalized(ALL_TAB_LABEL, language),
+        count: sortedSections.reduce(
+          (sum, section) => sum + buildDisplayUnits(visibleItems(section), language).length,
+          0
+        ),
+      },
+      ...sortedSections.map((section) => ({
+        id: section.id,
+        label: pickLocalized(section.title, language),
+        count: buildDisplayUnits(visibleItems(section), language).length,
+      })),
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sortedSections, language, company]
+  );
+
+  const isAllView = activeModule === ALL_TAB_ID;
 
   const activeSection = useMemo(
     () =>
@@ -249,14 +319,11 @@ const NotificationPreferencesPage = ({
     [activeModule]
   );
 
-  // Switching module tabs with unsaved changes prompts the same discard
-  // confirmation as Cancel, instead of silently carrying the draft over.
+  // Switching module tabs carries the unsaved draft over silently — the
+  // discard-changes prompt is reserved for leaving the page entirely (via
+  // the navigation guard) or clicking Cancel.
   const requestModule = (id) => {
     if (id === activeModule) return;
-    if (isDirty) {
-      setPendingAction({ type: "module", id });
-      return;
-    }
     setActiveModule(id);
     setSearchQuery("");
   };
@@ -277,7 +344,7 @@ const NotificationPreferencesPage = ({
       : channelDisabled && !checked
         ? DISABLED_OFF_TOGGLE_CLASS
         : "";
-    return (
+    const toggle = (
       <ToggleSwitch
         checked={checked}
         disabled={channelDisabled}
@@ -285,6 +352,26 @@ const NotificationPreferencesPage = ({
         onChange={(next) => patchRules(unit.memberIds, { [channel]: next })}
       />
     );
+    // A Required toggle is always locked on — tooltip explains why it can't
+    // be turned off.
+    if (isRequired) {
+      return (
+        <Tooltip content={pickLocalized(REQUIRED_TOOLTIP, language)}>
+          <span style={{ display: "inline-flex" }}>{toggle}</span>
+        </Tooltip>
+      );
+    }
+    // A channel disabled because the company turned it off (not because it's
+    // Required) gets a tooltip explaining why it can't be toggled here.
+    const disabledFromAdmin = channelDisabled && !companyAllowsChannel;
+    if (disabledFromAdmin) {
+      return (
+        <Tooltip content={pickLocalized(DISABLED_FROM_ADMIN_TOOLTIP, language)}>
+          <span style={{ display: "inline-flex" }}>{toggle}</span>
+        </Tooltip>
+      );
+    }
+    return toggle;
   };
 
   // Merged In-app/Email cell: two toggles side by side with a single
@@ -319,41 +406,109 @@ const NotificationPreferencesPage = ({
     );
   };
 
-  const rows = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    return buildDisplayUnits(
-      activeSection.items.filter(
-        (item) => canAccess(item.permission) && isEnabledByCompany(item, company)
-      ),
-      language
-    )
-      .filter((unit) => {
-        if (!q) return true;
-        const r = unit.rule;
-        return `${r.name} ${pickLocalized(r.description, language)} ${r.permission || "-"}`
-          .toLowerCase()
-          .includes(q);
-      })
+  const renderRow = (row) => {
+    const isRequired = row.unit.kind === "rule" && row.unit.rule.type === "required";
+    const primaryId = row.unit.memberIds[0];
+    const showsReminder = REMINDER_SUPPORTED_RULE_IDS.has(primaryId);
+    const days = company[primaryId]?.remindBefore;
+    return (
+      <div key={row.id} style={cardStyle}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: "1 1 320px", minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "14px", fontWeight: "var(--font-weight-bold)" }}>
+              {row.name}
+            </span>
+            {isRequired ? (
+              <Tooltip content={pickLocalized(REQUIRED_TOOLTIP, language)}>
+                <StatusBadge variant="blue-light">Required</StatusBadge>
+              </Tooltip>
+            ) : null}
+          </div>
+          <span
+            style={{
+              fontSize: "14px",
+              lineHeight: "18px",
+              color: "var(--neutral-on-surface-secondary)",
+            }}
+          >
+            {pickLocalized(row.unit.rule.description, language)}
+          </span>
+          {showsReminder ? (
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                fontSize: "14px",
+                color: "var(--neutral-on-surface-secondary)",
+              }}
+            >
+              <Info size={14} />
+              {pickLocalized(REMINDER_CHIP_TEXT, language)
+                .replace("{days}", days)
+                .replace("{dayWord}", days === 1 ? "day" : "days")}
+            </span>
+          ) : null}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: "140px" }}>
+          <span style={metaLabelStyle}>Permission</span>
+          <span style={{ fontSize: "var(--text-title-3)" }}>{row.permission || "-"}</span>
+        </div>
+
+        {renderTogglePair(row.unit)}
+      </div>
+    );
+  };
+
+  const matchesSearch = (unit, q) => {
+    if (!q) return true;
+    const r = unit.rule;
+    return `${pickLocalized(r.name, language)} ${pickLocalized(r.description, language)} ${r.permission || "-"}`
+      .toLowerCase()
+      .includes(q);
+  };
+
+  const rowsForSection = (section, q) =>
+    buildDisplayUnits(visibleItems(section), language)
+      .filter((unit) => matchesSearch(unit, q))
       .map((unit) => ({
         id: unit.key,
         unit,
-        name: unit.rule.name,
+        name: pickLocalized(unit.rule.name, language),
         permission: unit.rule.permission,
       }));
+
+  const rows = useMemo(() => {
+    if (isAllView) return [];
+    const q = searchQuery.trim().toLowerCase();
+    return rowsForSection(activeSection, q);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeSection, searchQuery, language, company]);
+  }, [activeSection, searchQuery, language, company, isAllView]);
+
+  // "All" view: one row group per module, in the same ascending order as the
+  // tabs, skipping modules with no results so an empty header never appears.
+  const groupedRows = useMemo(() => {
+    if (!isAllView) return [];
+    const q = searchQuery.trim().toLowerCase();
+    return sortedSections
+      .map((section) => ({ section, rows: rowsForSection(section, q) }))
+      .filter((group) => group.rows.length > 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAllView, sortedSections, searchQuery, language, company]);
 
 
   return (
     <div
       style={{
-        minHeight: "calc(100vh - 64px)",
+        height: "calc(100vh - 64px)",
         padding: "24px 24px 0",
         boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
         gap: "20px",
-        overflow: "visible",
+        overflow: "hidden",
+        minHeight: 0,
       }}
     >
       {toastMessage ? (
@@ -399,13 +554,20 @@ const NotificationPreferencesPage = ({
         Notification Preferences
       </h1>
 
-      {/* Module chip tabs — outside the content card, wrapping instead of scrolling */}
-      <ChipTabs
-        tabs={chipTabs}
-        activeTab={activeModule}
-        onChange={requestModule}
-        className="flex-wrap"
-      />
+      {/* Module chip tabs — outside the content card, wrapping instead of scrolling.
+          flexShrink:0 keeps this row at its natural (wrapped) height instead of
+          being compressed by the flex column, which would otherwise trigger
+          ChipTabs' own overflow-x-auto to also scroll vertically (CSS forces a
+          "visible" cross-axis to compute as "auto" when the other axis isn't
+          visible), clipping the tab rows instead of hugging them. */}
+      <div style={{ flexShrink: 0 }}>
+        <ChipTabs
+          tabs={chipTabs}
+          activeTab={activeModule}
+          onChange={requestModule}
+          className="flex-wrap"
+        />
+      </div>
 
       {/* Content card — one card per notification instead of a table row,
           so each item's fields (name, permission, reminder, toggles) sit
@@ -418,6 +580,12 @@ const NotificationPreferencesPage = ({
           border: "1px solid var(--neutral-line-separator-1)",
           display: "flex",
           flexDirection: "column",
+          // No flex-grow: hug the content when the list is short instead of
+          // always stretching to fill the column; flex-shrink stays enabled
+          // so a long list is still capped and scrolls internally.
+          flex: "0 1 auto",
+          minHeight: 0,
+          overflow: "hidden",
         }}
       >
         <div
@@ -427,10 +595,11 @@ const NotificationPreferencesPage = ({
             justifyContent: "space-between",
             alignItems: "center",
             gap: "16px",
+            flexShrink: 0,
           }}
         >
           <span style={{ fontSize: "16px", fontWeight: "var(--font-weight-bold)" }}>
-            {pickLocalized(activeSection.title, language)}
+            {isAllView ? pickLocalized(ALL_TAB_LABEL, language) : pickLocalized(activeSection.title, language)}
           </span>
           <TableSearchField
             value={searchQuery}
@@ -439,72 +608,60 @@ const NotificationPreferencesPage = ({
             width="360px"
           />
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", padding: "0 20px 20px" }}>
-          {rows.map((row) => {
-            const isRequired =
-              row.unit.kind === "rule" && row.unit.rule.type === "required";
-            const primaryId = row.unit.memberIds[0];
-            const showsReminder = REMINDER_SUPPORTED_RULE_IDS.has(primaryId);
-            const days = company[primaryId]?.remindBefore;
-            return (
-              <div key={row.id} style={cardStyle}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px", flex: "1 1 320px", minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                    <span style={{ fontSize: "14px", fontWeight: "var(--font-weight-bold)" }}>
-                      {row.name}
-                    </span>
-                    {isRequired ? (
-                      <StatusBadge variant="blue-light">Required</StatusBadge>
-                    ) : null}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+            padding: "0 20px 20px",
+            overflow: "auto",
+            minHeight: 0,
+            flex: "1 1 auto",
+          }}
+        >
+          {isAllView ? (
+            <>
+              {groupedRows.map((group, index) => (
+                <React.Fragment key={group.section.id}>
+                  {index > 0 ? <div style={sectionDividerStyle} /> : null}
+                  <div style={sectionHeaderWrapperStyle}>
+                    <div style={sectionHeaderStyle}>
+                      {pickLocalized(group.section.title, language)}
+                    </div>
                   </div>
-                  <span
-                    style={{
-                      fontSize: "14px",
-                      lineHeight: "18px",
-                      color: "var(--neutral-on-surface-secondary)",
-                    }}
-                  >
-                    {pickLocalized(row.unit.rule.description, language)}
-                  </span>
-                  {showsReminder ? (
-                    <span
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        fontSize: "14px",
-                        color: "var(--neutral-on-surface-secondary)",
-                      }}
-                    >
-                      <Info size={14} />
-                      {`Reminder: ${days} ${days === 1 ? "day" : "days"} before`}
-                    </span>
-                  ) : null}
+                  {group.rows.map((row) => renderRow(row))}
+                </React.Fragment>
+              ))}
+              {groupedRows.length === 0 ? (
+                <div
+                  style={{
+                    padding: "32px 0",
+                    textAlign: "center",
+                    color: "var(--neutral-on-surface-secondary)",
+                    fontSize: "var(--text-title-3)",
+                  }}
+                >
+                  No notifications match this module.
                 </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px", minWidth: "140px" }}>
-                  <span style={metaLabelStyle}>Permission</span>
-                  <span style={{ fontSize: "var(--text-title-3)" }}>
-                    {row.permission || "-"}
-                  </span>
+              ) : null}
+            </>
+          ) : (
+            <>
+              {rows.map((row) => renderRow(row))}
+              {rows.length === 0 ? (
+                <div
+                  style={{
+                    padding: "32px 0",
+                    textAlign: "center",
+                    color: "var(--neutral-on-surface-secondary)",
+                    fontSize: "var(--text-title-3)",
+                  }}
+                >
+                  No notifications match this module.
                 </div>
-
-                {renderTogglePair(row.unit)}
-              </div>
-            );
-          })}
-          {rows.length === 0 ? (
-            <div
-              style={{
-                padding: "32px 0",
-                textAlign: "center",
-                color: "var(--neutral-on-surface-secondary)",
-                fontSize: "var(--text-title-3)",
-              }}
-            >
-              No notifications match this module.
-            </div>
-          ) : null}
+              ) : null}
+            </>
+          )}
         </div>
       </div>
 

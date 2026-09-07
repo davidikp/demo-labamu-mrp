@@ -1,0 +1,13 @@
+Location,Key,English,Bahasa Indonesia
+Company Notification Settings — Reminder timing card,label,Reminder timing,
+Company Notification Settings — Reminder timing card,helper text,Define how long before the {target} the notification should be sent.,
+Company Notification Settings — Reminder timing card,input prefix,Send,
+Company Notification Settings — Reminder timing card,input suffix,days before the {target},
+Company Notification Settings — Reminder timing card,validation error,Remind Day must be between {min}-{max} days,
+Company Notification Settings — Reminder timing card,confirmation text,The reminder will be sent {days} days before the {target}.,
+Notification Preferences — reminder chip,reminder chip text,Reminder: {days} day(s) before,
+Reminder target word (used inside {target} above),reminderTarget: expiry date,expiry date,
+Reminder target word (used inside {target} above),reminderTarget: deadline,deadline,
+Reminder target word (used inside {target} above),reminderTarget: valid-until date,valid-until date,
+Reminder target word (used inside {target} above),reminderTarget: due date,due date,
+Reminder target word (used inside {target} above),reminderTarget: expected end date,expected end date,

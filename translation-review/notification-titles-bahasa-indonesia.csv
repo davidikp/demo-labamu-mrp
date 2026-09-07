@@ -1,0 +1,47 @@
+Module,Item ID,English,Bahasa Indonesia
+Approval,approval_submission,Approval Submission,Pengajuan Persetujuan
+Approval,approval_progress_update,Approval Progress Update,Pembaruan Proses Persetujuan
+Approval,final_approval,Final Approval,Persetujuan Akhir
+Approval,approval_rejected,Approval Rejected,Persetujuan Ditolak
+Approval,revision_requested,Revision Requested,Revisi Diminta
+Inventory,material_running_low,Material Running Low,Stok Material Menipis
+Inventory,material_out_of_stock,Material Out of Stock,Stok Material Habis
+Inventory,material_expiring_soon,Material Expiring Soon,Material Segera Kedaluwarsa
+Inventory,material_expired,Material Expired,Material Kedaluwarsa
+Material Request,mr_new_material_request,New Material Request,Permintaan Material Baru
+Material Request,mr_transfer_started,Transfer Started,Transfer Dimulai
+Material Request,mr_receipt_confirmed,Receipt Confirmed,Penerimaan Dikonfirmasi
+Material Request,mr_receipt_rejected,Receipt Rejected,Penerimaan Ditolak
+Material Request,mr_cancelled_by_preparer,Material Request Cancelled by Preparer,Permintaan Material Dibatalkan oleh Pembuat
+Work Order,wo_new_work_order,New Work Order,Work Order Baru
+Work Order,wo_outsource_po_issued,Outsource Purchase Order Issued,Purchase Order Outsource Diterbitkan
+Work Order,wo_outsource_po_receipt_recorded,Outsource Purchase Order Receipt Recorded,Penerimaan Purchase Order Outsource Dicatat
+Work Order,wo_outsource_po_fully_received,Outsource Purchase Order Fully Received,Purchase Order Outsource Diterima Sepenuhnya
+Work Order,wo_deadline_approaching,Deadline Approaching,Batas Waktu Segera Tiba
+Work Order,wo_deadline_overdue,Deadline Overdue,Batas Waktu Terlewat
+Work Order,wo_changed_to_completed,Changed to Completed,Status Diubah menjadi Selesai
+Work Order,wo_changed_to_cancelled,Changed to Cancelled,Status Diubah menjadi Dibatalkan
+Custom Product Request,cpr_new_request,New Request,Permintaan Baru
+Quotes,quote_valid_until_reminder,Quote Valid Until Reminder,Pengingat Masa Berlaku Penawaran
+Quotes,quote_revision_requested_by_customer,Quote Revision Requested by Customer,Revisi Penawaran Diminta Pelanggan
+Quotes,quote_approved_by_customer,Quote Approved by Customer,Penawaran Disetujui Pelanggan
+Quotes,quote_rejected_by_customer,Quote Rejected by Customer,Penawaran Ditolak Pelanggan
+Orders,order_new_order,New Order,Pesanan Baru
+Orders,order_invoice_paid,Order Invoice Paid,Tagihan Pesanan Dibayar
+Orders,order_deadline_approaching,Order Deadline Approaching,Batas Waktu Pesanan Segera Tiba
+Orders,order_deadline_overdue,Order Deadline Overdue,Batas Waktu Pesanan Terlewat
+Orders,order_changed_to_completed,Changed to Completed,Status Diubah menjadi Selesai
+Orders,order_changed_to_cancelled,Changed to Cancelled,Status Diubah menjadi Dibatalkan
+Invoice,invoice_revision_requested_by_customer,Invoice Revision Requested by Customer,Revisi Tagihan Diminta Pelanggan
+Invoice,invoice_approved_by_customer,Invoice Approved by Customer,Tagihan Disetujui Pelanggan
+Invoice,invoice_rejected_by_customer,Invoice Rejected by Customer,Tagihan Ditolak Pelanggan
+Invoice,invoice_due_date_approaching,Due Date Approaching,Jatuh Tempo Segera Tiba
+Invoice,invoice_overdue,Invoice Overdue,Tagihan Jatuh Tempo
+Invoice,invoice_payment_proof_submitted,Payment Proof Submitted,Bukti Pembayaran Dikirim
+Invoice,invoice_payment_proof_rejected,Payment Proof Rejected,Bukti Pembayaran Ditolak
+Purchase Order,po_expected_end_date_approaching,Expected End Date Approaching,Perkiraan Tanggal Selesai Segera Tiba
+Purchase Order,po_expected_end_date_overdue,Expected End Date Overdue,Perkiraan Tanggal Selesai Terlewat
+Purchase Order,po_payment_overdue,Payment Overdue,Pembayaran Terlambat
+Bulk Upload,bu_ready_for_review,Bulk Import Ready for Review,Impor Massal Siap Ditinjau
+Bulk Upload,bu_completed,Bulk Import Completed,Impor Massal Selesai
+Bulk Upload,bu_cancelled,Bulk Import Canceled,Impor Massal Dibatalkan

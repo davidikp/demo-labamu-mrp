@@ -1276,52 +1276,56 @@ NOTIFICATION_CATALOG.product_catalog = {
     todo: null,
     inApp: (c) => ({
       title: {
-        en: `Bulk upload finished — ${c.fileName}`,
-        id: `Bulk upload selesai — ${c.fileName}`,
+        en: `Your Product bulk upload is complete`,
+        id: `Bulk upload Product Anda selesai`,
       },
       body: {
-        en: `${c.fileName} finished processing — ${c.productCount} product${c.productCount === 1 ? "" : "s"} added to your catalog.`,
-        id: `${c.fileName} selesai diproses — ${c.productCount} produk ditambahkan ke katalog Anda.`,
+        en: `Your bulk upload has been completed. You can open the Bulk Upload page to review the result.`,
+        id: `Bulk upload Anda telah selesai. Anda dapat melihat hasil import melalui halaman Bulk Upload.`,
       },
-      cta: { en: "View Upload", id: "Lihat Upload" },
+      cta: { en: "View Result", id: "Lihat Hasil" },
     }),
     email: (c) => ({
       subject: {
-        en: `Bulk upload finished — ${c.fileName}`,
-        id: `Bulk upload selesai — ${c.fileName}`,
+        en: `Your Product Bulk Upload is Completed`,
+        id: `Bulk Upload Product Anda Selesai`,
       },
       body: {
-        en: `Hi ${c.requesterName}, ${c.fileName} finished processing — ${c.productCount} product${c.productCount === 1 ? "" : "s"} added to your catalog.`,
-        id: `Halo ${c.requesterName}, ${c.fileName} selesai diproses — ${c.productCount} produk ditambahkan ke katalog Anda.`,
+        en: `Hi ${c.requesterName}, your Product bulk upload has been completed. You can open the Bulk Upload page to review the result.\nUpload ID: ${c.entityId}\nFile: ${c.fileName}`,
+        id: `Halo ${c.requesterName}, bulk upload Product Anda telah selesai. Anda dapat melihat hasil import melalui halaman Bulk Upload.\nUpload ID: ${c.entityId}\nFile: ${c.fileName}`,
       },
-      cta: { en: "View Upload", id: "Lihat Upload" },
+      cta: { en: "View Product Bulk Upload Result", id: "Lihat Hasil Bulk Upload Product" },
     }),
   },
-  bulk_upload_mapping_ready: {
+  bulk_upload_ready_for_review: {
     recipientRule: "eligible_users",
     channels: { inApp: true, email: true },
-    todo: null,
+    todo: {
+      type: "bulk_upload",
+      tag: { en: "Review bulk upload", id: "Tinjau bulk upload" },
+      action: { en: "Review", id: "Tinjau" },
+    },
     inApp: (c) => ({
       title: {
-        en: `Mapping finished — ${c.fileName}`,
-        id: `Mapping selesai — ${c.fileName}`,
+        en: `Your Product bulk upload is ready for review`,
+        id: `Bulk upload Product Anda siap untuk ditinjau`,
       },
       body: {
-        en: `${c.fileName} finished mapping and is ready for review.`,
-        id: `${c.fileName} selesai dipetakan dan siap untuk ditinjau.`,
+        en: `Your bulk upload data has been processed and is ready for review before confirming the import.`,
+        id: `Data bulk upload Anda telah diproses dan siap ditinjau sebelum import dikonfirmasi.`,
       },
-      cta: { en: "Review", id: "Tinjau" },
+      cta: { en: "Review Bulk Upload", id: "Tinjau Bulk Upload" },
     }),
     email: (c) => ({
       subject: {
-        en: `Mapping finished — ${c.fileName}`,
-        id: `Mapping selesai — ${c.fileName}`,
+        en: `Your Product Bulk Upload is Ready for Review`,
+        id: `Bulk Upload Product Anda Siap untuk Ditinjau`,
       },
       body: {
-        en: `Hi ${c.requesterName}, ${c.fileName} finished mapping and is ready for review.`,
-        id: `Halo ${c.requesterName}, ${c.fileName} selesai dipetakan dan siap untuk ditinjau.`,
+        en: `Hi ${c.requesterName}, your Product bulk upload data is ready for review. You can open the Bulk Upload page to review the normalized data before confirming the import.\nUpload ID: ${c.entityId}\nFile: ${c.fileName}`,
+        id: `Halo ${c.requesterName}, data bulk upload Product Anda siap untuk ditinjau. Anda dapat melihat halaman Bulk Upload untuk meninjau data yang telah dinormalisasi sebelum mengonfirmasi import.\nUpload ID: ${c.entityId}\nFile: ${c.fileName}`,
       },
-      cta: { en: "Review", id: "Tinjau" },
+      cta: { en: "Review Product Bulk Upload", id: "Tinjau Bulk Upload Product" },
     }),
   },
   bulk_upload_cancelled: {
@@ -1330,25 +1334,25 @@ NOTIFICATION_CATALOG.product_catalog = {
     todo: null,
     inApp: (c) => ({
       title: {
-        en: `Bulk upload cancelled — ${c.fileName}`,
-        id: `Bulk upload dibatalkan — ${c.fileName}`,
+        en: `Your Product bulk upload was canceled`,
+        id: `Bulk upload Product Anda dibatalkan`,
       },
       body: {
-        en: `${c.fileName} was cancelled before it finished processing.`,
-        id: `${c.fileName} dibatalkan sebelum selesai diproses.`,
+        en: `Your bulk upload was canceled by the system because an error occurred during processing.`,
+        id: `Bulk upload Anda dibatalkan oleh sistem karena terjadi kesalahan saat proses berlangsung.`,
       },
-      cta: { en: "View Upload", id: "Lihat Upload" },
+      cta: { en: "View Detail", id: "View Detail" },
     }),
     email: (c) => ({
       subject: {
-        en: `Bulk upload cancelled — ${c.fileName}`,
-        id: `Bulk upload dibatalkan — ${c.fileName}`,
+        en: `Your Product Bulk Upload was Canceled`,
+        id: `Bulk Upload Product Anda Dibatalkan`,
       },
       body: {
-        en: `Hi ${c.requesterName}, ${c.fileName} was cancelled before it finished processing.`,
-        id: `Halo ${c.requesterName}, ${c.fileName} dibatalkan sebelum selesai diproses.`,
+        en: `Hi ${c.requesterName}, your Product bulk upload was canceled by the system. An error occurred during batch processing. Please try uploading your file again or contact our support team for assistance.\nUpload ID: ${c.entityId}\nFile: ${c.fileName}`,
+        id: `Halo ${c.requesterName}, bulk upload Product Anda dibatalkan oleh sistem. Terjadi kesalahan saat pemrosesan batch. Silakan coba unggah kembali file Anda atau hubungi tim support jika masalah berlanjut.\nUpload ID: ${c.entityId}\nFile: ${c.fileName}`,
       },
-      cta: { en: "View Upload", id: "Lihat Upload" },
+      cta: { en: "View Detail", id: "Lihat Detail" },
     }),
   },
 };
@@ -1364,52 +1368,56 @@ NOTIFICATION_CATALOG.material_bulk_upload = {
     todo: null,
     inApp: (c) => ({
       title: {
-        en: `Bulk upload finished — ${c.fileName}`,
-        id: `Bulk upload selesai — ${c.fileName}`,
+        en: `Your Material bulk upload is complete`,
+        id: `Bulk upload Material Anda selesai`,
       },
       body: {
-        en: `${c.fileName} finished processing — ${c.materialCount} material${c.materialCount === 1 ? "" : "s"} added to your catalog.`,
-        id: `${c.fileName} selesai diproses — ${c.materialCount} material ditambahkan ke katalog Anda.`,
+        en: `Your bulk upload has been completed. You can open the Bulk Upload page to review the result.`,
+        id: `Bulk upload Anda telah selesai. Anda dapat melihat hasil import melalui halaman Bulk Upload.`,
       },
-      cta: { en: "View Upload", id: "Lihat Upload" },
+      cta: { en: "View Result", id: "Lihat Hasil" },
     }),
     email: (c) => ({
       subject: {
-        en: `Bulk upload finished — ${c.fileName}`,
-        id: `Bulk upload selesai — ${c.fileName}`,
+        en: `Your Material Bulk Upload is Completed`,
+        id: `Bulk Upload Material Anda Selesai`,
       },
       body: {
-        en: `Hi ${c.requesterName}, ${c.fileName} finished processing — ${c.materialCount} material${c.materialCount === 1 ? "" : "s"} added to your catalog.`,
-        id: `Halo ${c.requesterName}, ${c.fileName} selesai diproses — ${c.materialCount} material ditambahkan ke katalog Anda.`,
+        en: `Hi ${c.requesterName}, your Material bulk upload has been completed. You can open the Bulk Upload page to review the result.\nUpload ID: ${c.entityId}\nFile: ${c.fileName}`,
+        id: `Halo ${c.requesterName}, bulk upload Material Anda telah selesai. Anda dapat melihat hasil import melalui halaman Bulk Upload.\nUpload ID: ${c.entityId}\nFile: ${c.fileName}`,
       },
-      cta: { en: "View Upload", id: "Lihat Upload" },
+      cta: { en: "View Material Bulk Upload Result", id: "Lihat Hasil Bulk Upload Material" },
     }),
   },
-  bulk_upload_mapping_ready: {
+  bulk_upload_ready_for_review: {
     recipientRule: "eligible_users",
     channels: { inApp: true, email: true },
-    todo: null,
+    todo: {
+      type: "bulk_upload",
+      tag: { en: "Review bulk upload", id: "Tinjau bulk upload" },
+      action: { en: "Review", id: "Tinjau" },
+    },
     inApp: (c) => ({
       title: {
-        en: `Mapping finished — ${c.fileName}`,
-        id: `Mapping selesai — ${c.fileName}`,
+        en: `Your Material bulk upload is ready for review`,
+        id: `Bulk upload Material Anda siap untuk ditinjau`,
       },
       body: {
-        en: `${c.fileName} finished mapping and is ready for review.`,
-        id: `${c.fileName} selesai dipetakan dan siap untuk ditinjau.`,
+        en: `Your bulk upload data has been processed and is ready for review before confirming the import.`,
+        id: `Data bulk upload Anda telah diproses dan siap ditinjau sebelum import dikonfirmasi.`,
       },
-      cta: { en: "Review", id: "Tinjau" },
+      cta: { en: "Review Bulk Upload", id: "Tinjau Bulk Upload" },
     }),
     email: (c) => ({
       subject: {
-        en: `Mapping finished — ${c.fileName}`,
-        id: `Mapping selesai — ${c.fileName}`,
+        en: `Your Material Bulk Upload is Ready for Review`,
+        id: `Bulk Upload Material Anda Siap untuk Ditinjau`,
       },
       body: {
-        en: `Hi ${c.requesterName}, ${c.fileName} finished mapping and is ready for review.`,
-        id: `Halo ${c.requesterName}, ${c.fileName} selesai dipetakan dan siap untuk ditinjau.`,
+        en: `Hi ${c.requesterName}, your Material bulk upload data is ready for review. You can open the Bulk Upload page to review the normalized data before confirming the import.\nUpload ID: ${c.entityId}\nFile: ${c.fileName}`,
+        id: `Halo ${c.requesterName}, data bulk upload Material Anda siap untuk ditinjau. Anda dapat melihat halaman Bulk Upload untuk meninjau data yang telah dinormalisasi sebelum mengonfirmasi import.\nUpload ID: ${c.entityId}\nFile: ${c.fileName}`,
       },
-      cta: { en: "Review", id: "Tinjau" },
+      cta: { en: "Review Material Bulk Upload", id: "Tinjau Bulk Upload Material" },
     }),
   },
   bulk_upload_cancelled: {
@@ -1418,25 +1426,25 @@ NOTIFICATION_CATALOG.material_bulk_upload = {
     todo: null,
     inApp: (c) => ({
       title: {
-        en: `Bulk upload cancelled — ${c.fileName}`,
-        id: `Bulk upload dibatalkan — ${c.fileName}`,
+        en: `Your Material bulk upload was canceled`,
+        id: `Bulk upload Material Anda dibatalkan`,
       },
       body: {
-        en: `${c.fileName} was cancelled before it finished processing.`,
-        id: `${c.fileName} dibatalkan sebelum selesai diproses.`,
+        en: `Your bulk upload was canceled by the system because an error occurred during processing.`,
+        id: `Bulk upload Anda dibatalkan oleh sistem karena terjadi kesalahan saat proses berlangsung.`,
       },
-      cta: { en: "View Upload", id: "Lihat Upload" },
+      cta: { en: "View Detail", id: "View Detail" },
     }),
     email: (c) => ({
       subject: {
-        en: `Bulk upload cancelled — ${c.fileName}`,
-        id: `Bulk upload dibatalkan — ${c.fileName}`,
+        en: `Your Material Bulk Upload was Canceled`,
+        id: `Bulk Upload Material Anda Dibatalkan`,
       },
       body: {
-        en: `Hi ${c.requesterName}, ${c.fileName} was cancelled before it finished processing.`,
-        id: `Halo ${c.requesterName}, ${c.fileName} dibatalkan sebelum selesai diproses.`,
+        en: `Hi ${c.requesterName}, your Material bulk upload was canceled by the system. An error occurred during batch processing. Please try uploading your file again or contact our support team for assistance.\nUpload ID: ${c.entityId}\nFile: ${c.fileName}`,
+        id: `Halo ${c.requesterName}, bulk upload Material Anda dibatalkan oleh sistem. Terjadi kesalahan saat pemrosesan batch. Silakan coba unggah kembali file Anda atau hubungi tim support jika masalah berlanjut.\nUpload ID: ${c.entityId}\nFile: ${c.fileName}`,
       },
-      cta: { en: "View Upload", id: "Lihat Upload" },
+      cta: { en: "View Detail", id: "Lihat Detail" },
     }),
   },
 };

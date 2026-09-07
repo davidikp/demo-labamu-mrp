@@ -7,7 +7,7 @@ import { SearchableSelectField } from "../../bill-of-materials/components/Search
 import { MOCK_PRODUCTS_DATA } from "../../product-catalog/mock/productsMocks.js";
 import { getQuoteProductTotal } from "../mock/quoteMocks.js";
 
-const PRODUCT_OPTIONS = MOCK_PRODUCTS_DATA.map((p) => ({ value: p.id, label: `${p.name} (${p.sku})` }));
+const PRODUCT_OPTIONS = MOCK_PRODUCTS_DATA.map((p) => ({ value: p.id, label: p.name, secondary: p.sku }));
 
 const MAX_LINE_ATTACHMENTS = 3;
 const MAX_ATTACHMENT_BYTES = 30 * 1024 * 1024;
@@ -78,6 +78,7 @@ export const QuoteProductModal = ({ isOpen, onClose, onSave, initialLine, curren
 
   const handleSave = () => {
     const nextErrors = {};
+    if (!productId) nextErrors.productId = "Field cannot be empty";
     if (!(Number(qty) > 0)) nextErrors.qty = "Quantity must be above 0";
     if (!(Number(unitPrice) >= 0) || unitPrice === "") nextErrors.unitPrice = "Field cannot be empty";
     const discount = Number(discountPercent) || 0;
@@ -120,10 +121,12 @@ export const QuoteProductModal = ({ isOpen, onClose, onSave, initialLine, curren
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
           <SearchableSelectField
             label="Product"
+            required
             value={productId}
             onChange={handleProductChange}
             options={PRODUCT_OPTIONS}
             placeholder="Search or select..."
+            error={errors.productId}
           />
           <InputField
             label="Quantity"
@@ -156,7 +159,7 @@ export const QuoteProductModal = ({ isOpen, onClose, onSave, initialLine, curren
           />
         </div>
 
-        <FormField label="Total Price">
+        <FormField label="Total Price" helperText="Auto calculated based on quantity, unit price, and discount">
           <div style={readOnlyFieldStyle}>{money(totalPrice)}</div>
         </FormField>
 
@@ -166,7 +169,7 @@ export const QuoteProductModal = ({ isOpen, onClose, onSave, initialLine, curren
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Enter notes (optional)"
-          maxLength={500}
+          maxLength={1000}
           showCounter
         />
 

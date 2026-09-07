@@ -387,10 +387,39 @@ export const MOCK_BANK_ACCOUNTS = [
 
 export const getBankAccountById = (id) => MOCK_BANK_ACCOUNTS.find((b) => b.id === id) || null;
 
-export const PAYMENT_TERMS_OPTIONS = ["Net 15", "Net 30", "Net 60", "Net 90", "Cash on Delivery", "Advance Payment"];
-export const INCOTERMS_OPTIONS = ["EXW", "FOB", "CIF", "CFR", "DAP", "DDP"];
-export const SHIPPING_METHOD_OPTIONS = ["Sea Freight", "Air Freight", "Land Freight", "Courier", "Customer Pickup"];
+export const PAYMENT_TERMS_OPTIONS = [
+  "Net 30",
+  "Net 60",
+  "Net 90",
+  "Cash on Delivery",
+  "Payment in Advance",
+  "Letter of Credit",
+];
+// value = the short code stored/used for risk-level derivation; label = the
+// full name shown in the option list (matches the design's "EXW (Ex Works)" style).
+export const INCOTERMS_OPTIONS = [
+  { value: "EXW", label: "EXW (Ex Works)" },
+  { value: "FOB", label: "FOB (Free On Board)" },
+  { value: "CIF", label: "CIF (Cost, Insurance, and Freight)" },
+  { value: "DDP", label: "DDP (Delivered Duty Paid)" },
+];
+export const SHIPPING_METHOD_OPTIONS = ["Air", "Sea", "Road", "Express"];
 export const DISPUTE_RESOLUTION_OPTIONS = ["Arbitration", "Mediation", "Litigation", "Negotiation"];
+
+// Simple risk heuristic used to auto-fill the (read-only) Risk Level field once
+// both Payment Terms and Incoterms are selected. Payment terms that collect
+// cash upfront or via a bank instrument are low risk; longer open-account
+// terms carry more risk, and DDP (seller bears cost/risk to destination)
+// nudges that up further.
+export const deriveRiskLevel = (paymentTerms, incoterms) => {
+  if (!paymentTerms || !incoterms) return "";
+  const lowRiskPaymentTerms = ["Cash on Delivery", "Payment in Advance", "Letter of Credit"];
+  let score = lowRiskPaymentTerms.includes(paymentTerms) ? 0 : paymentTerms === "Net 30" ? 1 : 2;
+  if (incoterms === "DDP") score += 1;
+  if (score <= 0) return "Low";
+  if (score === 1) return "Medium";
+  return "High";
+};
 
 // Shared helpers used by both QuoteDetailPage and the Customer Portal so the
 // two surfaces never drift on currency formatting or status→badge mapping.

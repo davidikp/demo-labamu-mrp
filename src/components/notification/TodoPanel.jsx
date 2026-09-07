@@ -16,6 +16,7 @@ const STATUS_COLOR = {
   revision: "yellow",
   proof: "blue",
   receipt: "green",
+  bulk_upload: "grey",
 };
 
 const MODULE_ICON = {
@@ -26,6 +27,8 @@ const MODULE_ICON = {
   purchase_order: ProcurementIcon,
   custom_product_request: ProductIcon,
   material_request: ResourcesIcon,
+  product_catalog: ProductIcon,
+  material_bulk_upload: ResourcesIcon,
 };
 
 export const TodoPanel = () => {

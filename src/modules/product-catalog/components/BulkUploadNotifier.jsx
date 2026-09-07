@@ -35,7 +35,7 @@ export const BulkUploadNotifier = () => {
               eligibleUsers: [CURRENT_USER],
             });
           } else if (batch.status === "Review" && prevStatus === "Normalizing Data") {
-            notify("product_catalog", "bulk_upload_mapping_ready", {
+            notify("product_catalog", "bulk_upload_ready_for_review", {
               entityId: batch.id,
               fileName: batch.fileName,
               eligibleUsers: [CURRENT_USER],

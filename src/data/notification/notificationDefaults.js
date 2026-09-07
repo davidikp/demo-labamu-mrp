@@ -46,7 +46,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
     items: [
       {
         id: "approval_submission",
-        name: "Approval Submission",
+        name: { en: "Approval Submission", id: "Pengajuan Persetujuan" },
         description: {
           en: "Notifies all assigned approvers when an RFQ, Quote, Order, Purchase Order, or Custom Product Request is submitted for approval.",
           id: "Memberi tahu seluruh approver yang ditugaskan ketika Permintaan Penawaran, Penawaran, Pesanan, Purchase Order, atau Permintaan Produk Khusus diajukan untuk persetujuan.",
@@ -78,7 +78,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "approval_progress_update",
-        name: "Approval Progress Update",
+        name: { en: "Approval Progress Update", id: "Pembaruan Proses Persetujuan" },
         description: {
           en: "Notifies the latest submitter when an approver completes their review while other approvals are still pending.",
           id: "Memberi tahu pengaju terakhir ketika salah satu approver menyelesaikan peninjauannya, sementara persetujuan dari approver lainnya masih menunggu.",
@@ -109,8 +109,40 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
         },
       },
       {
+        id: "revision_requested",
+        name: { en: "Revision Requested", id: "Revisi Diminta" },
+        description: {
+          en: "Notifies the latest submitter when an approver requests changes before the record can continue through approval.",
+          id: "Memberi tahu pengaju terakhir ketika approver meminta perubahan sebelum data dapat melanjutkan proses persetujuan.",
+        },
+        trigger: "Needs revision",
+        type: "required",
+        recipient: "Latest submitter",
+        permission: null,
+        todo: "Needs revision",
+        groupId: null,
+        defaults: { inApp: true, email: true },
+        content: {
+          inApp: {
+            en: "[Entity] [Number] needs revision\n[Approver Name] requested changes on [Entity] [Number]. Note: [Revision Note].\nCTA: See Detail",
+            id: "[Entity] [Number] perlu revisi\n[Approver Name] meminta perubahan pada [Entity] [Number]. Catatan: [Revision Note].\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "[Entity] [Number] needs revision",
+              id: "[Entity] [Number] perlu revisi",
+            },
+            body: {
+              en: "[Approver Name] requested changes on [Entity] [Number]. Note: [Revision Note].",
+              id: "[Approver Name] meminta perubahan pada [Entity] [Number]. Catatan: [Revision Note].",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
+      {
         id: "final_approval",
-        name: "Final Approval",
+        name: { en: "Final Approval", id: "Persetujuan Akhir" },
         description: {
           en: "Notifies the latest submitter when all required approvers have approved the record.",
           id: "Memberi tahu pengaju terakhir ketika seluruh approver yang diperlukan telah menyetujui data.",
@@ -142,7 +174,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "approval_rejected",
-        name: "Approval Rejected",
+        name: { en: "Approval Rejected", id: "Persetujuan Ditolak" },
         description: {
           en: "Notifies the latest submitter when an approver rejects the record.",
           id: "Memberi tahu pengaju terakhir ketika salah satu approver menolak data.",
@@ -172,38 +204,6 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
           },
         },
       },
-      {
-        id: "revision_requested",
-        name: "Revision Requested",
-        description: {
-          en: "Notifies the latest submitter when an approver requests changes before the record can continue through approval.",
-          id: "Memberi tahu pengaju terakhir ketika approver meminta perubahan sebelum data dapat melanjutkan proses persetujuan.",
-        },
-        trigger: "Needs revision",
-        type: "required",
-        recipient: "Latest submitter",
-        permission: null,
-        todo: "Needs revision",
-        groupId: null,
-        defaults: { inApp: true, email: true },
-        content: {
-          inApp: {
-            en: "[Entity] [Number] needs revision\n[Approver Name] requested changes on [Entity] [Number]. Note: [Revision Note].\nCTA: See Detail",
-            id: "[Entity] [Number] perlu revisi\n[Approver Name] meminta perubahan pada [Entity] [Number]. Catatan: [Revision Note].\nCTA: Lihat Detail",
-          },
-          email: {
-            subject: {
-              en: "[Entity] [Number] needs revision",
-              id: "[Entity] [Number] perlu revisi",
-            },
-            body: {
-              en: "[Approver Name] requested changes on [Entity] [Number]. Note: [Revision Note].",
-              id: "[Approver Name] meminta perubahan pada [Entity] [Number]. Catatan: [Revision Note].",
-            },
-            cta: SEE_DETAIL,
-          },
-        },
-      },
     ],
   },
   {
@@ -216,7 +216,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
     items: [
       {
         id: "material_running_low",
-        name: "Material Running Low",
+        name: { en: "Material Running Low", id: "Stok Material Menipis" },
         description: {
           en: "Notifies eligible users with Materials access when the available quantity reaches or falls below the configured minimum stock level.",
           id: "Memberi tahu pengguna yang memiliki Izin Akses Materials ketika jumlah stok tersedia mencapai atau berada di bawah batas minimum yang telah dikonfigurasi.",
@@ -248,7 +248,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "material_out_of_stock",
-        name: "Material Out of Stock",
+        name: { en: "Material Out of Stock", id: "Stok Material Habis" },
         description: {
           en: "Notifies eligible users with Materials access when the available quantity reaches zero.",
           id: "Memberi tahu pengguna yang memiliki Izin Akses Materials ketika jumlah stok tersedia mencapai nol.",
@@ -272,7 +272,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
             },
             body: {
               en: "Material [Material Name] has reached zero available stock. Please review the material and replenishment plan.",
-              id: "Material [Material Name] telah mencapai stok nol. Silakan tinjau material dan rencana pengisian ulang.",
+              id: "Material [Material Name] telah mencapai stok nol. Tinjau material dan rencana pengisian ulang.",
             },
             cta: SEE_DETAIL,
           },
@@ -280,7 +280,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "material_expiring_soon",
-        name: "Material Expiring Soon",
+        name: { en: "Material Expiring Soon", id: "Material Segera Kedaluwarsa" },
         description: {
           en: "Notifies eligible users with Batches access before a material batch reaches its expiry date, based on the configured reminder timing.",
           id: "Memberi tahu pengguna yang memiliki Izin Akses Batches sebelum batch material mencapai tanggal kedaluwarsa, sesuai waktu pengingat yang telah dikonfigurasi.",
@@ -292,7 +292,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
         todo: null,
         groupId: null,
         remindBefore: DEFAULT_REMIND_BEFORE_DAYS,
-        reminderTarget: "expiry date",
+        reminderTarget: { en: "expiry date", id: "tanggal kedaluwarsa" },
         defaults: { inApp: true, email: false },
         content: {
           inApp: {
@@ -314,7 +314,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "material_expired",
-        name: "Material Expired",
+        name: { en: "Material Expired", id: "Material Kedaluwarsa" },
         description: {
           en: "Notifies eligible users with Batches access when a material batch reaches its expiry date.",
           id: "Memberi tahu pengguna yang memiliki Izin Akses Batches ketika batch material mencapai tanggal kedaluwarsa.",
@@ -338,7 +338,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
             },
             body: {
               en: "Batch [Batch Number] for [Material Name] expired on [Expiry Date]. Please review the remaining quantity and take the required action.",
-              id: "Batch [Batch Number] untuk [Material Name] kedaluwarsa pada [Expiry Date]. Silakan tinjau sisa kuantitas dan lakukan tindakan yang diperlukan.",
+              id: "Batch [Batch Number] untuk [Material Name] kedaluwarsa pada [Expiry Date]. Tinjau sisa kuantitas dan lakukan tindakan yang diperlukan.",
             },
             cta: SEE_DETAIL,
           },
@@ -355,8 +355,41 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
     },
     items: [
       {
+        id: "mr_new_material_request",
+        name: { en: "New Material Request", id: "Permintaan Material Baru" },
+        description: {
+          en: "Notifies eligible material preparers with access when a new Material Request is created and requires preparation.",
+          id: "Memberi tahu penyiap material yang memiliki akses ketika Material Request baru dibuat dan memerlukan persiapan.",
+        },
+        trigger: "New Material Request is created",
+        type: "configurable",
+        recipient: "Eligible material preparers with access",
+        permission: "Material Preparation",
+        todo: null,
+        groupId: null,
+        // Off by default (PRD System Rules).
+        defaults: { enabled: false, inApp: true, email: false },
+        content: {
+          inApp: {
+            en: "New Material Request [MR Number]\n[Requester Name] created a new Material Request for [Work Order / Purpose].\nCTA: See Detail",
+            id: "Material Request baru [MR Number]\n[Requester Name] membuat Material Request baru untuk [Work Order / Tujuan].\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "New Material Request [MR Number]",
+              id: "Material Request baru [MR Number]",
+            },
+            body: {
+              en: "[Requester Name] created a new Material Request for [Work Order / Purpose].",
+              id: "[Requester Name] membuat Material Request baru untuk [Work Order / Tujuan].",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
+      {
         id: "mr_transfer_started",
-        name: "Transfer Started",
+        name: { en: "Transfer Started", id: "Transfer Dimulai" },
         description: {
           en: "Notifies the requester or material receiver when the requested materials have been transferred and are ready for receipt confirmation.",
           id: "Memberi tahu pemohon atau penerima material ketika material yang diminta telah ditransfer dan siap untuk dikonfirmasi penerimaannya.",
@@ -371,7 +404,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
         content: {
           inApp: {
             en: "Material Request [MR Number] transfer started\n[Preparer Name] started the transfer. Please confirm receipt.\nCTA: See Detail",
-            id: "Transfer Material Request [MR Number] dimulai\n[Preparer Name] memulai transfer. Silakan konfirmasi penerimaan.\nCTA: Lihat Detail",
+            id: "Transfer Material Request [MR Number] dimulai\n[Preparer Name] memulai transfer. Konfirmasi penerimaan.\nCTA: Lihat Detail",
           },
           email: {
             subject: {
@@ -380,7 +413,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
             },
             body: {
               en: "[Preparer Name] started the transfer for Material Request [MR Number]. Please confirm receipt.",
-              id: "[Preparer Name] memulai transfer untuk Material Request [MR Number]. Silakan konfirmasi penerimaan.",
+              id: "[Preparer Name] memulai transfer untuk Material Request [MR Number]. Konfirmasi penerimaan.",
             },
             cta: SEE_DETAIL,
           },
@@ -388,7 +421,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "mr_receipt_confirmed",
-        name: "Receipt Confirmed",
+        name: { en: "Receipt Confirmed", id: "Penerimaan Dikonfirmasi" },
         description: {
           en: "Notifies the material preparer when the requester or receiver confirms that the materials were received successfully.",
           id: "Memberi tahu penyiap material ketika pemohon atau penerima mengonfirmasi bahwa material telah diterima dengan baik.",
@@ -420,7 +453,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "mr_receipt_rejected",
-        name: "Receipt Rejected",
+        name: { en: "Receipt Rejected", id: "Penerimaan Ditolak" },
         description: {
           en: "Notifies the material preparer when the requester or receiver reports an issue with the received materials.",
           id: "Memberi tahu penyiap material ketika pemohon atau penerima melaporkan masalah pada material yang diterima.",
@@ -435,7 +468,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
         content: {
           inApp: {
             en: "Material Request [MR Number] receipt rejected\n[Receiver Name] rejected the receipt. Please resolve the issue.\nCTA: See Detail",
-            id: "Penerimaan Material Request [MR Number] ditolak\n[Receiver Name] menolak penerimaan. Silakan selesaikan masalahnya.\nCTA: Lihat Detail",
+            id: "Penerimaan Material Request [MR Number] ditolak\n[Receiver Name] menolak penerimaan. Selesaikan masalahnya.\nCTA: Lihat Detail",
           },
           email: {
             subject: {
@@ -444,7 +477,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
             },
             body: {
               en: "[Receiver Name] rejected the receipt for Material Request [MR Number]. Please resolve the issue.",
-              id: "[Receiver Name] menolak penerimaan untuk Material Request [MR Number]. Silakan selesaikan masalahnya.",
+              id: "[Receiver Name] menolak penerimaan untuk Material Request [MR Number]. Selesaikan masalahnya.",
             },
             cta: SEE_DETAIL,
           },
@@ -452,7 +485,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "mr_cancelled_by_preparer",
-        name: "Material Request Cancelled by Preparer",
+        name: { en: "Material Request Cancelled by Preparer", id: "Permintaan Material Dibatalkan oleh Pembuat" },
         description: {
           en: "Notifies the requester or material receiver when the material preparer cancels the Material Request.",
           id: "Memberi tahu pemohon atau penerima material ketika penyiap material membatalkan Material Request.",
@@ -482,39 +515,6 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
           },
         },
       },
-      {
-        id: "mr_new_material_request",
-        name: "New Material Request",
-        description: {
-          en: "Notifies eligible material preparers with access when a new Material Request is created and requires preparation.",
-          id: "Memberi tahu penyiap material yang memiliki akses ketika Material Request baru dibuat dan memerlukan persiapan.",
-        },
-        trigger: "New Material Request is created",
-        type: "configurable",
-        recipient: "Eligible material preparers with access",
-        permission: "Material Preparation",
-        todo: null,
-        groupId: null,
-        // Off by default (PRD System Rules).
-        defaults: { enabled: false, inApp: true, email: false },
-        content: {
-          inApp: {
-            en: "New Material Request [MR Number]\n[Requester Name] created a new Material Request for [Work Order / Purpose].\nCTA: See Detail",
-            id: "Material Request baru [MR Number]\n[Requester Name] membuat Material Request baru untuk [Work Order / Tujuan].\nCTA: Lihat Detail",
-          },
-          email: {
-            subject: {
-              en: "New Material Request [MR Number]",
-              id: "Material Request baru [MR Number]",
-            },
-            body: {
-              en: "[Requester Name] created a new Material Request for [Work Order / Purpose].",
-              id: "[Requester Name] membuat Material Request baru untuk [Work Order / Tujuan].",
-            },
-            cta: SEE_DETAIL,
-          },
-        },
-      },
     ],
   },
   {
@@ -526,138 +526,8 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
     },
     items: [
       {
-        id: "wo_deadline_approaching",
-        name: "Deadline Approaching",
-        description: {
-          en: "Reminds eligible users with access to the related Work Order before its deadline, based on the configured reminder timing.",
-          id: "Mengingatkan pengguna yang memiliki akses ke Work Order terkait sebelum batas waktunya, sesuai waktu pengingat yang telah dikonfigurasi.",
-        },
-        trigger: "Configured reminder date before deadline",
-        type: "configurable",
-        recipient: "Eligible users with Work Orders access",
-        permission: "Work Orders",
-        todo: null,
-        groupId: null,
-        remindBefore: DEFAULT_REMIND_BEFORE_DAYS,
-        reminderTarget: "deadline",
-        defaults: { inApp: true, email: true },
-        content: {
-          inApp: {
-            en: "Work Order [Number] is approaching its deadline\nThe deadline is [Deadline Date]. Current status: [Status].\nCTA: See Detail",
-            id: "Work Order [Number] mendekati batas waktu\nBatas waktunya adalah [Deadline Date]. Status saat ini: [Status].\nCTA: Lihat Detail",
-          },
-          email: {
-            subject: {
-              en: "Work Order [Number] is approaching its deadline",
-              id: "Work Order [Number] mendekati batas waktu",
-            },
-            body: {
-              en: "Work Order [Number] is approaching its deadline on [Deadline Date]. Current status: [Status].",
-              id: "Work Order [Number] mendekati batas waktu pada [Deadline Date]. Status saat ini: [Status].",
-            },
-            cta: SEE_DETAIL,
-          },
-        },
-      },
-      {
-        id: "wo_deadline_overdue",
-        name: "Deadline Overdue",
-        description: {
-          en: "Notifies eligible users with access to the related Work Order when it has passed its deadline and remains unresolved.",
-          id: "Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika telah melewati batas waktu dan belum diselesaikan.",
-        },
-        trigger: "Deadline passed",
-        type: "configurable",
-        recipient: "Eligible users with Work Orders access",
-        permission: "Work Orders",
-        todo: null,
-        groupId: null,
-        defaults: { inApp: true, email: true },
-        content: {
-          inApp: {
-            en: "Work Order [Number] is overdue\nThe deadline was [Deadline Date]. Current status: [Status].\nCTA: See Detail",
-            id: "Work Order [Number] terlambat\nBatas waktunya adalah [Deadline Date]. Status saat ini: [Status].\nCTA: Lihat Detail",
-          },
-          email: {
-            subject: {
-              en: "Work Order [Number] is overdue",
-              id: "Work Order [Number] terlambat",
-            },
-            body: {
-              en: "Work Order [Number] passed its deadline on [Deadline Date] and remains [Status].",
-              id: "Work Order [Number] melewati batas waktu pada [Deadline Date] dan tetap berstatus [Status].",
-            },
-            cta: SEE_DETAIL,
-          },
-        },
-      },
-      {
-        id: "wo_changed_to_completed",
-        name: "Changed to Completed",
-        description: {
-          en: "Notifies eligible users with access to the related Work Order when its status changes to Completed.",
-          id: "Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika statusnya berubah menjadi Completed.",
-        },
-        trigger: "Status changes to Completed",
-        type: "configurable",
-        recipient: "Eligible users with Work Orders access",
-        permission: "Work Orders",
-        todo: null,
-        groupId: null,
-        defaults: { inApp: true, email: false },
-        content: {
-          inApp: {
-            en: "Work Order [Number] has been completed\nThe Work Order status changed to Completed.\nCTA: See Detail",
-            id: "Work Order [Number] telah selesai\nStatus Work Order berubah menjadi Completed.\nCTA: Lihat Detail",
-          },
-          email: {
-            subject: {
-              en: "Work Order [Number] has been completed",
-              id: "Work Order [Number] telah selesai",
-            },
-            body: {
-              en: "The Work Order status changed to Completed.",
-              id: "Status Work Order berubah menjadi Completed.",
-            },
-            cta: SEE_DETAIL,
-          },
-        },
-      },
-      {
-        id: "wo_changed_to_cancelled",
-        name: "Changed to Cancelled",
-        description: {
-          en: "Notifies eligible users with access to the related Work Order when its status changes to Cancelled.",
-          id: "Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika statusnya berubah menjadi Cancelled.",
-        },
-        trigger: "Status changes to Cancelled",
-        type: "configurable",
-        recipient: "Eligible users with Work Orders access",
-        permission: "Work Orders",
-        todo: null,
-        groupId: null,
-        defaults: { inApp: true, email: false },
-        content: {
-          inApp: {
-            en: "Work Order [Number] was cancelled\nThe Work Order status changed to Cancelled by [Updated By].\nCTA: See Detail",
-            id: "Work Order [Number] dibatalkan\nStatus Work Order berubah menjadi Cancelled oleh [Updated By].\nCTA: Lihat Detail",
-          },
-          email: {
-            subject: {
-              en: "Work Order [Number] was cancelled",
-              id: "Work Order [Number] dibatalkan",
-            },
-            body: {
-              en: "The Work Order status changed to Cancelled by [Updated By].",
-              id: "Status Work Order berubah menjadi Cancelled oleh [Updated By].",
-            },
-            cta: SEE_DETAIL,
-          },
-        },
-      },
-      {
         id: "wo_new_work_order",
-        name: "New Work Order",
+        name: { en: "New Work Order", id: "Work Order Baru" },
         description: {
           en: "Notifies eligible users with Work Orders access when a new Work Order is created in Not Started status.",
           id: "Memberi tahu pengguna yang memiliki Izin Akses Work Orders ketika Work Order baru dibuat dengan status Not Started.",
@@ -690,7 +560,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "wo_outsource_po_issued",
-        name: "Outsource Purchase Order Issued",
+        name: { en: "Outsource Purchase Order Issued", id: "Purchase Order Outsource Diterbitkan" },
         description: {
           en: "Notifies eligible users with access to the related Work Order when a linked Purchase Order is issued to the vendor. A separate notification is generated for each linked Work Order.",
           id: "Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika Purchase Order yang terkait diterbitkan kepada vendor. Notifikasi terpisah dibuat untuk setiap Work Order yang terkait.",
@@ -723,7 +593,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "wo_outsource_po_receipt_recorded",
-        name: "Outsource Purchase Order Receipt Recorded",
+        name: { en: "Outsource Purchase Order Receipt Recorded", id: "Penerimaan Purchase Order Outsource Dicatat" },
         description: {
           en: "Notifies eligible users with access to the related Work Order when items are received and the Work Order remains partially received. A separate notification is generated for each affected Work Order.",
           id: "Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika barang diterima dan Work Order masih berstatus diterima sebagian. Notifikasi terpisah dibuat untuk setiap Work Order yang terdampak.",
@@ -757,7 +627,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "wo_outsource_po_fully_received",
-        name: "Outsource Purchase Order Fully Received",
+        name: { en: "Outsource Purchase Order Fully Received", id: "Purchase Order Outsource Diterima Sepenuhnya" },
         description: {
           en: "Notifies eligible users with access to the related Work Order when all outsourced items have been received. A separate notification is generated for each completed Work Order.",
           id: "Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika seluruh item outsource telah diterima. Notifikasi terpisah dibuat untuk setiap Work Order yang selesai.",
@@ -788,6 +658,136 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
           },
         },
       },
+      {
+        id: "wo_deadline_approaching",
+        name: { en: "Deadline Approaching", id: "Batas Waktu Segera Tiba" },
+        description: {
+          en: "Reminds eligible users with access to the related Work Order before its deadline, based on the configured reminder timing.",
+          id: "Mengingatkan pengguna yang memiliki akses ke Work Order terkait sebelum batas waktunya, sesuai waktu pengingat yang telah dikonfigurasi.",
+        },
+        trigger: "Configured reminder date before deadline",
+        type: "configurable",
+        recipient: "Eligible users with Work Orders access",
+        permission: "Work Orders",
+        todo: null,
+        groupId: null,
+        remindBefore: DEFAULT_REMIND_BEFORE_DAYS,
+        reminderTarget: { en: "deadline", id: "tenggat waktu" },
+        defaults: { inApp: true, email: true },
+        content: {
+          inApp: {
+            en: "Work Order [Number] is approaching its deadline\nThe deadline is [Deadline Date]. Current status: [Status].\nCTA: See Detail",
+            id: "Work Order [Number] mendekati batas waktu\nBatas waktunya adalah [Deadline Date]. Status saat ini: [Status].\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Work Order [Number] is approaching its deadline",
+              id: "Work Order [Number] mendekati batas waktu",
+            },
+            body: {
+              en: "Work Order [Number] is approaching its deadline on [Deadline Date]. Current status: [Status].",
+              id: "Work Order [Number] mendekati batas waktu pada [Deadline Date]. Status saat ini: [Status].",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
+      {
+        id: "wo_deadline_overdue",
+        name: { en: "Deadline Overdue", id: "Batas Waktu Terlewat" },
+        description: {
+          en: "Notifies eligible users with access to the related Work Order when it has passed its deadline and remains unresolved.",
+          id: "Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika telah melewati batas waktu dan belum diselesaikan.",
+        },
+        trigger: "Deadline passed",
+        type: "configurable",
+        recipient: "Eligible users with Work Orders access",
+        permission: "Work Orders",
+        todo: null,
+        groupId: null,
+        defaults: { inApp: true, email: true },
+        content: {
+          inApp: {
+            en: "Work Order [Number] is overdue\nThe deadline was [Deadline Date]. Current status: [Status].\nCTA: See Detail",
+            id: "Work Order [Number] terlambat\nBatas waktunya adalah [Deadline Date]. Status saat ini: [Status].\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Work Order [Number] is overdue",
+              id: "Work Order [Number] terlambat",
+            },
+            body: {
+              en: "Work Order [Number] passed its deadline on [Deadline Date] and remains [Status].",
+              id: "Work Order [Number] melewati batas waktu pada [Deadline Date] dan tetap berstatus [Status].",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
+      {
+        id: "wo_changed_to_completed",
+        name: { en: "Changed to Completed", id: "Status Diubah menjadi Selesai" },
+        description: {
+          en: "Notifies eligible users with access to the related Work Order when its status changes to Completed.",
+          id: "Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika statusnya berubah menjadi Completed.",
+        },
+        trigger: "Status changes to Completed",
+        type: "configurable",
+        recipient: "Eligible users with Work Orders access",
+        permission: "Work Orders",
+        todo: null,
+        groupId: null,
+        defaults: { inApp: true, email: false },
+        content: {
+          inApp: {
+            en: "Work Order [Number] has been completed\nThe Work Order status changed to Completed.\nCTA: See Detail",
+            id: "Work Order [Number] telah selesai\nStatus Work Order berubah menjadi Completed.\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Work Order [Number] has been completed",
+              id: "Work Order [Number] telah selesai",
+            },
+            body: {
+              en: "The Work Order status changed to Completed.",
+              id: "Status Work Order berubah menjadi Completed.",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
+      {
+        id: "wo_changed_to_cancelled",
+        name: { en: "Changed to Cancelled", id: "Status Diubah menjadi Dibatalkan" },
+        description: {
+          en: "Notifies eligible users with access to the related Work Order when its status changes to Cancelled.",
+          id: "Memberi tahu pengguna yang memiliki akses ke Work Order terkait ketika statusnya berubah menjadi Cancelled.",
+        },
+        trigger: "Status changes to Cancelled",
+        type: "configurable",
+        recipient: "Eligible users with Work Orders access",
+        permission: "Work Orders",
+        todo: null,
+        groupId: null,
+        defaults: { inApp: true, email: false },
+        content: {
+          inApp: {
+            en: "Work Order [Number] was cancelled\nThe Work Order status changed to Cancelled by [Updated By].\nCTA: See Detail",
+            id: "Work Order [Number] dibatalkan\nStatus Work Order berubah menjadi Cancelled oleh [Updated By].\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Work Order [Number] was cancelled",
+              id: "Work Order [Number] dibatalkan",
+            },
+            body: {
+              en: "The Work Order status changed to Cancelled by [Updated By].",
+              id: "Status Work Order berubah menjadi Cancelled oleh [Updated By].",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
     ],
   },
   {
@@ -800,7 +800,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
     items: [
       {
         id: "cpr_new_request",
-        name: "New Request",
+        name: { en: "New Request", id: "Permintaan Baru" },
         description: {
           en: "Notifies eligible users with Custom Product Requests access when a new Custom Product Request is created and is ready for review or processing.",
           id: "Memberi tahu pengguna yang memiliki Izin Akses Custom Product Requests ketika Custom Product Request baru dibuat dan siap untuk ditinjau atau diproses.",
@@ -843,7 +843,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
     items: [
       {
         id: "quote_valid_until_reminder",
-        name: "Quote Valid Until Reminder",
+        name: { en: "Quote Valid Until Reminder", id: "Pengingat Masa Berlaku Penawaran" },
         description: {
           en: "Reminds eligible users with Quotes access before an issued Quote reaches its validity date, based on the configured reminder timing.",
           id: "Mengingatkan pengguna yang memiliki Izin Akses Quotes sebelum Quote yang diterbitkan mencapai tanggal berakhir masa berlakunya, sesuai waktu pengingat yang telah dikonfigurasi.",
@@ -855,7 +855,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
         todo: null,
         groupId: null,
         remindBefore: DEFAULT_REMIND_BEFORE_DAYS,
-        reminderTarget: "valid-until date",
+        reminderTarget: { en: "valid-until date", id: "tanggal akhir masa berlaku" },
         defaults: { inApp: true, email: true },
         content: {
           inApp: {
@@ -869,7 +869,39 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
             },
             body: {
               en: "Quote [Number] is valid until [Valid Until Date]. Please review and follow up before it expires.",
-              id: "Quote [Number] berlaku sampai [Valid Until Date]. Silakan tinjau dan tindak lanjuti sebelum masa berlakunya habis.",
+              id: "Quote [Number] berlaku sampai [Valid Until Date]. Tinjau dan tindak lanjuti sebelum masa berlakunya habis.",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
+      {
+        id: "quote_revision_requested_by_customer",
+        name: { en: "Quote Revision Requested by Customer", id: "Revisi Penawaran Diminta Pelanggan" },
+        description: {
+          en: "Notifies the user who shared the Customer Portal when the customer requests changes to the Quote.",
+          id: "Memberi tahu pengguna yang membagikan Customer Portal ketika pelanggan meminta perubahan pada Quote.",
+        },
+        trigger: "Customer requests changes through Customer Portal",
+        type: "required",
+        recipient: "Customer Portal sender",
+        permission: "Quotes",
+        todo: null,
+        groupId: null,
+        defaults: { inApp: true, email: true },
+        content: {
+          inApp: {
+            en: "Quote [Number] revision requested by the customer\n[Customer Name] requested changes on Quote [Number] through the Customer Portal.\nCTA: See Detail",
+            id: "Revisi Quote [Number] diminta oleh pelanggan\n[Customer Name] meminta perubahan pada Quote [Number] melalui Customer Portal.\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Quote [Number] revision requested by the customer",
+              id: "Revisi Quote [Number] diminta oleh pelanggan",
+            },
+            body: {
+              en: "[Customer Name] requested changes on Quote [Number] through the Customer Portal.",
+              id: "[Customer Name] meminta perubahan pada Quote [Number] melalui Customer Portal.",
             },
             cta: SEE_DETAIL,
           },
@@ -877,7 +909,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "quote_approved_by_customer",
-        name: "Quote Approved by Customer",
+        name: { en: "Quote Approved by Customer", id: "Penawaran Disetujui Pelanggan" },
         description: {
           en: "Notifies the user who shared the Customer Portal when the customer approves the Quote.",
           id: "Memberi tahu pengguna yang membagikan Customer Portal ketika pelanggan menyetujui Quote.",
@@ -909,7 +941,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "quote_rejected_by_customer",
-        name: "Quote Rejected by Customer",
+        name: { en: "Quote Rejected by Customer", id: "Penawaran Ditolak Pelanggan" },
         description: {
           en: "Notifies the user who shared the Customer Portal when the customer rejects the Quote.",
           id: "Memberi tahu pengguna yang membagikan Customer Portal ketika pelanggan menolak Quote.",
@@ -939,38 +971,6 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
           },
         },
       },
-      {
-        id: "quote_revision_requested_by_customer",
-        name: "Quote Revision Requested by Customer",
-        description: {
-          en: "Notifies the user who shared the Customer Portal when the customer requests changes to the Quote.",
-          id: "Memberi tahu pengguna yang membagikan Customer Portal ketika pelanggan meminta perubahan pada Quote.",
-        },
-        trigger: "Customer requests changes through Customer Portal",
-        type: "required",
-        recipient: "Customer Portal sender",
-        permission: "Quotes",
-        todo: null,
-        groupId: null,
-        defaults: { inApp: true, email: true },
-        content: {
-          inApp: {
-            en: "Quote [Number] revision requested by the customer\n[Customer Name] requested changes on Quote [Number] through the Customer Portal.\nCTA: See Detail",
-            id: "Revisi Quote [Number] diminta oleh pelanggan\n[Customer Name] meminta perubahan pada Quote [Number] melalui Customer Portal.\nCTA: Lihat Detail",
-          },
-          email: {
-            subject: {
-              en: "Quote [Number] revision requested by the customer",
-              id: "Revisi Quote [Number] diminta oleh pelanggan",
-            },
-            body: {
-              en: "[Customer Name] requested changes on Quote [Number] through the Customer Portal.",
-              id: "[Customer Name] meminta perubahan pada Quote [Number] melalui Customer Portal.",
-            },
-            cta: SEE_DETAIL,
-          },
-        },
-      },
     ],
   },
   {
@@ -982,138 +982,8 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
     },
     items: [
       {
-        id: "order_deadline_approaching",
-        name: "Order Deadline Approaching",
-        description: {
-          en: "Reminds eligible users with access to the related Order before its deadline, based on the configured reminder timing.",
-          id: "Mengingatkan pengguna yang memiliki akses ke Order terkait sebelum batas waktunya, sesuai waktu pengingat yang telah dikonfigurasi.",
-        },
-        trigger: "Configured reminder date before deadline",
-        type: "configurable",
-        recipient: "Eligible users with Orders access",
-        permission: "Orders",
-        todo: null,
-        groupId: null,
-        remindBefore: DEFAULT_REMIND_BEFORE_DAYS,
-        reminderTarget: "deadline",
-        defaults: { inApp: true, email: true },
-        content: {
-          inApp: {
-            en: "Order [Number] is approaching its deadline\nThe deadline is [Deadline Date]. Current status: [Status].\nCTA: See Detail",
-            id: "Order [Number] mendekati batas waktu\nBatas waktunya adalah [Deadline Date]. Status saat ini: [Status].\nCTA: Lihat Detail",
-          },
-          email: {
-            subject: {
-              en: "Order [Number] is approaching its deadline",
-              id: "Order [Number] mendekati batas waktu",
-            },
-            body: {
-              en: "Order [Number] is approaching its deadline on [Deadline Date]. Current status: [Status].",
-              id: "Order [Number] mendekati batas waktu pada [Deadline Date]. Status saat ini: [Status].",
-            },
-            cta: SEE_DETAIL,
-          },
-        },
-      },
-      {
-        id: "order_deadline_overdue",
-        name: "Order Deadline Overdue",
-        description: {
-          en: "Notifies eligible users with access to the related Order when it has passed its deadline and remains unresolved.",
-          id: "Memberi tahu pengguna yang memiliki akses ke Order terkait ketika telah melewati batas waktu dan belum diselesaikan.",
-        },
-        trigger: "Deadline passed",
-        type: "configurable",
-        recipient: "Eligible users with Orders access",
-        permission: "Orders",
-        todo: null,
-        groupId: null,
-        defaults: { inApp: true, email: true },
-        content: {
-          inApp: {
-            en: "Order [Number] is overdue\nThe deadline was [Deadline Date]. Current status: [Status].\nCTA: See Detail",
-            id: "Order [Number] terlambat\nBatas waktunya adalah [Deadline Date]. Status saat ini: [Status].\nCTA: Lihat Detail",
-          },
-          email: {
-            subject: {
-              en: "Order [Number] is overdue",
-              id: "Order [Number] terlambat",
-            },
-            body: {
-              en: "Order [Number] passed its deadline on [Deadline Date] and remains [Status].",
-              id: "Order [Number] melewati batas waktu pada [Deadline Date] dan tetap berstatus [Status].",
-            },
-            cta: SEE_DETAIL,
-          },
-        },
-      },
-      {
-        id: "order_changed_to_completed",
-        name: "Changed to Completed",
-        description: {
-          en: "Notifies eligible users with access to the related Order when its status changes to Completed.",
-          id: "Memberi tahu pengguna yang memiliki akses ke Order terkait ketika statusnya berubah menjadi Completed.",
-        },
-        trigger: "Status changes to Completed",
-        type: "configurable",
-        recipient: "Eligible users with Orders access",
-        permission: "Orders",
-        todo: null,
-        groupId: null,
-        defaults: { inApp: true, email: false },
-        content: {
-          inApp: {
-            en: "Order [Number] has been completed\nThe Order status changed to Completed.\nCTA: See Detail",
-            id: "Order [Number] telah selesai\nStatus Order berubah menjadi Completed.\nCTA: Lihat Detail",
-          },
-          email: {
-            subject: {
-              en: "Order [Number] has been completed",
-              id: "Order [Number] telah selesai",
-            },
-            body: {
-              en: "The Order status changed to Completed.",
-              id: "Status Order berubah menjadi Completed.",
-            },
-            cta: SEE_DETAIL,
-          },
-        },
-      },
-      {
-        id: "order_changed_to_cancelled",
-        name: "Changed to Cancelled",
-        description: {
-          en: "Notifies eligible users with access to the related Order when its status changes to Cancelled.",
-          id: "Memberi tahu pengguna yang memiliki akses ke Order terkait ketika statusnya berubah menjadi Cancelled.",
-        },
-        trigger: "Status changes to Cancelled",
-        type: "configurable",
-        recipient: "Eligible users with Orders access",
-        permission: "Orders",
-        todo: null,
-        groupId: null,
-        defaults: { inApp: true, email: false },
-        content: {
-          inApp: {
-            en: "Order [Number] was cancelled\nThe Order status changed to Cancelled by [Updated By].\nCTA: See Detail",
-            id: "Order [Number] dibatalkan\nStatus Order berubah menjadi Cancelled oleh [Updated By].\nCTA: Lihat Detail",
-          },
-          email: {
-            subject: {
-              en: "Order [Number] was cancelled",
-              id: "Order [Number] dibatalkan",
-            },
-            body: {
-              en: "The Order status changed to Cancelled by [Updated By].",
-              id: "Status Order berubah menjadi Cancelled oleh [Updated By].",
-            },
-            cta: SEE_DETAIL,
-          },
-        },
-      },
-      {
         id: "order_new_order",
-        name: "New Order",
+        name: { en: "New Order", id: "Pesanan Baru" },
         description: {
           en: "Notifies eligible users with Orders access when a new Order is created in Not Started status.",
           id: "Memberi tahu pengguna yang memiliki Izin Akses Orders ketika Order baru dibuat dengan status Not Started.",
@@ -1146,7 +1016,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "order_invoice_paid",
-        name: "Order Invoice Paid",
+        name: { en: "Order Invoice Paid", id: "Tagihan Pesanan Dibayar" },
         description: {
           en: "Notifies eligible users with access to the related Order when a linked Invoice is fully paid. Partial payments do not trigger this notification.",
           id: "Memberi tahu pengguna yang memiliki akses ke Order terkait ketika Invoice yang terkait telah dibayar lunas. Pembayaran sebagian tidak memicu notifikasi ini.",
@@ -1176,6 +1046,136 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
           },
         },
       },
+      {
+        id: "order_deadline_approaching",
+        name: { en: "Order Deadline Approaching", id: "Batas Waktu Pesanan Segera Tiba" },
+        description: {
+          en: "Reminds eligible users with access to the related Order before its deadline, based on the configured reminder timing.",
+          id: "Mengingatkan pengguna yang memiliki akses ke Order terkait sebelum batas waktunya, sesuai waktu pengingat yang telah dikonfigurasi.",
+        },
+        trigger: "Configured reminder date before deadline",
+        type: "configurable",
+        recipient: "Eligible users with Orders access",
+        permission: "Orders",
+        todo: null,
+        groupId: null,
+        remindBefore: DEFAULT_REMIND_BEFORE_DAYS,
+        reminderTarget: { en: "deadline", id: "tenggat waktu" },
+        defaults: { inApp: true, email: true },
+        content: {
+          inApp: {
+            en: "Order [Number] is approaching its deadline\nThe deadline is [Deadline Date]. Current status: [Status].\nCTA: See Detail",
+            id: "Order [Number] mendekati batas waktu\nBatas waktunya adalah [Deadline Date]. Status saat ini: [Status].\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Order [Number] is approaching its deadline",
+              id: "Order [Number] mendekati batas waktu",
+            },
+            body: {
+              en: "Order [Number] is approaching its deadline on [Deadline Date]. Current status: [Status].",
+              id: "Order [Number] mendekati batas waktu pada [Deadline Date]. Status saat ini: [Status].",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
+      {
+        id: "order_deadline_overdue",
+        name: { en: "Order Deadline Overdue", id: "Batas Waktu Pesanan Terlewat" },
+        description: {
+          en: "Notifies eligible users with access to the related Order when it has passed its deadline and remains unresolved.",
+          id: "Memberi tahu pengguna yang memiliki akses ke Order terkait ketika telah melewati batas waktu dan belum diselesaikan.",
+        },
+        trigger: "Deadline passed",
+        type: "configurable",
+        recipient: "Eligible users with Orders access",
+        permission: "Orders",
+        todo: null,
+        groupId: null,
+        defaults: { inApp: true, email: true },
+        content: {
+          inApp: {
+            en: "Order [Number] is overdue\nThe deadline was [Deadline Date]. Current status: [Status].\nCTA: See Detail",
+            id: "Order [Number] terlambat\nBatas waktunya adalah [Deadline Date]. Status saat ini: [Status].\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Order [Number] is overdue",
+              id: "Order [Number] terlambat",
+            },
+            body: {
+              en: "Order [Number] passed its deadline on [Deadline Date] and remains [Status].",
+              id: "Order [Number] melewati batas waktu pada [Deadline Date] dan tetap berstatus [Status].",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
+      {
+        id: "order_changed_to_completed",
+        name: { en: "Changed to Completed", id: "Status Diubah menjadi Selesai" },
+        description: {
+          en: "Notifies eligible users with access to the related Order when its status changes to Completed.",
+          id: "Memberi tahu pengguna yang memiliki akses ke Order terkait ketika statusnya berubah menjadi Completed.",
+        },
+        trigger: "Status changes to Completed",
+        type: "configurable",
+        recipient: "Eligible users with Orders access",
+        permission: "Orders",
+        todo: null,
+        groupId: null,
+        defaults: { inApp: true, email: false },
+        content: {
+          inApp: {
+            en: "Order [Number] has been completed\nThe Order status changed to Completed.\nCTA: See Detail",
+            id: "Order [Number] telah selesai\nStatus Order berubah menjadi Completed.\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Order [Number] has been completed",
+              id: "Order [Number] telah selesai",
+            },
+            body: {
+              en: "The Order status changed to Completed.",
+              id: "Status Order berubah menjadi Completed.",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
+      {
+        id: "order_changed_to_cancelled",
+        name: { en: "Changed to Cancelled", id: "Status Diubah menjadi Dibatalkan" },
+        description: {
+          en: "Notifies eligible users with access to the related Order when its status changes to Cancelled.",
+          id: "Memberi tahu pengguna yang memiliki akses ke Order terkait ketika statusnya berubah menjadi Cancelled.",
+        },
+        trigger: "Status changes to Cancelled",
+        type: "configurable",
+        recipient: "Eligible users with Orders access",
+        permission: "Orders",
+        todo: null,
+        groupId: null,
+        defaults: { inApp: true, email: false },
+        content: {
+          inApp: {
+            en: "Order [Number] was cancelled\nThe Order status changed to Cancelled by [Updated By].\nCTA: See Detail",
+            id: "Order [Number] dibatalkan\nStatus Order berubah menjadi Cancelled oleh [Updated By].\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Order [Number] was cancelled",
+              id: "Order [Number] dibatalkan",
+            },
+            body: {
+              en: "The Order status changed to Cancelled by [Updated By].",
+              id: "Status Order berubah menjadi Cancelled oleh [Updated By].",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
     ],
   },
   {
@@ -1187,66 +1187,32 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
     },
     items: [
       {
-        id: "invoice_due_date_approaching",
-        name: "Due Date Approaching",
+        id: "invoice_revision_requested_by_customer",
+        name: { en: "Invoice Revision Requested by Customer", id: "Revisi Tagihan Diminta Pelanggan" },
         description: {
-          en: "Reminds eligible users with Invoices access before an unpaid Invoice reaches its due date, based on the configured reminder timing.",
-          id: "Mengingatkan pengguna yang memiliki Izin Akses Invoices sebelum Invoice yang belum dibayar mencapai tanggal jatuh tempo, sesuai waktu pengingat yang telah dikonfigurasi.",
+          en: "Notifies the Invoice owner or Customer Portal sender when the customer requests changes to the Invoice.",
+          id: "Memberi tahu pemilik Invoice atau pengirim Customer Portal ketika pelanggan meminta perubahan pada Invoice.",
         },
-        trigger: "Configured reminder date before due date",
-        type: "configurable",
-        recipient: "Subscribed users with Invoice access",
+        trigger: "Customer requests changes through Customer Portal",
+        type: "required",
+        recipient: "Invoice owner or Customer Portal sender",
         permission: "Invoices",
-        todo: null,
-        groupId: null,
-        remindBefore: DEFAULT_REMIND_BEFORE_DAYS,
-        reminderTarget: "due date",
-        defaults: { inApp: true, email: true },
-        content: {
-          inApp: {
-            en: "Invoice [Number] is approaching its due date\nThe due date is [Due Date]. Outstanding amount: [Amount] [Currency].\nCTA: See Detail",
-            id: "Invoice [Number] mendekati tanggal jatuh tempo\nTanggal jatuh tempo adalah [Due Date]. Sisa tagihan: [Amount] [Currency].\nCTA: Lihat Detail",
-          },
-          email: {
-            subject: {
-              en: "Invoice [Number] is approaching its due date",
-              id: "Invoice [Number] mendekati tanggal jatuh tempo",
-            },
-            body: {
-              en: "Invoice [Number] is approaching its due date on [Due Date]. Outstanding amount: [Amount] [Currency].",
-              id: "Invoice [Number] mendekati tanggal jatuh tempo pada [Due Date]. Sisa tagihan: [Amount] [Currency].",
-            },
-            cta: SEE_DETAIL,
-          },
-        },
-      },
-      {
-        id: "invoice_overdue",
-        name: "Invoice Overdue",
-        description: {
-          en: "Notifies eligible users with Invoices access when an unpaid Invoice has passed its due date.",
-          id: "Memberi tahu pengguna yang memiliki Izin Akses Invoices ketika Invoice yang belum dibayar telah melewati tanggal jatuh tempo.",
-        },
-        trigger: "Due date passed and unpaid",
-        type: "configurable",
-        recipient: "Subscribed users with Invoice access",
-        permission: "Invoices",
-        todo: null,
+        todo: "Needs revision",
         groupId: null,
         defaults: { inApp: true, email: true },
         content: {
           inApp: {
-            en: "Invoice [Number] is overdue\nThe invoice was due on [Due Date]. Outstanding amount: [Amount] [Currency].\nCTA: See Detail",
-            id: "Invoice [Number] terlambat\nInvoice jatuh tempo pada [Due Date]. Sisa tagihan: [Amount] [Currency].\nCTA: Lihat Detail",
+            en: "Invoice [Number] revision requested by the customer\n[Customer Name] requested changes on Invoice [Number] through the Customer Portal.\nCTA: See Detail",
+            id: "Revisi Invoice [Number] diminta oleh pelanggan\n[Customer Name] meminta perubahan pada Invoice [Number] melalui Customer Portal.\nCTA: Lihat Detail",
           },
           email: {
             subject: {
-              en: "Invoice [Number] is overdue",
-              id: "Invoice [Number] terlambat",
+              en: "Invoice [Number] revision requested by the customer",
+              id: "Revisi Invoice [Number] diminta oleh pelanggan",
             },
             body: {
-              en: "Invoice [Number] passed its due date on [Due Date]. Outstanding amount: [Amount] [Currency].",
-              id: "Invoice [Number] melewati tanggal jatuh tempo pada [Due Date]. Sisa tagihan: [Amount] [Currency].",
+              en: "[Customer Name] requested changes on Invoice [Number] through the Customer Portal.",
+              id: "[Customer Name] meminta perubahan pada Invoice [Number] melalui Customer Portal.",
             },
             cta: SEE_DETAIL,
           },
@@ -1254,7 +1220,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "invoice_approved_by_customer",
-        name: "Invoice Approved by Customer",
+        name: { en: "Invoice Approved by Customer", id: "Tagihan Disetujui Pelanggan" },
         description: {
           en: "Notifies the Invoice owner or Customer Portal sender when the customer approves the Invoice.",
           id: "Memberi tahu pemilik Invoice atau pengirim Customer Portal ketika pelanggan menyetujui Invoice.",
@@ -1286,7 +1252,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "invoice_rejected_by_customer",
-        name: "Invoice Rejected by Customer",
+        name: { en: "Invoice Rejected by Customer", id: "Tagihan Ditolak Pelanggan" },
         description: {
           en: "Notifies the Invoice owner or Customer Portal sender when the customer rejects the Invoice.",
           id: "Memberi tahu pemilik Invoice atau pengirim Customer Portal ketika pelanggan menolak Invoice.",
@@ -1317,32 +1283,66 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
         },
       },
       {
-        id: "invoice_revision_requested_by_customer",
-        name: "Invoice Revision Requested by Customer",
+        id: "invoice_due_date_approaching",
+        name: { en: "Due Date Approaching", id: "Jatuh Tempo Segera Tiba" },
         description: {
-          en: "Notifies the Invoice owner or Customer Portal sender when the customer requests changes to the Invoice.",
-          id: "Memberi tahu pemilik Invoice atau pengirim Customer Portal ketika pelanggan meminta perubahan pada Invoice.",
+          en: "Reminds eligible users with Invoices access before an unpaid Invoice reaches its due date, based on the configured reminder timing.",
+          id: "Mengingatkan pengguna yang memiliki Izin Akses Invoices sebelum Invoice yang belum dibayar mencapai tanggal jatuh tempo, sesuai waktu pengingat yang telah dikonfigurasi.",
         },
-        trigger: "Customer requests changes through Customer Portal",
-        type: "required",
-        recipient: "Invoice owner or Customer Portal sender",
+        trigger: "Configured reminder date before due date",
+        type: "configurable",
+        recipient: "Subscribed users with Invoice access",
         permission: "Invoices",
-        todo: "Needs revision",
+        todo: null,
+        groupId: null,
+        remindBefore: DEFAULT_REMIND_BEFORE_DAYS,
+        reminderTarget: { en: "due date", id: "tanggal jatuh tempo" },
+        defaults: { inApp: true, email: true },
+        content: {
+          inApp: {
+            en: "Invoice [Number] is approaching its due date\nThe due date is [Due Date]. Outstanding amount: [Amount] [Currency].\nCTA: See Detail",
+            id: "Invoice [Number] mendekati tanggal jatuh tempo\nTanggal jatuh tempo adalah [Due Date]. Sisa tagihan: [Amount] [Currency].\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Invoice [Number] is approaching its due date",
+              id: "Invoice [Number] mendekati tanggal jatuh tempo",
+            },
+            body: {
+              en: "Invoice [Number] is approaching its due date on [Due Date]. Outstanding amount: [Amount] [Currency].",
+              id: "Invoice [Number] mendekati tanggal jatuh tempo pada [Due Date]. Sisa tagihan: [Amount] [Currency].",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
+      {
+        id: "invoice_overdue",
+        name: { en: "Invoice Overdue", id: "Tagihan Jatuh Tempo" },
+        description: {
+          en: "Notifies eligible users with Invoices access when an unpaid Invoice has passed its due date.",
+          id: "Memberi tahu pengguna yang memiliki Izin Akses Invoices ketika Invoice yang belum dibayar telah melewati tanggal jatuh tempo.",
+        },
+        trigger: "Due date passed and unpaid",
+        type: "configurable",
+        recipient: "Subscribed users with Invoice access",
+        permission: "Invoices",
+        todo: null,
         groupId: null,
         defaults: { inApp: true, email: true },
         content: {
           inApp: {
-            en: "Invoice [Number] revision requested by the customer\n[Customer Name] requested changes on Invoice [Number] through the Customer Portal.\nCTA: See Detail",
-            id: "Revisi Invoice [Number] diminta oleh pelanggan\n[Customer Name] meminta perubahan pada Invoice [Number] melalui Customer Portal.\nCTA: Lihat Detail",
+            en: "Invoice [Number] is overdue\nThe invoice was due on [Due Date]. Outstanding amount: [Amount] [Currency].\nCTA: See Detail",
+            id: "Invoice [Number] terlambat\nInvoice jatuh tempo pada [Due Date]. Sisa tagihan: [Amount] [Currency].\nCTA: Lihat Detail",
           },
           email: {
             subject: {
-              en: "Invoice [Number] revision requested by the customer",
-              id: "Revisi Invoice [Number] diminta oleh pelanggan",
+              en: "Invoice [Number] is overdue",
+              id: "Invoice [Number] terlambat",
             },
             body: {
-              en: "[Customer Name] requested changes on Invoice [Number] through the Customer Portal.",
-              id: "[Customer Name] meminta perubahan pada Invoice [Number] melalui Customer Portal.",
+              en: "Invoice [Number] passed its due date on [Due Date]. Outstanding amount: [Amount] [Currency].",
+              id: "Invoice [Number] melewati tanggal jatuh tempo pada [Due Date]. Sisa tagihan: [Amount] [Currency].",
             },
             cta: SEE_DETAIL,
           },
@@ -1350,7 +1350,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "invoice_payment_proof_submitted",
-        name: "Payment Proof Submitted",
+        name: { en: "Payment Proof Submitted", id: "Bukti Pembayaran Dikirim" },
         description: {
           en: "Notifies the Invoice owner or responsible reviewer when a customer uploads payment proof through the Customer Portal.",
           id: "Memberi tahu pemilik Invoice atau peninjau yang bertanggung jawab ketika pelanggan mengunggah bukti pembayaran melalui Customer Portal.",
@@ -1365,7 +1365,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
         content: {
           inApp: {
             en: "Payment proof submitted for Invoice [Number]\n[Customer Name] submitted payment proof for Invoice [Number]. Please review.\nCTA: See Detail",
-            id: "Bukti pembayaran dikirim untuk Invoice [Number]\n[Customer Name] mengirim bukti pembayaran untuk Invoice [Number]. Silakan tinjau.\nCTA: Lihat Detail",
+            id: "Bukti pembayaran dikirim untuk Invoice [Number]\n[Customer Name] mengirim bukti pembayaran untuk Invoice [Number]. Tinjau.\nCTA: Lihat Detail",
           },
           email: {
             subject: {
@@ -1374,7 +1374,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
             },
             body: {
               en: "[Customer Name] submitted payment proof for Invoice [Number]. Please review.",
-              id: "[Customer Name] mengirim bukti pembayaran untuk Invoice [Number]. Silakan tinjau.",
+              id: "[Customer Name] mengirim bukti pembayaran untuk Invoice [Number]. Tinjau.",
             },
             cta: SEE_DETAIL,
           },
@@ -1382,7 +1382,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
       },
       {
         id: "invoice_payment_proof_rejected",
-        name: "Payment Proof Rejected",
+        name: { en: "Payment Proof Rejected", id: "Bukti Pembayaran Ditolak" },
         description: {
           en: "Notifies the customer when their payment proof is rejected and must be uploaded again.",
           id: "Memberi tahu pelanggan ketika bukti pembayarannya ditolak dan harus diunggah ulang.",
@@ -1397,7 +1397,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
         content: {
           inApp: {
             en: "Payment proof for Invoice [Number] was rejected\nYour payment proof for Invoice [Number] was rejected. Reason: [Reason]. Please re-upload.\nCTA: See Detail",
-            id: "Bukti pembayaran untuk Invoice [Number] ditolak\nBukti pembayaran Anda untuk Invoice [Number] ditolak. Alasan: [Reason]. Silakan unggah ulang.\nCTA: Lihat Detail",
+            id: "Bukti pembayaran untuk Invoice [Number] ditolak\nBukti pembayaran Anda untuk Invoice [Number] ditolak. Alasan: [Reason]. Unggah ulang.\nCTA: Lihat Detail",
           },
           email: {
             subject: {
@@ -1406,7 +1406,7 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
             },
             body: {
               en: "Your payment proof for Invoice [Number] was rejected. Reason: [Reason]. Please re-upload the payment proof.",
-              id: "Bukti pembayaran Anda untuk Invoice [Number] ditolak. Alasan: [Reason]. Silakan unggah ulang bukti pembayaran.",
+              id: "Bukti pembayaran Anda untuk Invoice [Number] ditolak. Alasan: [Reason]. Unggah ulang bukti pembayaran.",
             },
             cta: { en: "Re-upload payment proof", id: "Unggah ulang bukti pembayaran" },
           },
@@ -1423,8 +1423,74 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
     },
     items: [
       {
+        id: "po_expected_end_date_approaching",
+        name: { en: "Expected End Date Approaching", id: "Perkiraan Tanggal Selesai Segera Tiba" },
+        description: {
+          en: "Reminds eligible users with Purchase Orders access before a Purchase Order reaches its expected end date, based on the configured reminder timing.",
+          id: "Mengingatkan pengguna yang memiliki Izin Akses Purchase Orders sebelum Purchase Order mencapai tanggal selesai yang diperkirakan, sesuai waktu pengingat yang telah dikonfigurasi.",
+        },
+        trigger: "Configured reminder date before expected end date",
+        type: "configurable",
+        recipient: "Subscribed users with Purchase Order access",
+        permission: "Purchase Orders",
+        todo: null,
+        groupId: null,
+        remindBefore: DEFAULT_REMIND_BEFORE_DAYS,
+        reminderTarget: { en: "expected end date", id: "perkiraan tanggal selesai" },
+        defaults: { inApp: true, email: false },
+        content: {
+          inApp: {
+            en: "Purchase Order [Number] is approaching its expected end date\nThe expected end date is [Expected End Date]. Current status: [Status].\nCTA: See Detail",
+            id: "Purchase Order [Number] mendekati tanggal selesai yang diperkirakan\nTanggal selesai yang diharapkan adalah [Expected End Date]. Status saat ini: [Status].\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Purchase Order [Number] is approaching its expected end date",
+              id: "Purchase Order [Number] mendekati tanggal selesai yang diperkirakan",
+            },
+            body: {
+              en: "Purchase Order [Number] is approaching its expected end date on [Expected End Date]. Current status: [Status].",
+              id: "Purchase Order [Number] mendekati tanggal selesai yang diperkirakan pada [Expected End Date]. Status saat ini: [Status].",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
+      {
+        id: "po_expected_end_date_overdue",
+        name: { en: "Expected End Date Overdue", id: "Perkiraan Tanggal Selesai Terlewat" },
+        description: {
+          en: "Notifies eligible users with Purchase Orders access when a Purchase Order remains incomplete after its expected end date.",
+          id: "Memberi tahu pengguna yang memiliki Izin Akses Purchase Orders ketika Purchase Order masih belum selesai setelah melewati tanggal selesai yang diperkirakan.",
+        },
+        trigger: "Expected end date passed",
+        type: "configurable",
+        recipient: "Subscribed users with Purchase Order access",
+        permission: "Purchase Orders",
+        todo: null,
+        groupId: null,
+        defaults: { inApp: true, email: true },
+        content: {
+          inApp: {
+            en: "Purchase Order [Number] is overdue against its expected end date\nThe expected end date was [Expected End Date]. Current status: [Status].\nCTA: See Detail",
+            id: "Purchase Order [Number] melewati tanggal selesai yang diharapkan\nTanggal selesai yang diharapkan adalah [Expected End Date]. Status saat ini: [Status].\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Purchase Order [Number] is overdue",
+              id: "Purchase Order [Number] terlambat",
+            },
+            body: {
+              en: "Purchase Order [Number] passed its expected end date on [Expected End Date] and remains [Status].",
+              id: "Purchase Order [Number] melewati tanggal selesai yang diperkirakan pada [Expected End Date] dan tetap berstatus [Status].",
+            },
+            cta: SEE_DETAIL,
+          },
+        },
+      },
+      {
         id: "po_payment_overdue",
-        name: "Payment Overdue",
+        name: { en: "Payment Overdue", id: "Pembayaran Terlambat" },
         description: {
           en: "Notifies eligible users with Purchase Orders access when a Purchase Order remains unpaid after its payment due date.",
           id: "Memberi tahu pengguna yang memiliki Izin Akses Purchase Orders ketika Purchase Order masih belum dibayar setelah melewati tanggal jatuh tempo pembayaran.",
@@ -1454,67 +1520,107 @@ export const DEFAULT_NOTIFICATION_SETTINGS = [
           },
         },
       },
+    ],
+  },
+  {
+    id: "bulk_upload",
+    title: { en: "Bulk Upload", id: "Bulk Upload" },
+    description: {
+      en: "Bulk upload lifecycle events for Product Catalog and Materials. Sent only to the user who initiated the upload.",
+      id: "Peristiwa siklus bulk upload untuk Katalog Produk dan Material. Dikirim hanya kepada pengguna yang memulai unggahan.",
+    },
+    items: [
       {
-        id: "po_expected_end_date_approaching",
-        name: "Expected End Date Approaching",
+        id: "bu_ready_for_review",
+        name: { en: "Bulk Upload Ready for Review", id: "Unggah Massal Siap Ditinjau" },
         description: {
-          en: "Reminds eligible users with Purchase Orders access before a Purchase Order reaches its expected end date, based on the configured reminder timing.",
-          id: "Mengingatkan pengguna yang memiliki Izin Akses Purchase Orders sebelum Purchase Order mencapai tanggal selesai yang diperkirakan, sesuai waktu pengingat yang telah dikonfigurasi.",
+          en: "Notifies the user who initiated a Product Catalog or Materials bulk upload when AI normalization is completed and the batch is ready for review.",
+          id: "Memberi tahu pengguna yang memulai bulk upload Katalog Produk atau Material ketika normalisasi AI selesai dan batch siap untuk ditinjau.",
         },
-        trigger: "Configured reminder date before expected end date",
+        trigger: "AI normalization is completed",
         type: "configurable",
-        recipient: "Subscribed users with Purchase Order access",
-        permission: "Purchase Orders",
-        todo: null,
+        recipient: "User who initiated the bulk upload",
+        permission: null,
+        todo: "Review bulk upload",
         groupId: null,
-        remindBefore: DEFAULT_REMIND_BEFORE_DAYS,
-        reminderTarget: "expected end date",
-        defaults: { inApp: true, email: false },
+        defaults: { inApp: true, email: true },
         content: {
           inApp: {
-            en: "Purchase Order [Number] is approaching its expected end date\nThe expected end date is [Expected End Date]. Current status: [Status].\nCTA: See Detail",
-            id: "Purchase Order [Number] mendekati tanggal selesai yang diperkirakan\nTanggal selesai yang diharapkan adalah [Expected End Date]. Status saat ini: [Status].\nCTA: Lihat Detail",
+            en: "Your [Data Type] bulk upload is ready for review\nYour bulk upload data has been processed and is ready for review before confirming the import.\nCTA: Review Bulk Upload",
+            id: "Bulk upload [Data Type] Anda siap untuk ditinjau\nData bulk upload Anda telah diproses dan siap ditinjau sebelum impor dikonfirmasi.\nCTA: Tinjau Bulk Upload",
           },
           email: {
             subject: {
-              en: "Purchase Order [Number] is approaching its expected end date",
-              id: "Purchase Order [Number] mendekati tanggal selesai yang diperkirakan",
+              en: "Your [Data Type] Bulk Upload is Ready for Review",
+              id: "Bulk Upload [Data Type] Anda Siap untuk Ditinjau",
             },
             body: {
-              en: "Purchase Order [Number] is approaching its expected end date on [Expected End Date]. Current status: [Status].",
-              id: "Purchase Order [Number] mendekati tanggal selesai yang diperkirakan pada [Expected End Date]. Status saat ini: [Status].",
+              en: "Your [Data Type] bulk upload data is ready for review. You can open the Bulk Upload page to review the normalized data before confirming the import.\nUpload ID: [Upload ID]\nFile: [File Name]",
+              id: "Data bulk upload [Data Type] Anda siap untuk ditinjau. Anda dapat melihat halaman Bulk Upload untuk meninjau data yang telah dinormalisasi sebelum mengonfirmasi impor.\nUpload ID: [Upload ID]\nFile: [File Name]",
             },
-            cta: SEE_DETAIL,
+            cta: { en: "Review Bulk Upload", id: "Tinjau Bulk Upload" },
           },
         },
       },
       {
-        id: "po_expected_end_date_overdue",
-        name: "Expected End Date Overdue",
+        id: "bu_completed",
+        name: { en: "Bulk Upload Completed", id: "Unggah Massal Selesai" },
         description: {
-          en: "Notifies eligible users with Purchase Orders access when a Purchase Order remains incomplete after its expected end date.",
-          id: "Memberi tahu pengguna yang memiliki Izin Akses Purchase Orders ketika Purchase Order masih belum selesai setelah melewati tanggal selesai yang diperkirakan.",
+          en: "Notifies the user who initiated a Product Catalog or Materials bulk upload when all batches have been processed and the import is complete.",
+          id: "Memberi tahu pengguna yang memulai bulk upload Katalog Produk atau Material ketika seluruh batch telah diproses dan impor selesai.",
         },
-        trigger: "Expected end date passed",
+        trigger: "All batches have been processed and the bulk import is completed",
         type: "configurable",
-        recipient: "Subscribed users with Purchase Order access",
-        permission: "Purchase Orders",
+        recipient: "User who initiated the bulk upload",
+        permission: null,
         todo: null,
         groupId: null,
         defaults: { inApp: true, email: true },
         content: {
           inApp: {
-            en: "Purchase Order [Number] is overdue against its expected end date\nThe expected end date was [Expected End Date]. Current status: [Status].\nCTA: See Detail",
-            id: "Purchase Order [Number] melewati tanggal selesai yang diharapkan\nTanggal selesai yang diharapkan adalah [Expected End Date]. Status saat ini: [Status].\nCTA: Lihat Detail",
+            en: "Your [Data Type] bulk upload is complete\nYour bulk upload has been completed. You can open the Bulk Upload page to review the result.\nCTA: View Result",
+            id: "Bulk upload [Data Type] Anda selesai\nBulk upload Anda telah selesai. Anda dapat melihat hasil impor melalui halaman Bulk Upload.\nCTA: Lihat Hasil",
           },
           email: {
             subject: {
-              en: "Purchase Order [Number] is overdue",
-              id: "Purchase Order [Number] terlambat",
+              en: "Your [Data Type] Bulk Upload is Completed",
+              id: "Bulk Upload [Data Type] Anda Selesai",
             },
             body: {
-              en: "Purchase Order [Number] passed its expected end date on [Expected End Date] and remains [Status].",
-              id: "Purchase Order [Number] melewati tanggal selesai yang diperkirakan pada [Expected End Date] dan tetap berstatus [Status].",
+              en: "Your [Data Type] bulk upload has been completed. You can open the Bulk Upload page to review the result.\nUpload ID: [Upload ID]\nFile: [File Name]",
+              id: "Bulk upload [Data Type] Anda telah selesai. Anda dapat melihat hasil impor melalui halaman Bulk Upload.\nUpload ID: [Upload ID]\nFile: [File Name]",
+            },
+            cta: { en: "View Bulk Upload Result", id: "Lihat Hasil Bulk Upload" },
+          },
+        },
+      },
+      {
+        id: "bu_cancelled",
+        name: { en: "Bulk Upload Canceled", id: "Unggah Massal Dibatalkan" },
+        description: {
+          en: "Notifies the user who initiated a Product Catalog or Materials bulk upload when the system cancels the import because of an infrastructure or batch-processing failure.",
+          id: "Memberi tahu pengguna yang memulai bulk upload Katalog Produk atau Material ketika sistem membatalkan impor karena kegagalan infrastruktur atau pemrosesan batch.",
+        },
+        trigger: "Bulk import is canceled by the system because of a processing failure",
+        type: "configurable",
+        recipient: "User who initiated the bulk upload",
+        permission: null,
+        todo: null,
+        groupId: null,
+        defaults: { inApp: true, email: true },
+        content: {
+          inApp: {
+            en: "Your [Data Type] bulk upload was canceled\nYour bulk upload was canceled by the system because an error occurred during processing.\nCTA: View Detail",
+            id: "Bulk upload [Data Type] Anda dibatalkan\nBulk upload Anda dibatalkan oleh sistem karena terjadi kesalahan saat proses berlangsung.\nCTA: Lihat Detail",
+          },
+          email: {
+            subject: {
+              en: "Your [Data Type] Bulk Upload was Canceled",
+              id: "Bulk Upload [Data Type] Anda Dibatalkan",
+            },
+            body: {
+              en: "Your [Data Type] bulk upload was canceled by the system. An error occurred during batch processing. Please try uploading your file again or contact our support team for assistance.\nUpload ID: [Upload ID]\nFile: [File Name]",
+              id: "Bulk upload [Data Type] Anda dibatalkan oleh sistem. Terjadi kesalahan saat pemrosesan batch. Coba unggah kembali file Anda atau hubungi tim dukungan jika masalah berlanjut.\nUpload ID: [Upload ID]\nFile: [File Name]",
             },
             cta: SEE_DETAIL,
           },
