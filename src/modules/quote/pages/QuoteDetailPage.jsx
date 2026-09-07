@@ -130,11 +130,11 @@ const SCREENING_MODAL_COPY = {
     id: "Memeriksa pelanggan terhadap daftar sanksi yang berlaku. Proses ini mungkin memerlukan beberapa saat.",
   },
   failedTitle: {
-    en: "Customer did not pass sanctions screening",
+    en: "Sanctions screening failed and account suspended",
     id: "Pelanggan tidak lolos pemeriksaan sanksi",
   },
   failedBody: {
-    en: "The customer did not pass the required sanctions screening. As a result, the quote has been automatically rejected and your Labamu Manufacturing account has been suspended. Contact Customer Support at cs@labamu.co.id to submit an appeal.",
+    en: "The customer did not pass sanctions screening. The quote was automatically rejected and your Labamu Manufacturing account has been suspended. Contact Customer Support at cs@labamu.co.id to appeal.",
     id: "Pelanggan tidak lolos pemeriksaan sanksi yang diwajibkan. Akibatnya, penawaran ditolak secara otomatis dan akun Labamu Manufacturing Anda telah ditangguhkan. Hubungi Layanan Pelanggan di cs@labamu.co.id untuk mengajukan banding.",
   },
   failedAction: { en: "Understood", id: "Mengerti" },
@@ -799,6 +799,7 @@ export const QuoteDetailPage = ({
                   ? "yellow"
                   : "yellow-light",
               text: quoteData.customerApprovalStatus || "Pending",
+              tone: "soft",
             }}
           />
         </div>
@@ -815,22 +816,25 @@ export const QuoteDetailPage = ({
           <div style={sectionCardStyle}>
             {sectionTitle("Customer Information")}
             <div style={{ padding: "20px 24px 24px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
                 <LabelValue label="Customer Name" value={quoteData.customer?.name || quoteData.customerName || "-"} />
-                <LabelValue label="Email" value={quoteData.customer?.email || "-"} />
+                <LabelValue label="Customer Email" value={quoteData.customer?.email || "-"} />
                 <LabelValue label="Customer Phone" value={quoteData.customer?.phone || "-"} />
-              </div>
-              <LabelValue label="Customer Address" value={quoteData.customer?.address || "-"} />
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
-                <LabelValue label="Customer Tags" value={quoteData.customer?.tags?.length ? quoteData.customer.tags.join(", ") : "-"} />
-                <LabelValue label="Customer Country" value={linkedCustomer?.country || "-"} />
                 <LabelValue
                   label="Sanctions Screening Status"
                   badge={{
                     variant: getScreeningBadgeVariant(getEffectiveScreeningStatus(linkedCustomer)),
                     text: getScreeningStatusLabel(getEffectiveScreeningStatus(linkedCustomer)),
+                    tone: "soft",
                   }}
                 />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+                <LabelValue label="Customer Tags" value={quoteData.customer?.tags?.length ? quoteData.customer.tags.join(", ") : "-"} />
+                <LabelValue label="Customer Country" value={linkedCustomer?.country || "-"} />
+                <div style={{ gridColumn: "span 2" }}>
+                  <LabelValue label="Customer Address" value={quoteData.customer?.address || "-"} />
+                </div>
               </div>
             </div>
 
@@ -1154,6 +1158,7 @@ export const QuoteDetailPage = ({
         description={screeningResult === "failed" ? srm("failedBody") : srm("errorBody")}
         width="440px"
         hideFooterDivider
+        hideCloseButton={screeningResult === "failed"}
         footer={
           screeningResult === "failed" ? (
             <Button

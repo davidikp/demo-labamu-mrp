@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronLeftIcon, AddIcon, CheckIcon, ChevronDownIcon } from "../../../components/icons/Icons.jsx";
+import { ChevronLeftIcon, AddIcon, ChevronDownIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
 import { Tooltip } from "../../../components/common/Tooltip.jsx";
@@ -214,78 +214,6 @@ const CURRENCY_OPTIONS = [
 
 const toOptions = (values) => values.map((v) => ({ value: v, label: v }));
 
-const STEPS = [
-  { key: "details", label: "Quote & Customer" },
-  { key: "products", label: "Products" },
-  { key: "attachments", label: "Attachments & Bank" },
-  { key: "terms", label: "Terms & Conditions" },
-];
-
-// Free-jump stepper: clicking any circle navigates there directly; Next/Submit
-// are the only actions gated by per-step required-field validation.
-const Stepper = ({ currentStep, onStepClick, isStepValid }) => (
-  <div style={{ display: "flex", alignItems: "flex-start" }}>
-    {STEPS.map((step, idx) => {
-      const isActive = idx === currentStep;
-      const isComplete = !isActive && isStepValid(idx);
-      const circleColor = isActive || isComplete ? "var(--feature-brand-primary)" : "var(--neutral-line-separator-1)";
-      return (
-        <React.Fragment key={step.key}>
-          <div
-            onClick={() => onStepClick(idx)}
-            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", cursor: "pointer", flexShrink: 0 }}
-          >
-            <div
-              style={{
-                width: "32px",
-                height: "32px",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: isActive
-                  ? "var(--feature-brand-primary)"
-                  : isComplete
-                  ? "var(--feature-brand-container-lighter)"
-                  : "var(--neutral-surface-primary)",
-                border: `1.5px solid ${circleColor}`,
-                color: isActive ? "#fff" : isComplete ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-tertiary)",
-                fontWeight: "var(--font-weight-bold)",
-                fontSize: "var(--text-title-3)",
-                boxSizing: "border-box",
-              }}
-            >
-              {isComplete ? <CheckIcon size={16} color="var(--feature-brand-primary)" /> : idx + 1}
-            </div>
-            <span
-              style={{
-                fontSize: "var(--text-title-3)",
-                fontWeight: isActive ? "var(--font-weight-bold)" : "var(--font-weight-medium)",
-                color: isActive ? "var(--neutral-on-surface-primary)" : "var(--neutral-on-surface-secondary)",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {step.label}
-            </span>
-          </div>
-          {idx < STEPS.length - 1 ? (
-            <div
-              style={{
-                flex: 1,
-                height: "1.5px",
-                marginTop: "15px",
-                marginLeft: "8px",
-                marginRight: "8px",
-                background: isComplete ? "var(--feature-brand-primary)" : "var(--neutral-line-separator-1)",
-              }}
-            />
-          ) : null}
-        </React.Fragment>
-      );
-    })}
-  </div>
-);
-
 const EMPTY_TERMS = {
   paymentTerms: "",
   incoterms: "",
@@ -332,8 +260,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
   // real quote record) avoids misreading that placeholder as edit mode.
   const isEditMode = !!initialData?.quoteNo;
 
-  const [currentStep, setCurrentStep] = useState(0);
-  const [stepErrors, setStepErrors] = useState({});
+  const [formErrors, setFormErrors] = useState({});
   const [productModal, setProductModal] = useState(null);
 
   const [form, setForm] = useState(() =>
@@ -517,8 +444,10 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
 
   const money = (value) => `${form.currency} ${Math.round(value).toLocaleString("en-US")}`;
 
-  // Required-field checks per step, keyed by field name for inline error text.
-  const validateDetailsStep = () => {
+  // Required-field checks across the whole form — the page is single-scroll
+  // now, so there are no per-step gates, just one combined error set keyed
+  // by field name for inline error text.
+  const validate = () => {
     const errors = {};
     if (!form.currency) errors.currency = "Field cannot be empty";
     if (!form.validUntil) errors.validUntil = "Field cannot be empty";
@@ -533,51 +462,16 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
     });
     if (Object.keys(picFieldErrors).length > 0) errors.picFieldErrors = picFieldErrors;
 
-    return errors;
-  };
-
-  const validateProductsStep = () => {
-    const errors = {};
     if (products.length === 0) errors.products = "Please add at least one product";
-    return errors;
-  };
 
-  const validateBankStep = () => {
-    const errors = {};
     if (!form.bankAccountId) errors.bankAccountId = "Field cannot be empty";
-    return errors;
-  };
 
-  const validateTermsStep = () => {
-    const errors = {};
     if (!terms.paymentTerms) errors.paymentTerms = "Field cannot be empty";
     CLAUSE_FIELDS.forEach(({ key }) => {
       if (clauseEnabled[key] && !String(terms[key] || "").trim()) errors[key] = "Field cannot be empty";
     });
+
     return errors;
-  };
-
-  const stepValidators = [validateDetailsStep, validateProductsStep, validateBankStep, validateTermsStep];
-  const isStepValid = (idx) => Object.keys(stepValidators[idx]()).length === 0;
-
-  const goToStep = (idx) => {
-    setStepErrors({});
-    setCurrentStep(idx);
-  };
-
-  const handleNext = () => {
-    const errors = stepValidators[currentStep]();
-    if (Object.keys(errors).length > 0) {
-      setStepErrors(errors);
-      return;
-    }
-    setStepErrors({});
-    setCurrentStep((s) => Math.min(s + 1, STEPS.length - 1));
-  };
-
-  const handlePrevious = () => {
-    setStepErrors({});
-    setCurrentStep((s) => Math.max(s - 1, 0));
   };
 
   const buildPayload = () => ({
@@ -634,15 +528,12 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
     persist("Draft", isEditMode ? "Quote draft successfully updated" : "Quote draft successfully saved");
 
   const handleSubmit = () => {
-    for (let i = 0; i < STEPS.length; i += 1) {
-      const errors = stepValidators[i]();
-      if (Object.keys(errors).length > 0) {
-        setCurrentStep(i);
-        setStepErrors(errors);
-        return;
-      }
+    const errors = validate();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
     }
-    setStepErrors({});
+    setFormErrors({});
     persist("Draft", isEditMode ? "Quote successfully updated" : "Quote successfully created");
   };
 
@@ -691,49 +582,43 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
         </div>
       </div>
 
-      <div style={{ ...pageSectionStyle, padding: "20px 24px" }}>
-        <Stepper currentStep={currentStep} onStepClick={goToStep} isStepValid={isStepValid} />
-      </div>
-
-      {currentStep === 0 ? (
-        <>
-          <div style={pageSectionStyle}>
-            {sectionHeader("Quote Details")}
-            <div style={sectionBodyStyle}>
-              <div style={{ display: "flex", gap: "16px" }}>
-                <div style={{ flex: 1 }}>
-                  <FormField label="Currency" required error={stepErrors.currency}>
-                    <DropdownSelect
-                      value={form.currency}
-                      onChange={(val) => setField({ currency: val })}
-                      options={CURRENCY_OPTIONS}
-                      hasError={!!stepErrors.currency}
-                      clearable={false}
-                    />
-                  </FormField>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <InputField
-                    label="Down Payment Percentage"
-                    type="number"
-                    suffix="%"
-                    value={form.downPaymentPercent}
-                    onChange={(e) => setField({ downPaymentPercent: e.target.value })}
+      <div style={pageSectionStyle}>
+          {sectionHeader("Quote Details")}
+          <div style={sectionBodyStyle}>
+            <div style={{ display: "flex", gap: "16px" }}>
+              <div style={{ flex: 1 }}>
+                <FormField label="Currency" required error={formErrors.currency}>
+                  <DropdownSelect
+                    value={form.currency}
+                    onChange={(val) => setField({ currency: val })}
+                    options={CURRENCY_OPTIONS}
+                    hasError={!!formErrors.currency}
+                    clearable={false}
                   />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <InputField
-                    label="Valid Until"
-                    type="date"
-                    required
-                    placeholder="Enter date"
-                    value={form.validUntil}
-                    onChange={(val) => setField({ validUntil: typeof val === "string" ? val : val?.target?.value || "" })}
-                    error={stepErrors.validUntil}
-                  />
-                </div>
+                </FormField>
+              </div>
+              <div style={{ flex: 1 }}>
+                <InputField
+                  label="Down Payment Percentage"
+                  type="number"
+                  suffix="%"
+                  value={form.downPaymentPercent}
+                  onChange={(e) => setField({ downPaymentPercent: e.target.value })}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <InputField
+                  label="Valid Until"
+                  type="date"
+                  required
+                  placeholder="Enter date"
+                  value={form.validUntil}
+                  onChange={(val) => setField({ validUntil: typeof val === "string" ? val : val?.target?.value || "" })}
+                  error={formErrors.validUntil}
+                />
               </div>
             </div>
+          </div>
           </div>
 
           {/* Customer Information — same field set and layout as the Customer
@@ -743,7 +628,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
             <div style={sectionBodyStyle}>
               <div style={{ display: "flex", gap: "16px" }}>
                 <div style={{ flex: 1 }}>
-                  <FormField label="Customer Name" required error={stepErrors.customerName}>
+                  <FormField label="Customer Name" required error={formErrors.customerName}>
                     <div style={{ position: "relative" }}>
                       <input
                         value={customerSearch}
@@ -760,7 +645,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                           padding: "0 40px 0 16px",
                           borderRadius: "10px",
                           border: `1px solid ${
-                            stepErrors.customerName
+                            formErrors.customerName
                               ? "var(--status-red-primary)"
                               : isCustomerFieldFocused
                               ? "var(--feature-brand-primary)"
@@ -893,13 +778,13 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                   </FormField>
                 </div>
                 <div style={{ flex: 1 }}>
-                  <FormField label="Customer Country" required error={stepErrors.customerCountry}>
+                  <FormField label="Customer Country" required error={formErrors.customerCountry}>
                     <DropdownSelect
                       value={form.customerCountry}
                       onChange={(val) => setField({ customerCountry: val })}
                       options={COUNTRY_OPTIONS.map((c) => ({ value: c.value, label: `${c.flag} ${c.label}` }))}
                       placeholder="Select customer country"
-                      hasError={!!stepErrors.customerCountry}
+                      hasError={!!formErrors.customerCountry}
                       disabled={isCustomerLocked}
                       searchable
                     />
@@ -915,13 +800,13 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     value={form.customerAddress}
                     onChange={(e) => setField({ customerAddress: e.target.value })}
                     placeholder="Enter registered company address"
-                    error={stepErrors.customerAddress}
+                    error={formErrors.customerAddress}
                     disabled={isCustomerLocked}
                   />
                   {/* Rendered manually rather than via `helperText` — ce-ui gives a
                       multiline field the same 4px gap as a single-line one, which
                       reads as a much bigger gap under a textarea. */}
-                  {!stepErrors.customerAddress ? (
+                  {!formErrors.customerAddress ? (
                     <span style={{ display: "block", marginTop: "4px", fontSize: "var(--text-body)", color: "#9CA3AF" }}>
                       Will be used for document purposes
                     </span>
@@ -939,16 +824,12 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
               <PersonInChargeTable
                 pics={pics}
                 onChange={setPics}
-                fieldErrors={stepErrors.picFieldErrors || {}}
+                fieldErrors={formErrors.picFieldErrors || {}}
                 readOnly={isCustomerLocked}
               />
             </div>
           </div>
-        </>
-      ) : null}
 
-      {currentStep === 1 ? (
-        <>
           <div style={pageSectionStyle}>
             {sectionHeader(
               "Products",
@@ -957,7 +838,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
               </Button>
             )}
             <div style={{ padding: "18px 20px 20px 20px", display: "flex", flexDirection: "column", gap: "12px" }}>
-              {fieldErrorText(stepErrors.products)}
+              {fieldErrorText(formErrors.products)}
               {products.length ? (
                 <div style={{ overflowX: "auto", width: "100%" }}>
                   <div style={{ minWidth: "900px" }}>
@@ -1001,7 +882,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                   </div>
                 </div>
               ) : (
-                <div style={emptyStateBoxStyle(!!stepErrors.products)}>No products added yet. Click "Add Product" to get started.</div>
+                <div style={emptyStateBoxStyle(!!formErrors.products)}>No products added yet. Click "Add Product" to get started.</div>
               )}
             </div>
           </div>
@@ -1065,11 +946,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
               </div>
             </div>
           </div>
-        </>
-      ) : null}
 
-      {currentStep === 2 ? (
-        <>
           {/* Attachments — ce-ui's DocumentUploadField (drop zone + file list). */}
           <div style={pageSectionStyle}>
             {sectionHeader("Attachments")}
@@ -1093,7 +970,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
               <FormField
                 label="Bank Account"
                 required
-                error={stepErrors.bankAccountId}
+                error={formErrors.bankAccountId}
                 helperText={
                   bankCurrencyMismatch ? `Selected bank account is not supported for ${form.currency} currency` : undefined
                 }
@@ -1103,7 +980,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                   onChange={(val) => setField({ bankAccountId: val })}
                   options={MOCK_BANK_ACCOUNTS.map((b) => ({ value: b.id, label: `${b.bankName} - ${b.accountName}` }))}
                   placeholder="Select bank account"
-                  hasError={!!stepErrors.bankAccountId}
+                  hasError={!!formErrors.bankAccountId}
                 />
               </FormField>
 
@@ -1138,133 +1015,129 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
               ) : null}
             </div>
           </div>
-        </>
-      ) : null}
 
-      {currentStep === 3 ? (
-        <div style={pageSectionStyle}>
-          {sectionHeader("Terms and Conditions")}
-          <div style={sectionBodyStyle}>
-            <div style={{ display: "flex", gap: "16px" }}>
-              <div style={{ flex: 1 }}>
-                <FormField
-                  label={labelWithHint("Payment Terms", TERMS_TOOLTIPS.paymentTerms)}
-                  required
-                  error={stepErrors.paymentTerms}
-                >
-                  <DropdownSelect
-                    value={terms.paymentTerms}
-                    onChange={(val) => setTerm({ paymentTerms: val })}
-                    options={toOptions(PAYMENT_TERMS_OPTIONS)}
-                    placeholder="Select payment terms"
-                    hasError={!!stepErrors.paymentTerms}
-                  />
-                </FormField>
-              </div>
-              <div style={{ flex: 1 }}>
-                <FormField label={labelWithHint("Incoterms", TERMS_TOOLTIPS.incoterms)}>
-                  <DropdownSelect
-                    value={terms.incoterms}
-                    onChange={(val) => setTerm({ incoterms: val })}
-                    options={INCOTERMS_OPTIONS}
-                    placeholder="Select incoterms"
-                  />
-                </FormField>
-              </div>
-              <div style={{ flex: 1 }}>
-                {/* Risk Level is derived from the selected Incoterms / screening
-                    result rather than entered here, so it stays read-only. */}
-                <FormField label={labelWithHint("Risk Level", TERMS_TOOLTIPS.riskLevel)}>
-                  <DropdownSelect
-                    value={terms.riskLevel}
-                    onChange={() => {}}
-                    options={toOptions(["Low", "Medium", "High"])}
-                    placeholder="-"
-                    disabled
-                  />
-                </FormField>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: "16px" }}>
-              <div style={{ flex: 1 }}>
-                <FormField label={labelWithHint("Shipping Method", TERMS_TOOLTIPS.shippingMethod)}>
-                  <DropdownSelect
-                    value={terms.shippingMethod}
-                    onChange={(val) => setTerm({ shippingMethod: val })}
-                    options={toOptions(SHIPPING_METHOD_OPTIONS)}
-                    placeholder="Select shipping method"
-                  />
-                </FormField>
-              </div>
-              <div style={{ flex: 1 }}>
-                <InputField
-                  label={labelWithHint("Estimated Delivery", TERMS_TOOLTIPS.estimatedDelivery)}
-                  value={terms.estimatedDelivery}
-                  onChange={(e) => setTerm({ estimatedDelivery: e.target.value })}
-                  placeholder="e.g., 2-3 weeks"
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <FormField label={labelWithHint("Dispute Resolution Method", TERMS_TOOLTIPS.disputeResolutionMethod)}>
-                  <DropdownSelect
-                    value={terms.disputeResolutionMethod}
-                    onChange={(val) => setTerm({ disputeResolutionMethod: val })}
-                    options={toOptions(DISPUTE_RESOLUTION_OPTIONS)}
-                    placeholder="Select dispute resolution method"
-                  />
-                </FormField>
-              </div>
-            </div>
-
-            <InputField
-              label={labelWithHint("Governing Law", TERMS_TOOLTIPS.governingLaw)}
-              multiline
-              showCounter
-              maxLength={5000}
-              value={terms.governingLaw}
-              onChange={(e) => setTerm({ governingLaw: e.target.value })}
-              placeholder="Enter governing law"
-            />
-
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              {CLAUSE_FIELDS.map(({ key, label, placeholder }) => (
-                <div key={key} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                    <Checkbox
-                      checked={!!clauseEnabled[key]}
-                      onChange={(checked) => setClauseEnabled((prev) => ({ ...prev, [key]: checked }))}
+          <div style={pageSectionStyle}>
+            {sectionHeader("Terms and Conditions")}
+            <div style={sectionBodyStyle}>
+              <div style={{ display: "flex", gap: "16px" }}>
+                <div style={{ flex: 1 }}>
+                  <FormField
+                    label={labelWithHint("Payment Terms", TERMS_TOOLTIPS.paymentTerms)}
+                    required
+                    error={formErrors.paymentTerms}
+                  >
+                    <DropdownSelect
+                      value={terms.paymentTerms}
+                      onChange={(val) => setTerm({ paymentTerms: val })}
+                      options={toOptions(PAYMENT_TERMS_OPTIONS)}
+                      placeholder="Select payment terms"
+                      hasError={!!formErrors.paymentTerms}
                     />
-                    <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>{label}</span>
-                    <InfoHint content={TERMS_TOOLTIPS[key]} />
-                  </div>
-                  {clauseEnabled[key] ? (
-                    <InputField
-                      multiline
-                      showCounter
-                      maxLength={5000}
-                      value={terms[key] || ""}
-                      onChange={(e) => setTerm({ [key]: e.target.value })}
-                      placeholder={placeholder}
-                      error={stepErrors[key]}
-                    />
-                  ) : null}
+                  </FormField>
                 </div>
-              ))}
+                <div style={{ flex: 1 }}>
+                  <FormField label={labelWithHint("Incoterms", TERMS_TOOLTIPS.incoterms)}>
+                    <DropdownSelect
+                      value={terms.incoterms}
+                      onChange={(val) => setTerm({ incoterms: val })}
+                      options={INCOTERMS_OPTIONS}
+                      placeholder="Select incoterms"
+                    />
+                  </FormField>
+                </div>
+                <div style={{ flex: 1 }}>
+                  {/* Risk Level is derived from the selected Incoterms / screening
+                      result rather than entered here, so it stays read-only. */}
+                  <FormField label={labelWithHint("Risk Level", TERMS_TOOLTIPS.riskLevel)}>
+                    <DropdownSelect
+                      value={terms.riskLevel}
+                      onChange={() => {}}
+                      options={toOptions(["Low", "Medium", "High"])}
+                      placeholder="-"
+                      disabled
+                    />
+                  </FormField>
+                </div>
+              </div>
+  
+              <div style={{ display: "flex", gap: "16px" }}>
+                <div style={{ flex: 1 }}>
+                  <FormField label={labelWithHint("Shipping Method", TERMS_TOOLTIPS.shippingMethod)}>
+                    <DropdownSelect
+                      value={terms.shippingMethod}
+                      onChange={(val) => setTerm({ shippingMethod: val })}
+                      options={toOptions(SHIPPING_METHOD_OPTIONS)}
+                      placeholder="Select shipping method"
+                    />
+                  </FormField>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <InputField
+                    label={labelWithHint("Estimated Delivery", TERMS_TOOLTIPS.estimatedDelivery)}
+                    value={terms.estimatedDelivery}
+                    onChange={(e) => setTerm({ estimatedDelivery: e.target.value })}
+                    placeholder="e.g., 2-3 weeks"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <FormField label={labelWithHint("Dispute Resolution Method", TERMS_TOOLTIPS.disputeResolutionMethod)}>
+                    <DropdownSelect
+                      value={terms.disputeResolutionMethod}
+                      onChange={(val) => setTerm({ disputeResolutionMethod: val })}
+                      options={toOptions(DISPUTE_RESOLUTION_OPTIONS)}
+                      placeholder="Select dispute resolution method"
+                    />
+                  </FormField>
+                </div>
+              </div>
+  
+              <InputField
+                label={labelWithHint("Governing Law", TERMS_TOOLTIPS.governingLaw)}
+                multiline
+                showCounter
+                maxLength={5000}
+                value={terms.governingLaw}
+                onChange={(e) => setTerm({ governingLaw: e.target.value })}
+                placeholder="Enter governing law"
+              />
+  
+              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                {CLAUSE_FIELDS.map(({ key, label, placeholder }) => (
+                  <div key={key} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <Checkbox
+                        checked={!!clauseEnabled[key]}
+                        onChange={(checked) => setClauseEnabled((prev) => ({ ...prev, [key]: checked }))}
+                      />
+                      <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>{label}</span>
+                      <InfoHint content={TERMS_TOOLTIPS[key]} />
+                    </div>
+                    {clauseEnabled[key] ? (
+                      <InputField
+                        multiline
+                        showCounter
+                        maxLength={5000}
+                        value={terms[key] || ""}
+                        onChange={(e) => setTerm({ [key]: e.target.value })}
+                        placeholder={placeholder}
+                        error={formErrors[key]}
+                      />
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+  
+              <InputField
+                label="Additional"
+                multiline
+                showCounter
+                maxLength={5000}
+                value={terms.additional}
+                onChange={(e) => setTerm({ additional: e.target.value })}
+                placeholder="Enter additional"
+              />
             </div>
-
-            <InputField
-              label="Additional"
-              multiline
-              showCounter
-              maxLength={5000}
-              value={terms.additional}
-              onChange={(e) => setTerm({ additional: e.target.value })}
-              placeholder="Enter additional"
-            />
           </div>
-        </div>
-      ) : null}
 
       <div
         style={{
@@ -1289,20 +1162,9 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
           <Button size="large" variant="outlined" onClick={handleSaveDraft}>
             Save Draft
           </Button>
-          {currentStep > 0 ? (
-            <Button size="large" variant="outlined" onClick={handlePrevious}>
-              Previous Step
-            </Button>
-          ) : null}
-          {currentStep < STEPS.length - 1 ? (
-            <Button size="large" variant="filled" onClick={handleNext}>
-              Next Step
-            </Button>
-          ) : (
-            <Button size="large" variant="filled" onClick={handleSubmit}>
-              Submit
-            </Button>
-          )}
+          <Button size="large" variant="filled" onClick={handleSubmit}>
+            Submit
+          </Button>
         </div>
       </div>
 

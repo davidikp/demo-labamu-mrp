@@ -4,14 +4,14 @@ import { Button } from "../../../components/common/Button.jsx";
 
 const SUPPORT_EMAIL = "cs@labamu.co.id";
 
-// Full-screen takeover shown app-wide whenever the (simulated) manufacturer
-// account status is "Suspended" — mirrors the PRD's "Suspended Account
-// Experience" requirement: it replaces the entire Manufacturing workspace,
-// cannot be dismissed/bypassed by navigation, and only clears on reactivation
-// (which, per the PRD, Labamu performs manually after an appeal review — there
-// is no in-app path back out).
-export const SuspendedAccountPage = ({ suspensionContext }) => {
-  const { customerName, quoteNumber } = suspensionContext || {};
+// Suspended-account modal shown over the login page whenever the (simulated)
+// manufacturer account status is "Suspended" — mirrors the PRD's "Suspended
+// Account Experience" requirement. The account is signed out automatically,
+// so the surface behind this modal is the login page; closing the modal just
+// reveals that login page, and attempting to log back into the same account
+// re-opens this modal instead of letting the login succeed.
+export const SuspendedAccountPage = ({ suspensionContext, onClose }) => {
+  const { quoteNumber } = suspensionContext || {};
 
   const mailtoHref = quoteNumber
     ? `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(
@@ -25,7 +25,7 @@ export const SuspendedAccountPage = ({ suspensionContext }) => {
         position: "fixed",
         inset: 0,
         zIndex: 5000,
-        background: "var(--neutral-background-primary, #F5F5F7)",
+        background: "rgba(15, 17, 21, 0.5)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -35,6 +35,7 @@ export const SuspendedAccountPage = ({ suspensionContext }) => {
     >
       <div
         style={{
+          position: "relative",
           maxWidth: "560px",
           width: "100%",
           background: "var(--neutral-surface-primary)",
@@ -49,6 +50,31 @@ export const SuspendedAccountPage = ({ suspensionContext }) => {
           gap: "16px",
         }}
       >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: "absolute",
+            top: "16px",
+            right: "16px",
+            width: "32px",
+            height: "32px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "transparent",
+            border: "none",
+            borderRadius: "50%",
+            color: "var(--neutral-on-surface-secondary)",
+            cursor: "pointer",
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </button>
+
         <div
           style={{
             width: "64px",
@@ -75,9 +101,8 @@ export const SuspendedAccountPage = ({ suspensionContext }) => {
             lineHeight: 1.6,
           }}
         >
-          Customer <strong>{customerName || "-"}</strong> did not pass the sanctions screening for quote{" "}
-          <strong>{quoteNumber || "-"}</strong>. As a result, your account has been suspended and access to
-          Labamu Manufacturing is temporarily restricted.
+          Your account has been suspended due to an issue identified during sanctions screening. Access to Labamu
+          Manufacturing is temporarily restricted.
         </p>
 
         <div
@@ -87,9 +112,10 @@ export const SuspendedAccountPage = ({ suspensionContext }) => {
             background: "var(--neutral-surface-grey-lighter, #F5F5F7)",
             borderRadius: "12px",
             padding: "20px",
-            textAlign: "left",
+            textAlign: "center",
             display: "flex",
             flexDirection: "column",
+            alignItems: "center",
             gap: "8px",
           }}
         >

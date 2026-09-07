@@ -14,6 +14,7 @@ const GeneralModal = ({
   noPadding = false,
   hideFooterDivider = false,
   footerPaddingTop,
+  hideCloseButton = false,
 }) => {
   const hasChildren = React.Children.count(children) > 0;
 
@@ -29,6 +30,7 @@ const GeneralModal = ({
       style={{ zIndex, "--gm-width": width }}
       hideFooterDivider={hideFooterDivider}
       footerPaddingTop={footerPaddingTop}
+      hideCloseButton={hideCloseButton}
       footer={
         footer && (
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>

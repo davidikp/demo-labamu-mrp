@@ -27,6 +27,9 @@ export const Popup: React.FC<{
   /** Overrides the footer's top padding (px) — use to control the gap above
    *  the footer independently of the divider, instead of the default 16px. */
   footerPaddingTop?: number
+  /** Hide the header's "x" dismiss button — for modals the user must resolve
+   *  via an explicit footer action rather than a quick dismiss. */
+  hideCloseButton?: boolean
   children?: React.ReactNode
   className?: string
   testId?: string
@@ -43,6 +46,7 @@ export const Popup: React.FC<{
   footer,
   hideFooterDivider = false,
   footerPaddingTop,
+  hideCloseButton = false,
   children,
   className,
   testId,
@@ -79,15 +83,17 @@ export const Popup: React.FC<{
 
         {(title || description) && (
           <div className={cn("relative px-6 pt-7 flex-shrink-0", align === "left" ? "text-left" : "text-center")}>
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center text-lb-on-surface hover:bg-lb-surface-grey transition-colors bg-transparent border-none cursor-pointer rounded-full"
-              type="button"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            </button>
+            {!hideCloseButton && (
+              <button
+                onClick={onClose}
+                className="absolute top-4 right-4 w-6 h-6 flex items-center justify-center text-lb-on-surface hover:bg-lb-surface-grey transition-colors bg-transparent border-none cursor-pointer rounded-full"
+                type="button"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
             {title && (
               <h2 className={cn(
                 "font-lb text-[20px] font-lb-bold text-lb-on-surface leading-[30px] tracking-[0.1375px] m-0",

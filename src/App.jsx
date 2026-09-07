@@ -32,6 +32,7 @@ import { QuoteDetailPage } from "./modules/quote/pages/QuoteDetailPage.jsx";
 import { QuoteCreatePage } from "./modules/quote/pages/QuoteCreatePage.jsx";
 import { QuoteSettingsPage } from "./modules/quote/pages/QuoteSettingsPage.jsx";
 import { SuspendedAccountPage } from "./modules/administration/pages/SuspendedAccountPage.jsx";
+import { LoginPage } from "./modules/administration/pages/LoginPage.jsx";
 import { CustomerPortalQuotePage } from "./modules/customer-portal/pages/CustomerPortalQuotePage.jsx";
 import { PortalRevisionRequestedPage } from "./modules/customer-portal/pages/PortalRevisionRequestedPage.jsx";
 import { CustomProductRequestListPage } from "./modules/custom-product-request/pages/CustomProductRequestListPage.jsx";
@@ -1189,10 +1190,26 @@ export default function App() {
   // real account/company/session model in this demo.
   const [manufacturerAccountStatus, setManufacturerAccountStatus] = useState("Active");
   const [suspensionContext, setSuspensionContext] = useState(null);
+  // Suspension modal starts open — the account is signed out and lands back
+  // on the login page with the suspension explained up front.
+  const [isSuspensionModalOpen, setIsSuspensionModalOpen] = useState(true);
   const onSuspendAccount = (context) => {
     setManufacturerAccountStatus("Suspended");
     setSuspensionContext(context || null);
+    setIsSuspensionModalOpen(true);
   };
+  // Being signed out lands the browser on the login page itself — not just a
+  // visual takeover over whatever route was open when the suspension fired.
+  // Pushed (not replaced) so the quote page the suspension fired from is
+  // still one browser "Back" away, same as any other real navigation.
+  useEffect(() => {
+    if (manufacturerAccountStatus === "Suspended") {
+      navigate("/login");
+    }
+    // Only re-run when the suspension itself fires — not on every route
+    // change afterwards (e.g. the user pressing Back to the quote page).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manufacturerAccountStatus]);
   const [notificationSettings, setNotificationSettings] = useState(() =>
     buildDefaultCompanySettings()
   );
@@ -1435,8 +1452,24 @@ export default function App() {
       <BulkUploadNotifier />
       <MaterialUploadNotifier />
       {currentActiveModule === "dashboard" ? <SimulateEventPanel /> : null}
-      {manufacturerAccountStatus === "Suspended" ? (
-        <SuspendedAccountPage suspensionContext={suspensionContext} />
+      {manufacturerAccountStatus === "Suspended" && location.pathname === "/login" ? (
+        <>
+          {/* Failed sanctions screening signs the account out automatically —
+              the login page is what sits behind the suspension modal. Closing
+              the modal reveals the login page; attempting to log back into
+              this (still-suspended) account just re-opens the modal instead
+              of letting the login through. Gated on the route (not just the
+              suspended status) so browser Back off "/login" returns to
+              whatever page the suspension fired from instead of being pulled
+              straight back to the login takeover. */}
+          <LoginPage onLogin={() => setIsSuspensionModalOpen(true)} />
+          {isSuspensionModalOpen && (
+            <SuspendedAccountPage
+              suspensionContext={suspensionContext}
+              onClose={() => setIsSuspensionModalOpen(false)}
+            />
+          )}
+        </>
       ) : (
       <div style={{ display: "flex", flex: 1, width: "100%" }}>
         <Sidebar

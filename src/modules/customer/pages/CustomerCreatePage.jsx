@@ -6,8 +6,15 @@ import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
 import { Dropdown as CeDropdown } from "../../../ce-ui";
 import { PersonInChargeTable, nextPicRowId } from "../components/PersonInChargeTable.jsx";
 import { CustomerTagModal } from "../components/CustomerTagModal.jsx";
+import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
 import { COUNTRY_OPTIONS } from "../../../constants/appConstants.js";
-import { MOCK_CUSTOMER_TAGS, nextCustomerTagId, createCustomer, updateCustomer } from "../mock/customerMocks.js";
+import {
+  MOCK_CUSTOMER_TAGS,
+  nextCustomerTagId,
+  createCustomer,
+  updateCustomer,
+  getEffectiveScreeningStatus,
+} from "../mock/customerMocks.js";
 
 // Same "blue accent bar + title" section header used by PurchaseOrderCreatePage
 // (the `sectionHeader`/`pageSectionStyle` local helpers there) — the accent
@@ -94,6 +101,7 @@ export const CustomerCreatePage = ({ onNavigate, showSnackbar, t, initialData, i
       : [{ id: nextPicRowId(), primary: true, name: "", email: "", role: "Approver", phone: "+62" }]
   );
   const [errors, setErrors] = useState({});
+  const [isResetScreeningModalOpen, setIsResetScreeningModalOpen] = useState(false);
 
   const [tags, setTags] = useState(MOCK_CUSTOMER_TAGS);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
@@ -138,12 +146,29 @@ export const CustomerCreatePage = ({ onNavigate, showSnackbar, t, initialData, i
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
-    if (!validate()) return;
+  // Editing the name and/or country invalidates a Passed screening result
+  // (the PRD only trusts it against the exact name + country it was
+  // screened under), so that combination needs the user to explicitly
+  // accept the reset rather than silently carrying a stale Passed forward.
+  // Not Screened / Failed customers have nothing valid to lose, so editing
+  // them proceeds without this confirmation — and an expired Passed result
+  // already reads as effectively "Not Screened", so it's checked here too
+  // rather than the raw stored `screeningStatus`.
+  const changesInvalidateScreening =
+    isEditMode &&
+    getEffectiveScreeningStatus(initialData) === "Passed" &&
+    (form.name.trim() !== initialData.name || form.country !== initialData.country);
 
+  const persist = () => {
     const payload = { ...form, pics };
 
     if (isEditMode) {
+      if (changesInvalidateScreening) {
+        payload.screeningStatus = "Not Screened";
+        payload.lastScreenedName = null;
+        payload.lastScreenedCountry = null;
+        payload.lastScreenedAt = null;
+      }
       const updated = updateCustomer(initialData.id, payload);
       showSnackbar?.("Customer successfully updated", "success");
       onNavigate("detail", updated);
@@ -152,6 +177,21 @@ export const CustomerCreatePage = ({ onNavigate, showSnackbar, t, initialData, i
       showSnackbar?.("Customer successfully created", "success");
       onNavigate("detail", created);
     }
+  };
+
+  const handleSave = () => {
+    if (!validate()) return;
+
+    if (changesInvalidateScreening) {
+      setIsResetScreeningModalOpen(true);
+      return;
+    }
+    persist();
+  };
+
+  const handleConfirmResetScreening = () => {
+    setIsResetScreeningModalOpen(false);
+    persist();
   };
 
   const handleBack = () => {
@@ -357,6 +397,30 @@ export const CustomerCreatePage = ({ onNavigate, showSnackbar, t, initialData, i
         mode="Add"
         onClose={() => setIsTagModalOpen(false)}
         onSave={handleAddTag}
+      />
+
+      <GeneralModal
+        isOpen={isResetScreeningModalOpen}
+        onClose={() => setIsResetScreeningModalOpen(false)}
+        title="Save changes and reset screening?"
+        description="Changing the customer’s name or country will reset their sanctions screening status to Not Screened. A new screening will run when their next quote is approved."
+        width="440px"
+        hideFooterDivider
+        footer={
+          <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+            <Button
+              variant="outlined"
+              size="large"
+              onClick={() => setIsResetScreeningModalOpen(false)}
+              style={{ flex: 1 }}
+            >
+              Cancel
+            </Button>
+            <Button variant="filled" size="large" onClick={handleConfirmResetScreening} style={{ flex: 1 }}>
+              Yes, Save Changes
+            </Button>
+          </div>
+        }
       />
     </div>
   );

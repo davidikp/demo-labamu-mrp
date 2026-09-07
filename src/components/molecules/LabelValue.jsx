@@ -17,7 +17,7 @@ export const LabelValue = ({ label, value, badge }) => {
       </span>
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
         {badge ? (
-          <StatusBadge variant={badge.variant}>{badge.text}</StatusBadge>
+          <StatusBadge variant={badge.variant} tone={badge.tone}>{badge.text}</StatusBadge>
         ) : (
           <span
             style={{

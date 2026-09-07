@@ -45,6 +45,10 @@ export const CustomerDetailPage = ({ customer, onNavigate, showSnackbar, t }) =>
 
   const effectiveScreeningStatus = getEffectiveScreeningStatus(customer);
   const screeningExpired = isScreeningExpired(customer);
+  // A customer that failed sanctions screening is locked from further edits
+  // (and can't be deleted out from under an appeal/investigation) until the
+  // screening result changes.
+  const screeningFailed = effectiveScreeningStatus === "Sanctions Screening Failed";
 
   const handleDelete = () => {
     deleteCustomer(customer.id);
@@ -87,19 +91,21 @@ export const CustomerDetailPage = ({ customer, onNavigate, showSnackbar, t }) =>
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "12px" }}>
-          <Button
-            variant="outlined"
-            leftIcon={DeleteIcon}
-            onClick={() => setIsDeleteModalOpen(true)}
-            style={{ borderColor: "var(--status-red-primary)", color: "var(--status-red-primary)" }}
-          >
-            Delete
-          </Button>
-          <Button variant="outlined" leftIcon={EditIcon} onClick={() => onNavigate("create", customer)}>
-            Edit
-          </Button>
-        </div>
+        {screeningFailed ? null : (
+          <div style={{ display: "flex", gap: "12px" }}>
+            <Button
+              variant="outlined"
+              leftIcon={DeleteIcon}
+              onClick={() => setIsDeleteModalOpen(true)}
+              style={{ borderColor: "var(--status-red-primary)", color: "var(--status-red-primary)" }}
+            >
+              Delete
+            </Button>
+            <Button variant="outlined" leftIcon={EditIcon} onClick={() => onNavigate("create", customer)}>
+              Edit
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Merges what were separate "Screening Status" and "Customer
