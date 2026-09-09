@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { TodoPanel } from "../../../components/notification/TodoPanel.jsx";
 import { useNotifications } from "../../../context/NotificationContext.jsx";
 import { Plus } from "../../../components/icons/Icons.jsx";
+import { useIsMobile } from "../../../hooks/useIsMobile.js";
 import bannerArt from "../assets/homepage-afternoon.svg";
 
 // Quick-action / counter cards. Clicking the card opens the list page; the
@@ -67,6 +68,7 @@ const QuickActionCard = ({ data, onAdd, onViewList }) => (
 export const DashboardPage = () => {
   const navigate = useNavigate();
   const { currentUser, language } = useNotifications();
+  const isMobile = useIsMobile();
 
   const locale = language === "id" ? "id-ID" : "en-GB";
   const dateStr = new Date().toLocaleDateString(locale, {
@@ -83,7 +85,7 @@ export const DashboardPage = () => {
 
   return (
     <div style={{ height: "calc(100vh - 64px)", background: "#F5F6FA", overflowY: "auto" }}>
-      <div style={{ padding: "24px", display: "flex", flexDirection: "column", gap: "20px", width: "100%", boxSizing: "border-box" }}>
+      <div style={{ padding: isMobile ? "16px" : "24px", display: "flex", flexDirection: "column", gap: "20px", width: "100%", boxSizing: "border-box" }}>
         {/* Welcome banner */}
         <div
           style={{
@@ -99,19 +101,21 @@ export const DashboardPage = () => {
             flexShrink: 0,
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px", minWidth: 0 }}>
             <span data-no-localize style={{ fontSize: "13px", fontWeight: 600, color: "#9CA3AF" }}>{dateStr}</span>
-            <h1 data-no-localize style={{ fontSize: "28px", fontWeight: 800, color: "#1A1D23", margin: 0 }}>{L.welcome} 👋</h1>
+            <h1 data-no-localize style={{ fontSize: isMobile ? "22px" : "28px", fontWeight: 800, color: "#1A1D23", margin: 0 }}>{L.welcome} 👋</h1>
             <div style={{ fontSize: "15px", color: "#6B7280", lineHeight: 1.5 }}>
               <div>{L.l1}</div>
               <div>{L.l2}</div>
             </div>
           </div>
-          <img src={bannerArt} alt="" aria-hidden style={{ height: "140px", width: "auto", flexShrink: 0 }} />
+          {!isMobile ? (
+            <img src={bannerArt} alt="" aria-hidden style={{ height: "140px", width: "auto", flexShrink: 0 }} />
+          ) : null}
         </div>
 
-        {/* Quick actions / counters — single row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: "16px", flexShrink: 0 }}>
+        {/* Quick actions / counters — single row on desktop, 2-up on mobile */}
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))", gap: isMobile ? "12px" : "16px", flexShrink: 0 }}>
           {QUICK_ACTIONS.map((a) => (
             <QuickActionCard
               key={a.key}

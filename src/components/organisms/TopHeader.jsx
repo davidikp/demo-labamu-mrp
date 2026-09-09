@@ -1,11 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronDownIcon } from "../icons/Icons.jsx";
+import { ChevronDownIcon, MenuIcon } from "../icons/Icons.jsx";
 import { NotificationBell } from "../notification/NotificationBell.jsx";
+import { getShellLeftOffset } from "../../constants/layoutConstants.js";
 
 const TopHeader = ({
   t,
   isSidebarCollapsed,
   onOpenNotificationPreferences,
+  isMobile = false,
+  onOpenMobileSidebar,
 }) => {
   const settingsButtonRef = useRef(null);
   const quickMenuRef = useRef(null);
@@ -51,20 +54,41 @@ const TopHeader = ({
       <div
         style={{
           height: "64px",
-          padding: "0 24px",
+          padding: isMobile ? "0 16px" : "0 24px",
           background: "var(--neutral-surface-primary)",
           display: "flex",
           alignItems: "center",
-          justifyContent: "flex-end",
+          justifyContent: isMobile ? "space-between" : "flex-end",
           borderBottom: "1px solid var(--neutral-line-separator-1)",
           position: "fixed",
           top: 0,
-          left: isSidebarCollapsed ? "82px" : "286px",
+          left: getShellLeftOffset(isSidebarCollapsed, isMobile),
           right: 0,
           zIndex: 40,
           transition: "left 0.2s ease",
         }}
       >
+        {isMobile ? (
+          <button
+            type="button"
+            onClick={onOpenMobileSidebar}
+            aria-label="Open menu"
+            style={{
+              width: "40px",
+              height: "40px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              flexShrink: 0,
+              color: "var(--neutral-on-surface-primary)",
+            }}
+          >
+            <MenuIcon size={22} />
+          </button>
+        ) : null}
         <div style={{ display: "flex", alignItems: "center", gap: "24px" }}>
           <NotificationBell />
           <div
@@ -72,7 +96,7 @@ const TopHeader = ({
             onClick={() => setIsQuickMenuOpen((prev) => !prev)}
             style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" }}
           >
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+            <div style={{ display: isMobile ? "none" : "flex", flexDirection: "column", alignItems: "flex-end" }}>
               <span
                 data-no-localize
                 style={{

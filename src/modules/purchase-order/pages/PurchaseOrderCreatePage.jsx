@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import { ImageUploadField } from "../../../components/molecules/ImageUploadField.jsx";
 import {
   Bell,
@@ -901,6 +902,7 @@ const summaryTotalValueStyle = {
 export const PurchaseOrderCreatePage = ({
   onNavigate,
   isSidebarCollapsed = false,
+  isMobile = false,
   initialData,
   poApprovalSettings,
   showPoSnackbar,
@@ -2280,13 +2282,13 @@ export const PurchaseOrderCreatePage = ({
 
   const rowWrapStyle = {
     display: "grid",
-    gridTemplateColumns: "220px minmax(0, 1fr)",
-    gap: "20px",
+    gridTemplateColumns: isMobile ? "1fr" : "220px minmax(0, 1fr)",
+    gap: isMobile ? "6px" : "20px",
     alignItems: "start",
   };
   const compactGridStyle = {
     display: "grid",
-    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 1fr))",
     gap: "16px",
   };
   const currencyPrefixLabel = currency === "USD" ? "USD" : "IDR";
@@ -3200,9 +3202,9 @@ export const PurchaseOrderCreatePage = ({
                     key={fee.id}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "minmax(0, 1fr) 320px 32px",
+                      gridTemplateColumns: isMobile ? "1fr" : "minmax(0, 1fr) 320px 32px",
                       gap: "16px",
-                      alignItems: "center",
+                      alignItems: isMobile ? "stretch" : "center",
                     }}
                   >
                     <InputField
@@ -3334,13 +3336,15 @@ export const PurchaseOrderCreatePage = ({
         style={{
           position: "fixed",
           bottom: 0,
-          left: isSidebarCollapsed ? "82px" : "286px",
+          left: getShellLeftOffset(isSidebarCollapsed, isMobile),
           right: 0,
           transition: "left 0.2s ease",
           background: "var(--neutral-surface-primary)",
           borderTop: "1px solid var(--neutral-line-separator-1)",
           padding: "14px 24px",
           display: "flex",
+          flexWrap: "wrap",
+          rowGap: "8px",
           justifyContent: "space-between",
           alignItems: "center",
           zIndex: 100,
@@ -3354,7 +3358,7 @@ export const PurchaseOrderCreatePage = ({
         >
           Cancel
         </Button>
-        <div className="flex gap-sm">
+        <div className="flex gap-sm flex-wrap">
           {!isReviseMode && (
             <Button size="medium" variant="outlined" onClick={handleSaveDraft}>
               {isEditMode ? "Save Changes" : "Save as Draft"}
@@ -3512,7 +3516,7 @@ export const PurchaseOrderCreatePage = ({
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                    gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
                     gap: "16px",
                   }}
                 >
@@ -3646,7 +3650,7 @@ export const PurchaseOrderCreatePage = ({
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr",
                     gap: "16px",
                   }}
                 >
@@ -3908,7 +3912,7 @@ export const PurchaseOrderCreatePage = ({
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "1fr 1fr 1fr",
+                        gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr",
                         gap: "16px",
                       }}
                     >
@@ -4238,7 +4242,7 @@ export const PurchaseOrderCreatePage = ({
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: "1fr 1fr 1fr",
+                        gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr",
                         gap: "16px",
                       }}
                     >

@@ -27,6 +27,7 @@ import { PortalPicCard } from "../components/PortalPicCard.jsx";
 import { PortalActionsLogTable } from "../components/PortalActionsLogTable.jsx";
 import { PortalToast } from "../components/PortalToast.jsx";
 import { PortalSimulateScreeningPanel } from "../components/PortalSimulateScreeningPanel.jsx";
+import { useIsMobile } from "../../../hooks/useIsMobile.js";
 
 const sectionCardStyle = {
   background: "var(--neutral-surface-primary)",
@@ -96,6 +97,8 @@ const ACCEPT_PROCESSING_DURATION_MS = 2000;
 // wants to link straight to one variant).
 export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const labelGridColumns = (desktopCount) => (isMobile ? "1fr" : `repeat(${desktopCount}, 1fr)`);
   const [quoteData, setQuoteData] = useState(() => MOCK_QUOTES.find((q) => q.quoteNo === quoteNo) || null);
   const [toast, setToast] = useState(null);
   const [role, setRole] = useState(initialRole);
@@ -335,7 +338,7 @@ export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) =
   const products = quoteData.products || [];
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--neutral-background-primary, #F5F5F7)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--neutral-background-primary, #F5F5F7)", overflowX: "hidden" }}>
       <PortalTopBar
         email={actingPic?.email || quoteData.customer?.email || "dev@mail.com"}
         role={role}
@@ -350,7 +353,7 @@ export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) =
         style={{
           maxWidth: "1080px",
           margin: "0 auto",
-          padding: "24px 24px 100px 24px",
+          padding: isMobile ? "16px 16px 100px 16px" : "24px 24px 100px 24px",
           display: "flex",
           flexDirection: "column",
           gap: "24px",
@@ -361,7 +364,7 @@ export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) =
         </h1>
 
         <div style={sectionCardStyle}>
-          <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "24px" }}>
+          <div style={{ padding: "20px 24px", display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: "16px" }}>
             <div style={{ display: "flex", alignItems: "flex-start", gap: "16px", minWidth: 0 }}>
               <div
                 style={{
@@ -389,15 +392,24 @@ export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) =
                 </span>
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "8px", flexShrink: 0 }}>
-              <span style={{ fontSize: "var(--text-headline)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)", whiteSpace: "nowrap" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: isMobile ? "flex-start" : "flex-end", gap: "8px", flexShrink: isMobile ? 1 : 0, minWidth: 0 }}>
+              <span
+                style={{
+                  fontSize: "var(--text-headline)",
+                  fontWeight: "var(--font-weight-bold)",
+                  color: "var(--neutral-on-surface-primary)",
+                  whiteSpace: isMobile ? "normal" : "nowrap",
+                  wordBreak: isMobile ? "break-word" : "normal",
+                  textAlign: isMobile ? "left" : "right",
+                }}
+              >
                 #{quoteData.quoteNo}
               </span>
               <StatusBadge variant={headerStatusVariant}>{headerStatusLabel}</StatusBadge>
             </div>
           </div>
           <div style={{ margin: "0 24px", borderTop: "1px solid var(--neutral-line-separator-1)" }} />
-          <div style={{ padding: "20px 24px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+          <div style={{ padding: "20px 24px", display: "grid", gridTemplateColumns: labelGridColumns(4), gap: "24px" }}>
             <LabelValue label="Issued By" value={quoteData.createdBy || "-"} />
             <LabelValue label="Issued On" value={quoteData.createdAt || "-"} />
             <LabelValue label="Valid Until" value={quoteData.validUntil || "-"} />
@@ -410,7 +422,7 @@ export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) =
 
         <div style={sectionCardStyle}>
           {sectionTitle("Customer Information")}
-          <div style={{ padding: "20px 24px 24px 24px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+          <div style={{ padding: "20px 24px 24px 24px", display: "grid", gridTemplateColumns: labelGridColumns(4), gap: "24px" }}>
             <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
               {quoteData.customer?.name || quoteData.customerName || "-"}
             </span>
@@ -419,7 +431,7 @@ export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) =
               <span style={{ color: "var(--neutral-line-separator-2)", margin: "0 8px" }}>|</span>
               {quoteData.customer?.email || "-"}
             </span>
-            <span style={{ gridColumn: "3 / span 2", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>
+            <span style={{ gridColumn: isMobile ? "auto" : "3 / span 2", fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>
               {quoteData.customer?.address || "-"}
             </span>
           </div>
@@ -490,13 +502,13 @@ export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) =
         <div style={sectionCardStyle}>
           {sectionTitle("Terms and Conditions")}
           <div style={{ padding: "20px 24px 24px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: labelGridColumns(4), gap: "24px" }}>
               <LabelValue label="Payment Terms" value={quoteData.terms?.paymentTerms || "-"} />
               <LabelValue label="Incoterms" value={quoteData.terms?.incoterms || "-"} />
               <LabelValue label="Shipping Method" value={quoteData.terms?.shippingMethod || "-"} />
               <LabelValue label="Estimated Delivery" value={quoteData.terms?.estimatedDelivery || "-"} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: labelGridColumns(4), gap: "24px" }}>
               <LabelValue
                 label="Risk Level"
                 value={quoteData.terms?.riskLevel || "-"}
@@ -534,26 +546,30 @@ export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) =
           right: 0,
           background: "var(--neutral-surface-primary)",
           borderTop: "1px solid var(--neutral-line-separator-1)",
-          padding: "16px 24px",
+          padding: isMobile ? "12px 16px" : "16px 24px",
           display: "flex",
+          flexWrap: "wrap",
           justifyContent: "flex-end",
           alignItems: "center",
-          gap: "12px",
+          gap: isMobile ? "8px" : "12px",
+          rowGap: "8px",
+          width: isMobile ? "100%" : "auto",
+          boxSizing: "border-box",
           zIndex: 100,
         }}
       >
-        <Button variant="outlined" size="medium" leftIcon={DownloadIcon} onClick={() => {}}>
+        <Button variant="outlined" size="medium" leftIcon={DownloadIcon} onClick={() => {}} style={isMobile ? { flex: 1 } : undefined}>
           Download
         </Button>
         {canAct ? (
           <>
-            <Button variant="danger" size="medium" onClick={() => openDecisionModal("reject")}>
+            <Button variant="danger" size="medium" onClick={() => openDecisionModal("reject")} style={isMobile ? { flex: 1 } : undefined}>
               Reject Quote
             </Button>
-            <Button variant="outlined" size="medium" onClick={() => openDecisionModal("revision")}>
+            <Button variant="outlined" size="medium" onClick={() => openDecisionModal("revision")} style={isMobile ? { flex: 1 } : undefined}>
               Request Revision
             </Button>
-            <Button variant="filled" size="medium" onClick={handleAcceptClick}>
+            <Button variant="filled" size="medium" onClick={handleAcceptClick} style={isMobile ? { flex: 1 } : undefined}>
               Accept Quote
             </Button>
           </>
@@ -568,7 +584,10 @@ export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) =
           onReset={handleResetScenario}
           // Lift clear of the fixed action footer, which is always present
           // whenever this panel renders (both gated on `canAct`).
-          bottomOffset={88}
+          // On mobile the footer wraps its 4 buttons onto two rows, so it's
+          // taller than the desktop single-row footer this offset was tuned
+          // for — lift the Simulate trigger clear of that extra row.
+          bottomOffset={isMobile ? 156 : 88}
         />
       ) : null}
 

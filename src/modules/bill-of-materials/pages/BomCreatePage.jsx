@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import { createPortal } from "react-dom";
 import {
   AddIcon,
@@ -141,7 +142,7 @@ const summaryMetricValueStyle = { fontSize: "var(--text-title-3)", fontWeight: "
 const summaryTotalLabelStyle = { fontSize: "var(--text-title-1)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" };
 const summaryTotalValueStyle = { fontSize: "var(--text-title-1)", fontWeight: "var(--font-weight-black)", color: "var(--neutral-on-surface-primary)" };
 
-export const BomCreatePage = ({ onNavigate, initialData, isSidebarCollapsed }) => {
+export const BomCreatePage = ({ onNavigate, initialData, isSidebarCollapsed, isMobile = false }) => {
   // A direct/refreshed URL load synthesizes a placeholder initialData with the URL
   // segment as `id` (e.g. id: "create") — only treat this as an edit if that id
   // actually resolves to a real BOM record.
@@ -640,7 +641,7 @@ export const BomCreatePage = ({ onNavigate, initialData, isSidebarCollapsed }) =
         style={{
           position: "fixed",
           bottom: 0,
-          left: isSidebarCollapsed ? "82px" : "286px",
+          left: getShellLeftOffset(isSidebarCollapsed, isMobile),
           right: 0,
           transition: "left 0.2s ease",
           background: "var(--neutral-surface-primary)",

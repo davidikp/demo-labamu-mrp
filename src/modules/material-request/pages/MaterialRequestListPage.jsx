@@ -7,6 +7,7 @@ import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { getRequests, REQUEST_STATUS_META } from "../mock/materialRequestMocks.js";
+import { useIsMobile } from "../../../hooks/useIsMobile.js";
 
 const cellStyle = (overrides) => ({
   minWidth: 0,
@@ -26,6 +27,7 @@ const ellipsis = {
 };
 
 export const MaterialRequestListPage = ({ onNavigate }) => {
+  const isMobile = useIsMobile();
   // Read the store fresh on mount so session status changes are reflected.
   const rows = getRequests();
 
@@ -167,7 +169,22 @@ export const MaterialRequestListPage = ({ onNavigate }) => {
         </h1>
       </div>
 
-      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+      <div
+        style={
+          isMobile
+            ? {
+                display: "flex",
+                flexWrap: "nowrap",
+                overflowX: "auto",
+                overflowY: "hidden",
+                flexShrink: 0,
+                gap: "12px",
+                paddingBottom: "4px",
+                WebkitOverflowScrolling: "touch",
+              }
+            : { display: "flex", gap: "16px", flexWrap: "wrap" }
+        }
+      >
         {statusCards.map((card) => (
           <ListStatusCounterCard
             key={card.key}

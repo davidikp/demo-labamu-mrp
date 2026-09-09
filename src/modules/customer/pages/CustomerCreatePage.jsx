@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import { ChevronLeftIcon, AddIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { FormField, InputField, PhoneInputField } from "../../../components/index.js";
@@ -76,7 +77,7 @@ const EMPTY_FORM = {
 // Used for both "New Customer" (no initialData) and "Edit Customer"
 // (initialData = the customer record being edited) — same component per the
 // user's requirement that Edit reuses this page pre-filled.
-export const CustomerCreatePage = ({ onNavigate, showSnackbar, t, initialData, isSidebarCollapsed }) => {
+export const CustomerCreatePage = ({ onNavigate, showSnackbar, t, initialData, isSidebarCollapsed, isMobile = false }) => {
   // App.jsx's route resolver falls back to a placeholder `{ id: "create", ... }`
   // object as `location.state` whenever the URL has no real state (e.g. a
   // fresh "New Customer" navigation) — checking `.name` (always present on a
@@ -372,7 +373,7 @@ export const CustomerCreatePage = ({ onNavigate, showSnackbar, t, initialData, i
         style={{
           position: "fixed",
           bottom: 0,
-          left: isSidebarCollapsed ? "82px" : "286px",
+          left: getShellLeftOffset(isSidebarCollapsed, isMobile),
           right: 0,
           transition: "left 0.2s ease",
           background: "var(--neutral-surface-primary)",

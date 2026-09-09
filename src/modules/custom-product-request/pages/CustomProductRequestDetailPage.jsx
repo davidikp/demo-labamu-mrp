@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import {
   Box,
   Building2,
@@ -657,7 +658,7 @@ const DECISION_META = {
   reevaluate: { title: "Request Re-Evaluation", mandatory: true, confirmLabel: "Send" },
 };
 
-export const CustomProductRequestDetailPage = ({ onNavigate, initialData, isSidebarCollapsed }) => {
+export const CustomProductRequestDetailPage = ({ onNavigate, initialData, isSidebarCollapsed, isMobile = false }) => {
   const [activeTab, setActiveTab] = useState("cpr_information");
   const [decisionType, setDecisionType] = useState(null); // "approve" | "reject" | "revision" | "reevaluate" | null
   const [decisionComment, setDecisionComment] = useState("");
@@ -764,7 +765,7 @@ export const CustomProductRequestDetailPage = ({ onNavigate, initialData, isSide
           style={{
             position: "fixed",
             bottom: 0,
-            left: isSidebarCollapsed ? "82px" : "286px",
+            left: getShellLeftOffset(isSidebarCollapsed, isMobile),
             right: 0,
             transition: "left 0.2s ease",
             background: "var(--neutral-surface-primary)",

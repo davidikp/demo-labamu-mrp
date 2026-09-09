@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import { createPortal } from "react-dom";
 import {
   AddIcon,
@@ -187,7 +188,7 @@ const Stepper = ({ currentStep, onStepClick, isStepValid }) => (
   </div>
 );
 
-export const CustomProductRequestCreatePage = ({ onNavigate, initialData, isSidebarCollapsed }) => {
+export const CustomProductRequestCreatePage = ({ onNavigate, initialData, isSidebarCollapsed, isMobile = false }) => {
   const cpr = getCpr(initialData?.cprNumber) || initialData;
   const detail = cpr?.productDetail || {};
 
@@ -945,7 +946,7 @@ export const CustomProductRequestCreatePage = ({ onNavigate, initialData, isSide
         style={{
           position: "fixed",
           bottom: 0,
-          left: isSidebarCollapsed ? "82px" : "286px",
+          left: getShellLeftOffset(isSidebarCollapsed, isMobile),
           right: 0,
           transition: "left 0.2s ease",
           background: "var(--neutral-surface-primary)",

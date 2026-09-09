@@ -42,6 +42,7 @@ import {
   Star,
   Hourglass,
   LogOut,
+  Menu,
 } from "lucide-react";
 
 import labamuMarkSrc from "../../labamu-mark.svg";
@@ -525,6 +526,7 @@ const CheckCircleIcon = CheckCircle;
 const CancelledCircleIcon = XCircle;
 const HourglassIcon = Hourglass;
 const LogOutIcon = LogOut;
+const MenuIcon = Menu;
 
 export {
   Bell,
@@ -561,6 +563,7 @@ export {
   User,
   Users,
   ShieldCheck,
+  MenuIcon,
   BrandLogoIcon,
   BrandLogoLockup,
   DashboardIcon,

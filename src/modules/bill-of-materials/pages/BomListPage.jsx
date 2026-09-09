@@ -146,7 +146,7 @@ export const BomListPage = ({ onNavigate, t }) => {
         </div>
 
         <div style={{ overflowX: "auto", overflowY: "auto", width: "100%" }}>
-          <div style={{ minWidth: "100%", width: "100%", display: "flex", flexDirection: "column" }}>
+          <div style={{ minWidth: "1000px", width: "100%", display: "flex", flexDirection: "column" }}>
             <div
               style={{
                 display: "flex",

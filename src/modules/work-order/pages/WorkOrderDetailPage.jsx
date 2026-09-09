@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import { Send, Truck, AlertTriangle } from "lucide-react";
 import { AddIcon, Box, Building2, CheckIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ChevronUpIcon, CircleDollarSign, CloseIcon, DeleteIcon, DocumentIcon, DownloadIcon, EditIcon, FileText, Info, Minus, Plus, Upload, Users } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
@@ -587,7 +588,7 @@ const PRIORITY_BADGE_VARIANT = {
   Low: "grey-light",
 };
 
-export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, initialData, woSettings }) => {
+export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, isMobile = false, initialData, woSettings }) => {
   const scrollToTop = () => {
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "auto" });
@@ -7463,7 +7464,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
           style={{
             position: "fixed",
             bottom: 0,
-            left: isSidebarCollapsed ? "82px" : "286px",
+            left: getShellLeftOffset(isSidebarCollapsed, isMobile),
             transition: "left 0.2s ease",
             right: 0,
             background: "var(--neutral-surface-primary)",
@@ -7494,7 +7495,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
           style={{
             position: "fixed",
             bottom: 0,
-            left: isSidebarCollapsed ? "82px" : "286px",
+            left: getShellLeftOffset(isSidebarCollapsed, isMobile),
             transition: "left 0.2s ease",
             right: 0,
             background: "var(--neutral-surface-primary)",

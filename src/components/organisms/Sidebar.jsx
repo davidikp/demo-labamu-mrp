@@ -17,9 +17,11 @@ import {
   UserGuideIcon,
   WorkOrderIcon,
   DashboardIcon,
+  CloseIcon,
 } from "../icons/Icons.jsx";
 import { TableSearchField } from "../table/TableSearchField.jsx";
 import { LANGUAGE_OPTIONS } from "../../constants/appConstants.js";
+import { SIDEBAR_WIDTH_EXPANDED, SIDEBAR_WIDTH_COLLAPSED } from "../../constants/layoutConstants.js";
 
 const baseInputBorderColor = "#e9e9e9";
 
@@ -28,11 +30,24 @@ const Sidebar = ({
   onToggleCollapse,
   activeModule,
   viewState,
-  onModuleChange,
   language,
   onLanguageChange,
   t,
+  // Below the mobile breakpoint the sidebar renders as an off-canvas
+  // drawer (slides in over the content) instead of a permanent column
+  // that pushes content over. `isMobileOpen`/`onCloseMobile` control that
+  // drawer independently of the desktop collapsed/expanded state.
+  isMobile = false,
+  isMobileOpen = false,
+  onCloseMobile,
+  onModuleChange: onModuleChangeProp,
 }) => {
+  // Selecting a destination on mobile should also close the drawer, since
+  // there's no room to keep both the menu and the page in view.
+  const onModuleChange = (moduleId) => {
+    onModuleChangeProp(moduleId);
+    if (isMobile) onCloseMobile?.();
+  };
   const menuItems = [
     {
       icon: DashboardIcon,
@@ -189,16 +204,39 @@ const Sidebar = ({
   const activeLanguage =
     LANGUAGE_OPTIONS.find((option) => option.id === language) ||
     LANGUAGE_OPTIONS[0];
-  const expandedWidth = "286px";
-  const collapsedWidth = "82px";
+  // On mobile the drawer is either fully open (showing labels, like the
+  // desktop expanded state) or fully off-canvas — the icon-only "collapsed"
+  // state doesn't apply there.
+  const expandedWidth = `${SIDEBAR_WIDTH_EXPANDED}px`;
+  const collapsedWidth = `${SIDEBAR_WIDTH_COLLAPSED}px`;
   const expandedHeaderHeight = "64px";
   const collapsedHeaderHeight = "64px";
+  // On mobile the drawer is either fully open (showing labels, like the
+  // desktop expanded state) or fully off-canvas — the icon-only "collapsed"
+  // state doesn't apply there. Shadowing the prop keeps the rest of this
+  // component's markup (all keyed off `isCollapsed`) unchanged.
+  const isCollapsed_ = isMobile ? false : isCollapsed;
+  isCollapsed = isCollapsed_;
 
   return (
-    <div
+    <>
+      {isMobile && isMobileOpen ? (
+        <div
+          onClick={onCloseMobile}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(17, 24, 39, 0.4)",
+            zIndex: 49,
+          }}
+        />
+      ) : null}
+      <div
       style={{
         width: isCollapsed ? collapsedWidth : expandedWidth,
-        transition: "width 0.2s ease",
+        maxWidth: isMobile ? "85vw" : undefined,
+        transition: isMobile ? "transform 0.2s ease" : "width 0.2s ease",
+        transform: isMobile ? (isMobileOpen ? "translateX(0)" : "translateX(-100%)") : "none",
         height: "100vh",
         position: "fixed",
         left: 0,
@@ -209,6 +247,7 @@ const Sidebar = ({
         flexDirection: "column",
         zIndex: 50,
         overflowX: "hidden",
+        boxShadow: isMobile ? "0px 16px 40px rgba(17, 24, 39, 0.16)" : "none",
       }}
     >
       <div
@@ -218,7 +257,7 @@ const Sidebar = ({
           borderBottom: "1px solid var(--neutral-line-separator-1)",
           display: "flex",
           alignItems: "center",
-          justifyContent: isCollapsed ? "center" : "flex-start",
+          justifyContent: isCollapsed ? "center" : "space-between",
           flexShrink: 0,
         }}
       >
@@ -227,6 +266,27 @@ const Sidebar = ({
         ) : (
           <BrandLogoLockup width={172} title="Labamu Manufacturing" />
         )}
+        {isMobile ? (
+          <button
+            type="button"
+            onClick={onCloseMobile}
+            aria-label="Close menu"
+            style={{
+              width: "32px",
+              height: "32px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "none",
+              background: "transparent",
+              cursor: "pointer",
+              flexShrink: 0,
+              color: "var(--neutral-on-surface-primary)",
+            }}
+          >
+            <CloseIcon size={20} />
+          </button>
+        ) : null}
       </div>
 
       {!isCollapsed && (
@@ -549,6 +609,7 @@ const Sidebar = ({
           flexShrink: 0,
         }}
       >
+        {isMobile ? null : (
         <div
           style={{
             display: "flex",
@@ -583,6 +644,7 @@ const Sidebar = ({
             )}
           </div>
         </div>
+        )}
 
         <div
           ref={languageMenuRef}
@@ -765,7 +827,8 @@ const Sidebar = ({
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -45,14 +45,19 @@ const PoDetailHeader = ({
   setActiveTab,
   handleRevisePo,
   openDecisionModal,
+  isMobile = false,
 }) => {
+  const labelGridColumns = (desktopCount) => (isMobile ? "1fr" : `repeat(${desktopCount}, 1fr)`);
+
   return (
     <>
       <div
         style={{
           display: "flex",
+          flexDirection: isMobile ? "column" : "row",
           justifyContent: "space-between",
-          alignItems: "flex-start",
+          alignItems: isMobile ? "stretch" : "flex-start",
+          gap: isMobile ? "16px" : "0",
           marginBottom: "8px",
         }}
       >
@@ -108,12 +113,13 @@ const PoDetailHeader = ({
             </span>
           </div>
         </div>
-        <div style={{ display: "flex", gap: "12px" }}>
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
           {showHeaderEdit ? (
             <Button
               variant="outlined"
               leftIcon={EditIcon}
               onClick={handleEditPo}
+              style={isMobile ? { flex: 1 } : undefined}
             >
               Edit PO
             </Button>
@@ -124,6 +130,7 @@ const PoDetailHeader = ({
               leftIcon={FileText}
               disabled={isExportingPdf || isHistoricalVersion}
               onClick={handleExportPdf}
+              style={isMobile ? { flex: 1 } : undefined}
             >
               {isExportingPdf ? "Exporting PDF..." : "Export as PDF"}
             </Button>
@@ -195,11 +202,13 @@ const PoDetailHeader = ({
           style={{
             padding: "20px 24px",
             display: "flex",
+            flexWrap: "wrap",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: "12px",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
             <span
               style={{
                 fontSize: "var(--text-headline)",
@@ -314,7 +323,7 @@ const PoDetailHeader = ({
             gap: "20px",
           }}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: labelGridColumns(4), gap: "24px" }}>
             <LabelValue label="PO Date" value={createdDate} />
             <LabelValue label="Expected Delivery Date" value={expectedDeliveryDate ?? null} />
             <LabelValue label="Currency" value={currencyLabel} />
@@ -330,7 +339,7 @@ const PoDetailHeader = ({
               value={paymentStatus ? undefined : "-"}
             />
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: labelGridColumns(4), gap: "24px" }}>
             <LabelValue label="Created By" value="Joko" />
             <LabelValue label="Created Date" value={actualCreatedDate ?? createdDate} />
           </div>

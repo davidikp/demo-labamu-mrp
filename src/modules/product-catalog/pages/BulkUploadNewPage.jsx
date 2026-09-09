@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import { ChevronLeft, CheckIcon, ListViewIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { UploadStep, analyzeFile } from "../components/upload-steps/UploadStep.jsx";
@@ -80,7 +81,7 @@ const Stepper = ({ currentKey }) => {
   );
 };
 
-export const BulkUploadNewPage = ({ onNavigate, showSnackbar, initialData, isSidebarCollapsed }) => {
+export const BulkUploadNewPage = ({ onNavigate, showSnackbar, initialData, isSidebarCollapsed, isMobile = false }) => {
   const { resolveTodo } = useNotifications();
   const resumeDraftId = initialData?.resumeDraftId || null;
   const resumeRecord = resumeDraftId ? getBulkUpload(resumeDraftId) : null;
@@ -645,7 +646,7 @@ export const BulkUploadNewPage = ({ onNavigate, showSnackbar, initialData, isSid
           style={{
             position: "fixed",
             bottom: 0,
-            left: isSidebarCollapsed ? "82px" : "286px",
+            left: getShellLeftOffset(isSidebarCollapsed, isMobile),
             right: 0,
             transition: "left 0.2s ease",
             background: "var(--neutral-surface-primary)",

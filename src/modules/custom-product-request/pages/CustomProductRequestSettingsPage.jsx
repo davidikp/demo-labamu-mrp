@@ -1,10 +1,11 @@
 import React, { useState } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import { ChevronLeftIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { ToggleSwitch } from "../../../components/common/ToggleSwitch.jsx";
 import { DetailCard } from "../../bill-of-materials/components/BomShared.jsx";
 
-export const CustomProductRequestSettingsPage = ({ onNavigate, isSidebarCollapsed }) => {
+export const CustomProductRequestSettingsPage = ({ onNavigate, isSidebarCollapsed, isMobile = false }) => {
   const [requireApproval, setRequireApproval] = useState(true);
   const [requireComment, setRequireComment] = useState(false);
 
@@ -44,7 +45,7 @@ export const CustomProductRequestSettingsPage = ({ onNavigate, isSidebarCollapse
         style={{
           position: "fixed",
           bottom: 0,
-          left: isSidebarCollapsed ? "82px" : "286px",
+          left: getShellLeftOffset(isSidebarCollapsed, isMobile),
           right: 0,
           transition: "left 0.2s ease",
           background: "var(--neutral-surface-primary)",

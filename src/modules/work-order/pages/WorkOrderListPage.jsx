@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useIsMobile } from "../../../hooks/useIsMobile.js";
 import { AlertTriangle } from "lucide-react";
 import { Settings, ChevronDownIcon, SearchNotFoundIllustration } from "../../../components/icons/Icons.jsx";
 import { Tooltip } from "../../../components/atoms/Tooltip.jsx";
@@ -30,6 +31,7 @@ const wrapTextStyle = {
 };
 
 export const WorkOrderListPage = ({ onNavigate, t, showSnackbar }) => {
+  const isMobile = useIsMobile();
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilters, setPriorityFilters] = useState([]);
   const [creatorFilters, setCreatorFilters] = useState([]);
@@ -257,7 +259,22 @@ export const WorkOrderListPage = ({ onNavigate, t, showSnackbar }) => {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+      <div
+        style={
+          isMobile
+            ? {
+                display: "flex",
+                flexWrap: "nowrap",
+                overflowX: "auto",
+                overflowY: "hidden",
+                flexShrink: 0,
+                gap: "12px",
+                paddingBottom: "4px",
+                WebkitOverflowScrolling: "touch",
+              }
+            : { display: "flex", gap: "16px", flexWrap: "wrap" }
+        }
+      >
         {statusCards.map((card) => (
           <ListStatusCounterCard
             key={card.key}

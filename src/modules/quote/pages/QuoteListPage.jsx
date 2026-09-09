@@ -9,8 +9,10 @@ import { TablePaginationFooter } from "../../../components/table/TablePagination
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { MOCK_QUOTES, subscribeToQuoteSync } from "../mock/quoteMocks.js";
 import { cellStyle } from "../utils/quoteTableUtils.js";
+import { useIsMobile } from "../../../hooks/useIsMobile.js";
 
 export const QuoteListPage = ({ onNavigate, t }) => {
+  const isMobile = useIsMobile();
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortDirection, setSortDirection] = useState("desc");
   const [filterStatuses, setFilterStatuses] = useState([]);
@@ -126,12 +128,25 @@ export const QuoteListPage = ({ onNavigate, t }) => {
       </div>
 
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(6, 1fr)",
-          gap: "16px",
-          flexShrink: 0,
-        }}
+        style={
+          isMobile
+            ? {
+                display: "flex",
+                flexWrap: "nowrap",
+                overflowX: "auto",
+                overflowY: "hidden",
+                gap: "12px",
+                flexShrink: 0,
+                paddingBottom: "4px",
+                WebkitOverflowScrolling: "touch",
+              }
+            : {
+                display: "grid",
+                gridTemplateColumns: "repeat(6, 1fr)",
+                gap: "16px",
+                flexShrink: 0,
+              }
+        }
       >
         {statusCards.map((card) => (
           <ListStatusCounterCard

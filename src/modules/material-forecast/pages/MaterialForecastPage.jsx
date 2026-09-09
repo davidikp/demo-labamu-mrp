@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { useIsMobile } from "../../../hooks/useIsMobile.js";
 import { CloseIcon, ChevronLeft } from "../../../components/icons/Icons.jsx";
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
@@ -255,6 +256,7 @@ const getMondayOfWeekOffset = (weekOffset) => {
 };
 
 export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPlanningSettings }) => {
+  const isMobile = useIsMobile();
   const urgencyDaysInAdvance = materialPlanningSettings?.urgencyDaysInAdvance ?? 5;
 
   const [selectedCell, setSelectedCell] = useState(null);
@@ -534,7 +536,22 @@ export const MaterialForecastPage = ({ onNavigate, t, showPoSnackbar, materialPl
       </div>
 
       {/* Counter cards — 4 new types */}
-      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", flexShrink: 0 }}>
+      <div
+        style={
+          isMobile
+            ? {
+                display: "flex",
+                flexWrap: "nowrap",
+                overflowX: "auto",
+                overflowY: "hidden",
+                gap: "12px",
+                flexShrink: 0,
+                paddingBottom: "4px",
+                WebkitOverflowScrolling: "touch",
+              }
+            : { display: "flex", gap: "16px", flexWrap: "wrap", flexShrink: 0 }
+        }
+      >
         <ListStatusCounterCard
           label="Urgent to Buy"
           count={counters.urgentToBuy}

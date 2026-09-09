@@ -57,6 +57,7 @@ export const PortalSimulateScreeningPanel = ({ customer, armedScenario, onToggle
             right: "24px",
             zIndex: 9001,
             width: "360px",
+            maxWidth: "calc(100vw - 48px)",
             maxHeight: "70vh",
             background: "#fff",
             borderRadius: "16px",

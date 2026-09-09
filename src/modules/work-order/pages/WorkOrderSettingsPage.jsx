@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import { ChevronDownIcon, ChevronLeftIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { ToggleSwitch } from "../../../components/common/ToggleSwitch.jsx";
@@ -157,6 +158,7 @@ const ISSUE_METHOD_OPTIONS = [
 export const WorkOrderSettingsPage = ({
   onNavigate,
   isSidebarCollapsed,
+  isMobile = false,
   woSettings,
   onSaveSettings,
 }) => {
@@ -394,7 +396,7 @@ export const WorkOrderSettingsPage = ({
         style={{
           position: "fixed",
           bottom: 0,
-          left: isSidebarCollapsed ? "82px" : "286px",
+          left: getShellLeftOffset(isSidebarCollapsed, isMobile),
           right: 0,
           transition: "left 0.2s ease",
           background: "var(--neutral-surface-primary)",

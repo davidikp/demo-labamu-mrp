@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useIsMobile } from "../../../hooks/useIsMobile.js";
 import { ChevronLeft, ChevronRightIcon } from "../../../components/icons/Icons.jsx";
 import { ListStatusCounterCard } from "../../../components/common/ListStatusCounterCard.jsx";
 import { StatusBadge } from "../../../components/atoms/StatusBadge.jsx";
@@ -63,6 +64,7 @@ const toISO = (d) => {
 };
 
 export const IncomingPOPage = ({ onNavigate }) => {
+  const isMobile = useIsMobile();
   const [expandedRows, setExpandedRows] = useState({});
   const [activeFilter, setActiveFilter] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -168,7 +170,22 @@ export const IncomingPOPage = ({ onNavigate }) => {
       </div>
 
       {/* Counter Cards */}
-      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", flexShrink: 0 }}>
+      <div
+        style={
+          isMobile
+            ? {
+                display: "flex",
+                flexWrap: "nowrap",
+                overflowX: "auto",
+                overflowY: "hidden",
+                gap: "12px",
+                flexShrink: 0,
+                paddingBottom: "4px",
+                WebkitOverflowScrolling: "touch",
+              }
+            : { display: "flex", gap: "16px", flexWrap: "wrap", flexShrink: 0 }
+        }
+      >
         {counters.map((c) => (
           <ListStatusCounterCard
             key={c.key}

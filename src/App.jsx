@@ -79,6 +79,8 @@ import {
 } from "./utils/localization/localizationUtils.js";
 import { Sidebar } from "./components/layout/Sidebar.jsx";
 import { TopHeader } from "./components/layout/TopHeader.jsx";
+import { useIsMobile } from "./hooks/useIsMobile.js";
+import { getShellLeftOffset } from "./constants/layoutConstants.js";
 import { NotificationProvider } from "./context/NotificationContext.jsx";
 import { LocaleProvider } from "./ce-ui";
 import { NotificationSeeder } from "./components/notification/NotificationSeeder.jsx";
@@ -430,6 +432,7 @@ const ModuleRenderer = ({
   onNavigate,
   t,
   isSidebarCollapsed,
+  isMobile,
   poApprovalSettings,
   setPoApprovalSettings,
   woSettings,
@@ -726,6 +729,7 @@ const ModuleRenderer = ({
           onNavigate={onNavigate}
           initialData={viewState.data}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
         />
       );
     }
@@ -747,6 +751,7 @@ const ModuleRenderer = ({
           key={(viewState.data?.wo || "work-order-detail") + (viewState.data?._navVersion ? `-${viewState.data._navVersion}` : "")}
           onNavigate={onNavigate}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           initialData={viewState.data}
           woSettings={woSettings}
         />
@@ -763,6 +768,7 @@ const ModuleRenderer = ({
           }
           onNavigate={onNavigate}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           initialData={viewState.data}
           poApprovalSettings={poApprovalSettings}
           showPoSnackbar={showPoSnackbar}
@@ -777,6 +783,7 @@ const ModuleRenderer = ({
           initialData={viewState.data}
           poApprovalSettings={poApprovalSettings}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           showPoSnackbar={showPoSnackbar}
         />
       );
@@ -786,6 +793,7 @@ const ModuleRenderer = ({
         <WorkOrderSettingsPage
           onNavigate={onNavigate}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           woSettings={woSettings}
           onSaveSettings={(settings) => {
             setWoSettings(settings);
@@ -810,6 +818,7 @@ const ModuleRenderer = ({
         <PurchaseOrderSettingsPage
           onNavigate={onNavigate}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           poApprovalSettings={poApprovalSettings}
           onSaveSettings={(settings) => {
             setPoApprovalSettings(settings);
@@ -829,6 +838,7 @@ const ModuleRenderer = ({
           }
           onNavigate={onNavigate}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           initialData={viewState.data}
           poApprovalSettings={poApprovalSettings}
           showPoSnackbar={showPoSnackbar}
@@ -843,6 +853,7 @@ const ModuleRenderer = ({
           initialData={viewState.data}
           poApprovalSettings={poApprovalSettings}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           showPoSnackbar={showPoSnackbar}
         />
       );
@@ -854,6 +865,7 @@ const ModuleRenderer = ({
         <MaterialPlanningSettingsPage
           onNavigate={onNavigate}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           settings={materialPlanningSettings}
           onSaveSettings={(s) => {
             setMaterialPlanningSettings(s);
@@ -900,6 +912,7 @@ const ModuleRenderer = ({
         <OrderSettingsPage
           onNavigate={onNavigate}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           orderApprovalSettings={orderApprovalSettings}
           onSaveSettings={(settings) => {
             setOrderApprovalSettings(settings);
@@ -914,6 +927,7 @@ const ModuleRenderer = ({
         <OrderDetailPage
           onNavigate={onNavigate}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           initialData={viewState.data}
           showSnackbar={showPoSnackbar}
           orderApprovalSettings={orderApprovalSettings}
@@ -928,6 +942,7 @@ const ModuleRenderer = ({
         <QuoteSettingsPage
           onNavigate={onNavigate}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           quoteApprovalSettings={quoteApprovalSettings}
           onSaveSettings={(settings) => {
             setQuoteApprovalSettings(settings);
@@ -943,6 +958,7 @@ const ModuleRenderer = ({
           onNavigate={onNavigate}
           showSnackbar={showPoSnackbar}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           initialData={viewState.data}
         />
       );
@@ -952,6 +968,7 @@ const ModuleRenderer = ({
         <QuoteDetailPage
           onNavigate={onNavigate}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           initialData={viewState.data}
           showSnackbar={showPoSnackbar}
           quoteApprovalSettings={quoteApprovalSettings}
@@ -968,13 +985,14 @@ const ModuleRenderer = ({
       return <CustomProductRequestListPage onNavigate={onNavigate} />;
     }
     if (viewState.view === "settings") {
-      return <CustomProductRequestSettingsPage onNavigate={onNavigate} isSidebarCollapsed={isSidebarCollapsed} />;
+      return <CustomProductRequestSettingsPage onNavigate={onNavigate} isSidebarCollapsed={isSidebarCollapsed} isMobile={isMobile} />;
     }
     if (viewState.view === "detail") {
       return (
         <CustomProductRequestDetailPage
           onNavigate={onNavigate}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           initialData={viewState.data}
         />
       );
@@ -984,6 +1002,7 @@ const ModuleRenderer = ({
         <CustomProductRequestCreatePage
           onNavigate={onNavigate}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
           initialData={viewState.data}
         />
       );
@@ -993,6 +1012,7 @@ const ModuleRenderer = ({
     return (
       <UserManagementPage
         isSidebarCollapsed={isSidebarCollapsed}
+        isMobile={isMobile}
       />
     );
   }
@@ -1000,6 +1020,7 @@ const ModuleRenderer = ({
     return (
       <NotificationSettingsPage
         isSidebarCollapsed={isSidebarCollapsed}
+        isMobile={isMobile}
         notificationSettings={notificationSettings}
         onSaveNotificationSettings={(settings) =>
           setNotificationSettings(settings)
@@ -1012,6 +1033,7 @@ const ModuleRenderer = ({
     return (
       <NotificationPreferencesPage
         isSidebarCollapsed={isSidebarCollapsed}
+        isMobile={isMobile}
         companySettings={notificationSettings}
         personalPreferences={personalNotificationPreferences}
         onSavePersonalPreferences={(prefs) =>
@@ -1030,6 +1052,7 @@ const ModuleRenderer = ({
         key={viewState.data?.id || id || "material-request-detail"}
         onNavigate={onNavigate}
         isSidebarCollapsed={isSidebarCollapsed}
+        isMobile={isMobile}
         initialData={viewState.data}
         requestId={id}
         showSnackbar={showPoSnackbar}
@@ -1067,6 +1090,7 @@ const ModuleRenderer = ({
           t={t}
           initialData={viewState.data}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
         />
       );
     }
@@ -1093,6 +1117,7 @@ const ModuleRenderer = ({
           t={t}
           initialData={viewState.data}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
         />
       );
     }
@@ -1124,6 +1149,7 @@ const ModuleRenderer = ({
           t={t}
           initialData={viewState.data}
           isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
         />
       );
     }
@@ -1156,6 +1182,14 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const isMobile = useIsMobile();
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  // The sidebar is off-canvas by default on mobile — closing it whenever we
+  // cross the breakpoint (e.g. rotating a tablet, resizing devtools) avoids
+  // leaving it stuck open/closed in a state that no longer matches the shell.
+  useEffect(() => {
+    setIsMobileSidebarOpen(false);
+  }, [isMobile]);
   const appRootRef = useRef(null);
   const isApplyingLocalizationRef = useRef(false);
   const [language, setLanguage] = useState(() => {
@@ -1475,6 +1509,9 @@ export default function App() {
         <Sidebar
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          isMobile={isMobile}
+          isMobileOpen={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
           activeModule={
             ["procurement_ap_report", "po_report", "vendor_liability_report", "ap_aging_report"].includes(currentActiveModule)
               ? "analytics"
@@ -1493,7 +1530,7 @@ export default function App() {
 
         <div
           style={{
-            marginLeft: isSidebarCollapsed ? "82px" : "286px",
+            marginLeft: getShellLeftOffset(isSidebarCollapsed, isMobile),
             transition: "margin-left 0.2s ease",
             flex: 1,
             display: "flex",
@@ -1506,6 +1543,8 @@ export default function App() {
           <TopHeader
             t={t}
             isSidebarCollapsed={isSidebarCollapsed}
+            isMobile={isMobile}
+            onOpenMobileSidebar={() => setIsMobileSidebarOpen(true)}
             notificationSettings={notificationSettings}
             notifications={systemNotifications}
             onNotificationsChange={setSystemNotifications}
@@ -1575,6 +1614,7 @@ export default function App() {
                 onNavigate={onNavigate}
                 t={t}
                 isSidebarCollapsed={isSidebarCollapsed}
+                isMobile={isMobile}
                 poApprovalSettings={poApprovalSettings}
                 setPoApprovalSettings={setPoApprovalSettings}
                 woSettings={woSettings}
@@ -1603,6 +1643,7 @@ export default function App() {
                 onNavigate={onNavigate}
                 t={t}
                 isSidebarCollapsed={isSidebarCollapsed}
+                isMobile={isMobile}
                 poApprovalSettings={poApprovalSettings}
                 setPoApprovalSettings={setPoApprovalSettings}
                 woSettings={woSettings}
@@ -1631,6 +1672,7 @@ export default function App() {
                 onNavigate={onNavigate}
                 t={t}
                 isSidebarCollapsed={isSidebarCollapsed}
+                isMobile={isMobile}
                 poApprovalSettings={poApprovalSettings}
                 setPoApprovalSettings={setPoApprovalSettings}
                 woSettings={woSettings}

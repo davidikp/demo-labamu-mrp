@@ -1,10 +1,11 @@
 import React, { useRef, useState } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import { ChevronLeftIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
 import { InputField } from "../../../components/molecules/InputField.jsx";
 
-export const MaterialPlanningSettingsPage = ({ onNavigate, isSidebarCollapsed, settings, onSaveSettings }) => {
+export const MaterialPlanningSettingsPage = ({ onNavigate, isSidebarCollapsed, isMobile = false, settings, onSaveSettings }) => {
   const [urgencyDaysInAdvance, setUrgencyDaysInAdvance] = useState(
     settings?.urgencyDaysInAdvance ?? 5
   );
@@ -129,7 +130,7 @@ export const MaterialPlanningSettingsPage = ({ onNavigate, isSidebarCollapsed, s
       <div style={{
         position: "fixed",
         bottom: 0,
-        left: isSidebarCollapsed ? "82px" : "286px",
+        left: getShellLeftOffset(isSidebarCollapsed, isMobile),
         right: 0,
         transition: "left 0.2s ease",
         background: "var(--neutral-surface-primary)",

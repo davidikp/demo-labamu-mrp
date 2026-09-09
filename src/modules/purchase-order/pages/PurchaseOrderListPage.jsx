@@ -10,6 +10,7 @@ import { TablePaginationFooter } from "../../../components/table/TablePagination
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { MOCK_PO_TABLE_DATA } from "../mock/purchaseOrderMocks.js";
 import { cellStyle } from "../utils/purchaseOrderTableUtils.js";
+import { useIsMobile } from "../../../hooks/useIsMobile.js";
 
 const computePaymentStatus = (invoices, payments) => {
   if (!invoices || invoices.length === 0) return "Unpaid";
@@ -79,6 +80,7 @@ const PoTitleTooltip = () => {
 };
 
 export const PurchaseOrderListPage = ({ onNavigate, t }) => {
+  const isMobile = useIsMobile();
   const [sortBy, setSortBy] = useState("createdDate");
   const [sortDirection, setSortDirection] = useState("desc");
   const [filterStatuses, setFilterStatuses] = useState([]);
@@ -240,11 +242,13 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
       <div
         style={{
           display: "flex",
+          flexDirection: isMobile ? "column" : "row",
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: isMobile ? "flex-start" : "center",
+          gap: isMobile ? "12px" : "0",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
           <h1
             style={{
               margin: "0",
@@ -256,17 +260,32 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
           </h1>
           <PoTitleTooltip />
         </div>
-        <div style={{ display: "flex", gap: "12px" }}>
-          <Button variant="outlined" leftIcon={Settings} onClick={() => onNavigate("settings")}>
+        <div style={{ display: "flex", gap: "12px", width: isMobile ? "100%" : "auto" }}>
+          <Button variant="outlined" leftIcon={Settings} onClick={() => onNavigate("settings")} style={isMobile ? { flex: 1 } : undefined}>
             {t("purchase_order.settings")}
           </Button>
-          <Button variant="filled" leftIcon={AddIcon} onClick={() => onNavigate("create")}>
+          <Button variant="filled" leftIcon={AddIcon} onClick={() => onNavigate("create")} style={isMobile ? { flex: 1 } : undefined}>
             {t("purchase_order.new")}
           </Button>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+      <div
+        style={
+          isMobile
+            ? {
+                display: "flex",
+                flexWrap: "nowrap",
+                overflowX: "auto",
+                overflowY: "hidden",
+                flexShrink: 0,
+                gap: "12px",
+                paddingBottom: "4px",
+                WebkitOverflowScrolling: "touch",
+              }
+            : { display: "flex", gap: "16px", flexWrap: "wrap" }
+        }
+      >
         {statusCards.map((card) => (
           <ListStatusCounterCard
             key={card.key}
@@ -360,7 +379,7 @@ export const PurchaseOrderListPage = ({ onNavigate, t }) => {
         >
           <div
             style={{
-              minWidth: "100%",
+              minWidth: "1000px",
               width: "100%",
               display: "flex",
               flexDirection: "column",

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import { ChevronLeftIcon, AddIcon, ChevronDownIcon } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { Checkbox } from "../../../components/common/Checkbox.jsx";
@@ -253,7 +254,7 @@ const nextAttachmentId = () => `quo-att-${Date.now()}-${++attachmentSeq}`;
 const MAX_ATTACHMENTS = 10;
 const MAX_ATTACHMENT_BYTES = 30 * 1024 * 1024;
 
-export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, initialData }) => {
+export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, isMobile = false, initialData }) => {
   // App.jsx's route resolver falls back to a placeholder `{ id: "create", ... }`
   // object as `location.state` whenever the URL has no real state (e.g. a
   // fresh "New Quote" navigation) — checking `.quoteNo` (always present on a
@@ -585,8 +586,8 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
       <div style={pageSectionStyle}>
           {sectionHeader("Quote Details")}
           <div style={sectionBodyStyle}>
-            <div style={{ display: "flex", gap: "16px" }}>
-              <div style={{ flex: 1 }}>
+            <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 200px" }}>
                 <FormField label="Currency" required error={formErrors.currency}>
                   <DropdownSelect
                     value={form.currency}
@@ -597,7 +598,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                   />
                 </FormField>
               </div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: "1 1 200px" }}>
                 <InputField
                   label="Down Payment Percentage"
                   type="number"
@@ -606,7 +607,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                   onChange={(e) => setField({ downPaymentPercent: e.target.value })}
                 />
               </div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: "1 1 200px" }}>
                 <InputField
                   label="Valid Until"
                   type="date"
@@ -626,8 +627,8 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
           <div style={pageSectionStyle}>
             {sectionHeader("Customer Information")}
             <div style={sectionBodyStyle}>
-              <div style={{ display: "flex", gap: "16px" }}>
-                <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 200px" }}>
                   <FormField label="Customer Name" required error={formErrors.customerName}>
                     <div style={{ position: "relative" }}>
                       <input
@@ -738,7 +739,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     </div>
                   </FormField>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: "1 1 200px" }}>
                   <InputField
                     label="Customer Email"
                     type="email"
@@ -749,7 +750,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     disabled={isCustomerLocked}
                   />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: "1 1 200px" }}>
                   <PhoneInputField
                     label="Customer Phone"
                     value={form.customerPhone}
@@ -761,8 +762,8 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: "16px" }}>
-                <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 200px" }}>
                   <FormField label="Customer Tag" helperText="Max 5 tags">
                     <CeDropdown
                       multi
@@ -777,7 +778,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     />
                   </FormField>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: "1 1 200px" }}>
                   <FormField label="Customer Country" required error={formErrors.customerCountry}>
                     <DropdownSelect
                       value={form.customerCountry}
@@ -790,7 +791,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     />
                   </FormField>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: "1 1 200px" }}>
                   <InputField
                     label="Customer Address"
                     required
@@ -991,8 +992,8 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     borderRadius: "12px",
                     padding: "20px 24px",
                     display: "grid",
-                    gridTemplateColumns: "200px 1fr",
-                    rowGap: "14px",
+                    gridTemplateColumns: isMobile ? "1fr" : "200px 1fr",
+                    rowGap: isMobile ? "4px" : "14px",
                     columnGap: "16px",
                     fontSize: "var(--text-body)",
                   }}
@@ -1007,7 +1008,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     ["Branch Address", selectedBank.branchAddress],
                   ].map(([label, value]) => (
                     <React.Fragment key={label}>
-                      <span style={{ color: "var(--neutral-on-surface-tertiary)" }}>{label}:</span>
+                      <span style={{ color: "var(--neutral-on-surface-tertiary)", marginTop: isMobile ? "10px" : 0 }}>{label}:</span>
                       <span style={{ color: "var(--neutral-on-surface-primary)" }}>{value || "-"}</span>
                     </React.Fragment>
                   ))}
@@ -1019,8 +1020,8 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
           <div style={pageSectionStyle}>
             {sectionHeader("Terms and Conditions")}
             <div style={sectionBodyStyle}>
-              <div style={{ display: "flex", gap: "16px" }}>
-                <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 200px" }}>
                   <FormField
                     label={labelWithHint("Payment Terms", TERMS_TOOLTIPS.paymentTerms)}
                     required
@@ -1035,7 +1036,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     />
                   </FormField>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: "1 1 200px" }}>
                   <FormField label={labelWithHint("Incoterms", TERMS_TOOLTIPS.incoterms)}>
                     <DropdownSelect
                       value={terms.incoterms}
@@ -1045,7 +1046,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     />
                   </FormField>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: "1 1 200px" }}>
                   {/* Risk Level is derived from the selected Incoterms / screening
                       result rather than entered here, so it stays read-only. */}
                   <FormField label={labelWithHint("Risk Level", TERMS_TOOLTIPS.riskLevel)}>
@@ -1060,8 +1061,8 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                 </div>
               </div>
   
-              <div style={{ display: "flex", gap: "16px" }}>
-                <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 200px" }}>
                   <FormField label={labelWithHint("Shipping Method", TERMS_TOOLTIPS.shippingMethod)}>
                     <DropdownSelect
                       value={terms.shippingMethod}
@@ -1071,7 +1072,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     />
                   </FormField>
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: "1 1 200px" }}>
                   <InputField
                     label={labelWithHint("Estimated Delivery", TERMS_TOOLTIPS.estimatedDelivery)}
                     value={terms.estimatedDelivery}
@@ -1079,7 +1080,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
                     placeholder="e.g., 2-3 weeks"
                   />
                 </div>
-                <div style={{ flex: 1 }}>
+                <div style={{ flex: "1 1 200px" }}>
                   <FormField label={labelWithHint("Dispute Resolution Method", TERMS_TOOLTIPS.disputeResolutionMethod)}>
                     <DropdownSelect
                       value={terms.disputeResolutionMethod}
@@ -1143,13 +1144,15 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
         style={{
           position: "fixed",
           bottom: 0,
-          left: isSidebarCollapsed ? "82px" : "286px",
+          left: getShellLeftOffset(isSidebarCollapsed, isMobile),
           right: 0,
           transition: "left 0.2s ease",
           background: "var(--neutral-surface-primary)",
           borderTop: "1px solid var(--neutral-line-separator-1)",
           padding: "14px 24px",
           display: "flex",
+          flexWrap: "wrap",
+          rowGap: "8px",
           justifyContent: "space-between",
           alignItems: "center",
           zIndex: 100,
@@ -1158,7 +1161,7 @@ export const QuoteCreatePage = ({ onNavigate, showSnackbar, isSidebarCollapsed, 
         <Button size="large" variant="tertiary" onClick={handleCancel} style={{ color: "var(--status-red-primary)" }}>
           Cancel
         </Button>
-        <div style={{ display: "flex", gap: "12px" }}>
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
           <Button size="large" variant="outlined" onClick={handleSaveDraft}>
             Save Draft
           </Button>

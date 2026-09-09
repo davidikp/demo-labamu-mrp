@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useIsMobile } from "../../../hooks/useIsMobile.js";
 import { ChevronDownIcon, Settings, SearchNotFoundIllustration } from "../../../components/icons/Icons.jsx";
 import { EmptyState } from "../../../ce-ui";
 import { Button } from "../../../components/common/Button.jsx";
@@ -11,6 +12,7 @@ import { MOCK_ORDER_TABLE_DATA } from "../mock/orderMocks.js";
 import { cellStyle } from "../utils/orderTableUtils.js";
 
 export const OrderListPage = ({ onNavigate, t }) => {
+  const isMobile = useIsMobile();
   const [sortBy, setSortBy] = useState("createdAt");
   const [sortDirection, setSortDirection] = useState("desc");
   const [filterStatuses, setFilterStatuses] = useState([]);
@@ -150,13 +152,26 @@ export const OrderListPage = ({ onNavigate, t }) => {
         </div>
       </div>
 
-      <div 
-        style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(5, 1fr)", 
-          gap: "16px", 
-          flexShrink: 0 
-        }}
+      <div
+        style={
+          isMobile
+            ? {
+                display: "flex",
+                flexWrap: "nowrap",
+                overflowX: "auto",
+                overflowY: "hidden",
+                gap: "12px",
+                flexShrink: 0,
+                paddingBottom: "4px",
+                WebkitOverflowScrolling: "touch",
+              }
+            : {
+                display: "grid",
+                gridTemplateColumns: "repeat(5, 1fr)",
+                gap: "16px",
+                flexShrink: 0,
+              }
+        }
       >
         {statusCards.map((card) => (
           <ListStatusCounterCard

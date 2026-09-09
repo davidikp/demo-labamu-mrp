@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useIsMobile } from "../../../hooks/useIsMobile.js";
 import { 
   AddIcon, 
   ChevronDownIcon, 
@@ -21,6 +22,7 @@ import { MaterialCreateDrawer } from "../components/MaterialCreateDrawer.jsx";
 import { getMaterials, subscribeMaterials, addMaterial } from "../mock/materialsMocks.js";
 
 export const MaterialsListPage = ({ onNavigate, showSnackbar, t }) => {
+  const isMobile = useIsMobile();
   const [materials, setMaterials] = useState(getMaterials());
 
   // Picks up materials added elsewhere (e.g. a completed Bulk Upload import)
@@ -371,7 +373,22 @@ export const MaterialsListPage = ({ onNavigate, showSnackbar, t }) => {
       </div>
 
       {/* ABC Classification Cards */}
-      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+      <div
+        style={
+          isMobile
+            ? {
+                display: "flex",
+                flexWrap: "nowrap",
+                overflowX: "auto",
+                overflowY: "hidden",
+                flexShrink: 0,
+                gap: "12px",
+                paddingBottom: "4px",
+                WebkitOverflowScrolling: "touch",
+              }
+            : { display: "flex", gap: "16px", flexWrap: "wrap" }
+        }
+      >
         {abcClassificationCards.map((card) => (
           <ListStatusCounterCard
             key={card.key}

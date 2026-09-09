@@ -95,6 +95,11 @@
   min-width: 180px;
   flex: 1;
   min-height: 80px;
+  /* A native <button> as a flex item doesn't reliably honor the parent's
+     align-items: stretch across browsers, so a card with a longer label
+     that wraps to two lines (e.g. "Waiting for Approval") ends up taller
+     than its neighbors — height: 100% forces it to match anyway. */
+  height: 100%;
   padding: 14px 16px;
   border-radius: 16px;
   border: 1px solid var(--ds-list-status-card-border, var(--neutral-line-separator-1));

@@ -1,4 +1,5 @@
 import React, { useRef, useState } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -23,6 +24,7 @@ import {
 export const PurchaseOrderSettingsPage = ({
   onNavigate,
   isSidebarCollapsed,
+  isMobile = false,
   poApprovalSettings,
   onSaveSettings,
 }) => {
@@ -511,7 +513,7 @@ export const PurchaseOrderSettingsPage = ({
                         position: "relative",
                       }}
                     >
-                      <div style={{ width: "calc((100% - 80px) * 1.2 / 3.6)" }}>
+                      <div style={{ width: isMobile ? "100%" : "calc((100% - 80px) * 1.2 / 3.6)" }}>
                         <PurchaseOrderSearchShell
                           style={{ position: "relative", paddingLeft: "40px" }}
                         >
@@ -660,7 +662,7 @@ export const PurchaseOrderSettingsPage = ({
         style={{
           position: "fixed",
           bottom: 0,
-          left: isSidebarCollapsed ? "82px" : "286px",
+          left: getShellLeftOffset(isSidebarCollapsed, isMobile),
           right: 0,
           transition: "left 0.2s ease",
           background: "var(--neutral-surface-primary)",

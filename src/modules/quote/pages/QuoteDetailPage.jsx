@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -175,6 +176,7 @@ export const QuoteDetailPage = ({
   initialData,
   showSnackbar,
   isSidebarCollapsed,
+  isMobile = false,
   quoteApprovalSettings,
   onSuspendAccount,
   language,
@@ -698,9 +700,15 @@ export const QuoteDetailPage = ({
   const isSubmittedStatus = status === "Submitted";
   const isIssuedStatus = status === "Issued";
 
+  // Below the mobile breakpoint, the 4/3/2-column label grids collapse to a
+  // single column (values are often long — customer names, addresses,
+  // emails — and don't fit 4-up on a phone) and rows built from fixed-width
+  // flex columns stack instead of clipping.
+  const labelGridColumns = (desktopCount) => (isMobile ? "1fr" : `repeat(${desktopCount}, 1fr)`);
+
   return (
-    <div style={{ padding: "24px 24px 100px 24px", display: "flex", flexDirection: "column", gap: "24px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+    <div style={{ padding: isMobile ? "16px 16px 100px 16px" : "24px 24px 100px 24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? "16px" : "0", marginBottom: "8px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <div
             style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", marginLeft: "-4px" }}
@@ -720,20 +728,20 @@ export const QuoteDetailPage = ({
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "12px" }}>
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", width: isMobile ? "100%" : "auto" }}>
           {isEditableStatus ? (
-            <Button variant="outlined" leftIcon={EditIcon} onClick={handleEditQuote}>
+            <Button variant="outlined" leftIcon={EditIcon} onClick={handleEditQuote} style={isMobile ? { flex: 1 } : undefined}>
               Edit Quote
             </Button>
           ) : (
-            <Button variant="outlined" leftIcon={DownloadIcon} onClick={handleDownload}>
+            <Button variant="outlined" leftIcon={DownloadIcon} onClick={handleDownload} style={isMobile ? { flex: 1 } : undefined}>
               Download
             </Button>
           )}
 
           {isIssuedStatus ? (
-            <div style={{ position: "relative" }}>
-              <Button variant="outlined" rightIcon={ChevronDownIcon} onClick={() => setIsActionMenuOpen((prev) => !prev)}>
+            <div style={{ position: "relative", ...(isMobile ? { flex: 1 } : null) }}>
+              <Button variant="outlined" rightIcon={ChevronDownIcon} onClick={() => setIsActionMenuOpen((prev) => !prev)} style={isMobile ? { width: "100%" } : undefined}>
                 Customer Action
               </Button>
               {isActionMenuOpen ? (
@@ -780,7 +788,7 @@ export const QuoteDetailPage = ({
           <StatusBadge variant={quoteData.sBadge || "grey"}>{quoteData.status}</StatusBadge>
         </div>
         <div style={{ margin: "0 24px", borderTop: "1px solid var(--neutral-line-separator-1)" }} />
-        <div style={{ padding: "20px 24px", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+        <div style={{ padding: "20px 24px", display: "grid", gridTemplateColumns: labelGridColumns(4), gap: "24px" }}>
           <LabelValue label="RFQ No" value={quoteData.rfqNo || "-"} />
           <LabelValue label="Currency" value={quoteData.currency || "-"} />
           <LabelValue label="Down Payment" value={quoteData.downPaymentPercent != null ? `${quoteData.downPaymentPercent}%` : "-"} />
@@ -816,7 +824,7 @@ export const QuoteDetailPage = ({
           <div style={sectionCardStyle}>
             {sectionTitle("Customer Information")}
             <div style={{ padding: "20px 24px 24px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: labelGridColumns(4), gap: "24px" }}>
                 <LabelValue label="Customer Name" value={quoteData.customer?.name || quoteData.customerName || "-"} />
                 <LabelValue label="Customer Email" value={quoteData.customer?.email || "-"} />
                 <LabelValue label="Customer Phone" value={quoteData.customer?.phone || "-"} />
@@ -829,10 +837,10 @@ export const QuoteDetailPage = ({
                   }}
                 />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: labelGridColumns(4), gap: "24px" }}>
                 <LabelValue label="Customer Tags" value={quoteData.customer?.tags?.length ? quoteData.customer.tags.join(", ") : "-"} />
                 <LabelValue label="Customer Country" value={linkedCustomer?.country || "-"} />
-                <div style={{ gridColumn: "span 2" }}>
+                <div style={{ gridColumn: isMobile ? "auto" : "span 2" }}>
                   <LabelValue label="Customer Address" value={quoteData.customer?.address || "-"} />
                 </div>
               </div>
@@ -908,12 +916,12 @@ export const QuoteDetailPage = ({
           <div style={sectionCardStyle}>
             {sectionTitle("Bank Account")}
             <div style={{ padding: "20px 24px 24px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: labelGridColumns(3), gap: "24px" }}>
                 <LabelValue label="Account Name" value={quoteData.bankAccount?.accountName || "-"} />
                 <LabelValue label="Account Number" value={quoteData.bankAccount?.accountNumber || "-"} />
                 <LabelValue label="Bank Name" value={quoteData.bankAccount?.bankName || "-"} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: labelGridColumns(3), gap: "24px" }}>
                 <LabelValue label="Supported Currencies" value={quoteData.bankAccount?.currencies || "-"} />
                 <LabelValue label="SWIFT Code" value={quoteData.bankAccount?.swiftCode || "-"} />
                 <LabelValue label="Branch" value={quoteData.bankAccount?.branch || "-"} />
@@ -929,12 +937,12 @@ export const QuoteDetailPage = ({
           <div style={sectionCardStyle}>
             {sectionTitle("Terms and Conditions")}
             <div style={{ padding: "20px 24px 24px 24px", display: "flex", flexDirection: "column", gap: "20px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: labelGridColumns(3), gap: "24px" }}>
                 <LabelValue label="Payment Terms" value={quoteData.terms?.paymentTerms || "-"} />
                 <LabelValue label="Incoterms" value={quoteData.terms?.incoterms || "-"} />
                 <LabelValue label="Shipping Method" value={quoteData.terms?.shippingMethod || "-"} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: labelGridColumns(3), gap: "24px" }}>
                 <LabelValue label="Estimated Delivery" value={quoteData.terms?.estimatedDelivery || "-"} />
                 <LabelValue label="Risk Level" value={quoteData.terms?.riskLevel || "-"} />
                 <LabelValue label="Dispute Resolution Method" value={quoteData.terms?.disputeResolutionMethod || "-"} />
@@ -962,10 +970,79 @@ export const QuoteDetailPage = ({
             <div style={sectionCardStyle}>
               {sectionTitle("Approval Logs")}
               <div style={{ padding: "24px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginBottom: "28px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: labelGridColumns(2), gap: "24px", marginBottom: "28px" }}>
                   <LabelValue label="Requested By" value={quoteData.createdBy || "-"} />
                   <LabelValue label="Requested At" value={quoteData.createdAt || "-"} />
                 </div>
+                {!isMobile ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      paddingBottom: "12px",
+                      borderBottom: "1px solid var(--neutral-line-separator-1)",
+                      fontWeight: "var(--font-weight-bold)",
+                      fontSize: "var(--text-title-3)",
+                    }}
+                  >
+                    <div style={{ flex: "1.1" }}>Approvers</div>
+                    <div style={{ width: "140px" }}>Status</div>
+                    <div style={{ flex: "2.4" }}>Comments</div>
+                  </div>
+                ) : null}
+                {(quoteApprovalSettings?.approvers || []).map((approver, idx, arr) =>
+                  isMobile ? (
+                    <div
+                      key={approver.id || idx}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "8px",
+                        padding: "16px 0",
+                        fontSize: "var(--text-title-3)",
+                        borderBottom: idx === arr.length - 1 ? "none" : "1px solid var(--neutral-line-separator-1)",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                        <span style={{ fontWeight: "var(--font-weight-bold)" }}>{approver.name}</span>
+                        <StatusBadge variant={quoteData.customerApprovalStatus === "Approved" ? "green" : quoteData.customerApprovalStatus === "Rejected" ? "red" : "grey-light"}>
+                          {quoteData.customerApprovalStatus || "Pending"}
+                        </StatusBadge>
+                      </div>
+                      <span style={{ color: "var(--neutral-on-surface-secondary)" }}>
+                        {quoteData.revisionMessage || quoteData.rejectedMessage || "-"}
+                      </span>
+                    </div>
+                  ) : (
+                    <div
+                      key={approver.id || idx}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "18px 0 10px 0",
+                        fontSize: "var(--text-title-3)",
+                        borderBottom: idx === arr.length - 1 ? "none" : "1px solid var(--neutral-line-separator-1)",
+                      }}
+                    >
+                      <div style={{ flex: "1.1" }}>{approver.name}</div>
+                      <div style={{ width: "140px" }}>
+                        <StatusBadge variant={quoteData.customerApprovalStatus === "Approved" ? "green" : quoteData.customerApprovalStatus === "Rejected" ? "red" : "grey-light"}>
+                          {quoteData.customerApprovalStatus || "Pending"}
+                        </StatusBadge>
+                      </div>
+                      <div style={{ flex: "2.4", color: "var(--neutral-on-surface-secondary)" }}>
+                        {quoteData.revisionMessage || quoteData.rejectedMessage || "-"}
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          ) : null}
+
+          <div style={sectionCardStyle}>
+            {sectionTitle("Activity Logs")}
+            <div style={{ padding: "24px" }}>
+              {!isMobile ? (
                 <div
                   style={{
                     display: "flex",
@@ -975,73 +1052,53 @@ export const QuoteDetailPage = ({
                     fontSize: "var(--text-title-3)",
                   }}
                 >
-                  <div style={{ flex: "1.1" }}>Approvers</div>
-                  <div style={{ width: "140px" }}>Status</div>
-                  <div style={{ flex: "2.4" }}>Comments</div>
+                  <div style={{ flex: "1.1" }}>Name</div>
+                  <div style={{ flex: "1.9" }}>Email</div>
+                  <div style={{ flex: "2.8" }}>Activity</div>
+                  <div style={{ width: "190px" }}>Timestamp</div>
                 </div>
-                {(quoteApprovalSettings?.approvers || []).map((approver, idx, arr) => (
+              ) : null}
+              {dynamicActivityLogs.map((log, idx, arr) =>
+                isMobile ? (
                   <div
-                    key={approver.id || idx}
+                    key={idx}
                     style={{
                       display: "flex",
-                      alignItems: "center",
-                      padding: "18px 0 10px 0",
-                      fontSize: "var(--text-title-3)",
+                      flexDirection: "column",
+                      gap: "4px",
+                      padding: "16px 0",
                       borderBottom: idx === arr.length - 1 ? "none" : "1px solid var(--neutral-line-separator-1)",
+                      fontSize: "var(--text-title-3)",
                     }}
                   >
-                    <div style={{ flex: "1.1" }}>{approver.name}</div>
-                    <div style={{ width: "140px" }}>
-                      <StatusBadge variant={quoteData.customerApprovalStatus === "Approved" ? "green" : quoteData.customerApprovalStatus === "Rejected" ? "red" : "grey-light"}>
-                        {quoteData.customerApprovalStatus || "Pending"}
-                      </StatusBadge>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                      <span style={{ fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>{log.title}</span>
+                      <span style={{ color: "var(--neutral-on-surface-secondary)", flexShrink: 0 }}>{log.timestamp}</span>
                     </div>
-                    <div style={{ flex: "2.4", color: "var(--neutral-on-surface-secondary)" }}>
-                      {quoteData.revisionMessage || quoteData.rejectedMessage || "-"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          <div style={sectionCardStyle}>
-            {sectionTitle("Activity Logs")}
-            <div style={{ padding: "24px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  paddingBottom: "12px",
-                  borderBottom: "1px solid var(--neutral-line-separator-1)",
-                  fontWeight: "var(--font-weight-bold)",
-                  fontSize: "var(--text-title-3)",
-                }}
-              >
-                <div style={{ flex: "1.1" }}>Name</div>
-                <div style={{ flex: "1.9" }}>Email</div>
-                <div style={{ flex: "2.8" }}>Activity</div>
-                <div style={{ width: "190px" }}>Timestamp</div>
-              </div>
-              {dynamicActivityLogs.map((log, idx, arr) => (
-                <div
-                  key={idx}
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    padding: "16px 0",
-                    borderBottom: idx === arr.length - 1 ? "none" : "1px solid var(--neutral-line-separator-1)",
-                    fontSize: "var(--text-title-3)",
-                  }}
-                >
-                  <div style={{ flex: "1.1", color: "var(--neutral-on-surface-primary)" }}>{log.name}</div>
-                  <div style={{ flex: "1.9", color: "var(--neutral-on-surface-primary)" }}>{log.email}</div>
-                  <div style={{ flex: "2.8", display: "flex", flexDirection: "column", gap: log.desc ? "6px" : "0" }}>
-                    <span style={{ fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>{log.title}</span>
                     {log.desc ? <span style={{ color: "var(--neutral-on-surface-secondary)", lineHeight: "1.5" }}>{log.desc}</span> : null}
+                    <span style={{ color: "var(--neutral-on-surface-primary)" }}>{log.name}{log.email && log.email !== "-" ? ` · ${log.email}` : ""}</span>
                   </div>
-                  <div style={{ width: "190px", color: "var(--neutral-on-surface-secondary)" }}>{log.timestamp}</div>
-                </div>
-              ))}
+                ) : (
+                  <div
+                    key={idx}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      padding: "16px 0",
+                      borderBottom: idx === arr.length - 1 ? "none" : "1px solid var(--neutral-line-separator-1)",
+                      fontSize: "var(--text-title-3)",
+                    }}
+                  >
+                    <div style={{ flex: "1.1", color: "var(--neutral-on-surface-primary)" }}>{log.name}</div>
+                    <div style={{ flex: "1.9", color: "var(--neutral-on-surface-primary)" }}>{log.email}</div>
+                    <div style={{ flex: "2.8", display: "flex", flexDirection: "column", gap: log.desc ? "6px" : "0" }}>
+                      <span style={{ fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>{log.title}</span>
+                      {log.desc ? <span style={{ color: "var(--neutral-on-surface-secondary)", lineHeight: "1.5" }}>{log.desc}</span> : null}
+                    </div>
+                    <div style={{ width: "190px", color: "var(--neutral-on-surface-secondary)" }}>{log.timestamp}</div>
+                  </div>
+                )
+              )}
             </div>
           </div>
         </div>
@@ -1052,7 +1109,7 @@ export const QuoteDetailPage = ({
           style={{
             position: "fixed",
             bottom: 0,
-            left: isSidebarCollapsed ? "82px" : "286px",
+            left: getShellLeftOffset(isSidebarCollapsed, isMobile),
             right: 0,
             transition: "left 0.2s ease",
             background: "var(--neutral-surface-primary)",
@@ -1064,27 +1121,27 @@ export const QuoteDetailPage = ({
             zIndex: 100,
           }}
         >
-          <div style={{ display: "flex", gap: "16px" }}>
+          <div style={{ display: "flex", gap: isMobile ? "8px" : "16px", flexWrap: "wrap", justifyContent: "flex-end", rowGap: "8px", width: isMobile ? "100%" : "auto" }}>
             {isEditableStatus ? (
-              <Button size="medium" variant="filled" onClick={handleSubmitQuote}>
+              <Button size={isMobile ? "medium" : "large"} variant="filled" onClick={handleSubmitQuote} style={isMobile ? { flex: 1 } : undefined}>
                 Submit
               </Button>
             ) : null}
             {isSubmittedStatus ? (
               <>
-                <Button size="medium" variant="danger" onClick={() => openDecisionModal("reject")}>
+                <Button size={isMobile ? "medium" : "large"} variant="danger" onClick={() => openDecisionModal("reject")} style={isMobile ? { flex: 1 } : undefined}>
                   Reject
                 </Button>
-                <Button size="medium" variant="outlined" onClick={() => openDecisionModal("revision")}>
+                <Button size={isMobile ? "medium" : "large"} variant="outlined" onClick={() => openDecisionModal("revision")} style={isMobile ? { flex: 1 } : undefined}>
                   Ask for Revision
                 </Button>
-                <Button size="medium" variant="filled" onClick={() => openDecisionModal("approve")}>
+                <Button size={isMobile ? "medium" : "large"} variant="filled" onClick={() => openDecisionModal("approve")} style={isMobile ? { flex: 1 } : undefined}>
                   Approve
                 </Button>
               </>
             ) : null}
             {isIssuedStatus ? (
-              <Button size="medium" variant="filled" onClick={handleSendToCustomer}>
+              <Button size={isMobile ? "medium" : "large"} variant="filled" onClick={handleSendToCustomer} style={isMobile ? { flex: 1 } : undefined}>
                 Send to Customer
               </Button>
             ) : null}

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 import { useNotifications } from "../../../context/NotificationContext.jsx";
 import { createPortal } from "react-dom";
 import { 
@@ -318,7 +319,7 @@ const WorkOrderTab = ({ orderNo, orderStatus, onNavigate }) => {
 
   return (
     <div style={{ width: "100%", background: "var(--neutral-surface-primary)", display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px", flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           <FilterMenu
             label="Status"
@@ -329,7 +330,7 @@ const WorkOrderTab = ({ orderNo, orderStatus, onNavigate }) => {
             onChangeMultiple={setStatusFilter}
           />
         </div>
-        <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search WO Number, Product, SKU" width="320px" />
+        <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search WO Number, Product, SKU" width="min(320px, 100%)" />
       </div>
       <div style={{ height: "1px", background: "var(--neutral-line-separator-1)", width: "100%" }} />
       <div style={{ width: "100%", overflowX: "auto" }}>
@@ -408,7 +409,7 @@ const WorkOrderTab = ({ orderNo, orderStatus, onNavigate }) => {
   );
 };
 
-const InvoicesTab = ({ onNavigate }) => {
+const InvoicesTab = ({ onNavigate, isMobile = false }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -456,7 +457,7 @@ const InvoicesTab = ({ onNavigate }) => {
 
   return (
     <div style={{ width: "100%", background: "var(--neutral-background-primary)", display: "flex", flexDirection: "column", gap: "24px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? "12px" : "24px" }}>
         {[
           { label: "Total Invoice", value: metrics.totalInvoice, icon: <TrendingUp /> },
           { label: "Total Paid", value: metrics.totalPaid, icon: <Box /> },
@@ -500,7 +501,7 @@ const InvoicesTab = ({ onNavigate }) => {
         flexDirection: "column",
         overflow: "hidden"
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px", flexWrap: "wrap" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <FilterMenu
               label="Status"
@@ -511,8 +512,8 @@ const InvoicesTab = ({ onNavigate }) => {
               onChangeMultiple={setStatusFilter}
             />
           </div>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Invoice Number" width="320px" />
+          <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+            <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Invoice Number" width="min(320px, 100%)" />
             <Button variant="filled" leftIcon={AddIcon} onClick={() => {}}>
               Add Invoice
             </Button>
@@ -712,13 +713,13 @@ const AttachmentsTab = ({ onNavigate, showSnackbar }) => {
   return (
     <div style={{ width: "100%", background: "var(--neutral-surface-primary)", display: "flex", flexDirection: "column" }}>
       {/* Header Section */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px", flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
           {/* Removed Document Type Filter */}
         </div>
         
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search documents" width="320px" />
+        <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+          <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search documents" width="min(320px, 100%)" />
           <div style={{ display: "flex", border: "1px solid var(--neutral-line-separator-1)", borderRadius: "12px", overflow: "hidden", background: "white" }}>
             <button onClick={() => setView("list")} style={{ width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: view === "list" ? "#EAF1FF" : "white", cursor: "pointer" }}>
               <ListViewIcon size={18} color={view === "list" ? "var(--feature-brand-primary)" : "var(--neutral-on-surface-tertiary)"} />
@@ -1992,7 +1993,7 @@ const SubmitConfirmationModal = ({ isOpen, onClose, onSubmit }) => {
   );
 };
 
-const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
+const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData, isMobile = false }) => {
   const [materialsData, setMaterialsData] = useState(MOCK_ORDER_MATERIALS_DATA);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState([]);
@@ -2065,7 +2066,7 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
 
   return (
     <div style={{ width: "100%", background: "var(--neutral-background-primary)", display: "flex", flexDirection: "column", gap: "24px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: isMobile ? "12px" : "24px" }}>
         {[
           { label: "Total Materials", value: metrics.totalMaterials, icon: <Box /> },
           { label: "Shortage Items", value: metrics.shortageItems, icon: <Info /> },
@@ -2110,7 +2111,7 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
         flexDirection: "column",
         overflow: "hidden"
       }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "20px 24px", gap: "16px", flexWrap: "wrap" }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
             <FilterMenu
               label="Status"
@@ -2121,8 +2122,8 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
               onChangeMultiple={setStatusFilter}
             />
           </div>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center", position: "relative" }}>
-            <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Material Name, SKU" width="320px" />
+          <div style={{ display: "flex", gap: "12px", alignItems: "center", position: "relative", flexWrap: "wrap" }}>
+            <TableSearchField value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search Material Name, SKU" width="min(320px, 100%)" />
             <div style={{ position: "relative" }}>
               <Button 
                 variant="filled" 
@@ -2505,7 +2506,7 @@ const MaterialsTab = ({ orderNo, onNavigate, showSnackbar, initialData }) => {
   );
 };
 
-export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSidebarCollapsed, orderApprovalSettings }) => {
+export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSidebarCollapsed, isMobile = false, orderApprovalSettings }) => {
   const { notify: notifyOrder, currentUser: orderNotifUser } = useNotifications();
   const [activeTab, setActiveTab] = useState(initialData?.activeTab || "products");
 
@@ -2770,10 +2771,12 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
 
   const handleBackNavigation = () => onNavigate("list");
 
+  const labelGridColumns = (desktopCount) => (isMobile ? "1fr" : `repeat(${desktopCount}, 1fr)`);
+
   return (
-    <div style={{ padding: "24px 24px 100px 24px", display: "flex", flexDirection: "column", gap: "24px" }}>
+    <div style={{ padding: isMobile ? "16px 16px 100px 16px" : "24px 24px 100px 24px", display: "flex", flexDirection: "column", gap: "24px" }}>
       {/* Header & Breadcrumb */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", justifyContent: "space-between", alignItems: isMobile ? "stretch" : "flex-start", gap: isMobile ? "16px" : "0", marginBottom: "8px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <div 
             style={{ 
@@ -2812,7 +2815,12 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
           </div>
         </div>
         {orderData.status !== "Completed" && orderData.status !== "Cancelled" && (
-          <Button variant="outlined" leftIcon={EditIcon} onClick={() => setIsEditModalOpen(true)}>
+          <Button
+            variant="outlined"
+            leftIcon={EditIcon}
+            onClick={() => setIsEditModalOpen(true)}
+            style={isMobile ? { width: "100%" } : undefined}
+          >
             Edit Order
           </Button>
         )}
@@ -2896,11 +2904,11 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
         
         <div style={{ margin: "0 24px", height: "1px", background: "var(--neutral-line-separator-1)" }} />
 
-        <div style={{ 
+        <div style={{
           padding: "24px",
-          display: "grid", 
-          gridTemplateColumns: "repeat(4, 1fr)", 
-          gap: "24px 32px" 
+          display: "grid",
+          gridTemplateColumns: labelGridColumns(4),
+          gap: "24px 32px"
         }}>
           {/* Row 1 */}
           <LabelValue 
@@ -2927,7 +2935,7 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
             isClickable={true} 
             onClick={() => onNavigate("shipment_detail", { shipmentCode })} 
           />
-          <LabelValue label="Remarks" value={orderData.remarks || "-"} gridColumn="span 2" />
+          <LabelValue label="Remarks" value={orderData.remarks || "-"} gridColumn={isMobile ? "auto" : "span 2"} />
         </div>
       </div>
 
@@ -2946,24 +2954,25 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
         overflow: "hidden"
       }}>
         {activeTab === "products" && (
-          <WorkOrderTab orderNo={orderData.orderNo} orderStatus={orderData.status} onNavigate={onNavigate} />
+          <WorkOrderTab orderNo={orderData.orderNo} orderStatus={orderData.status} onNavigate={onNavigate} isMobile={isMobile} />
         )}
         {activeTab === "materials" && (
-          <MaterialsTab 
-            orderNo={orderData.orderNo} 
-            onNavigate={onNavigate} 
+          <MaterialsTab
+            orderNo={orderData.orderNo}
+            onNavigate={onNavigate}
             showSnackbar={showSnackbar}
             initialData={initialData}
+            isMobile={isMobile}
           />
         )}
         {activeTab === "traceability" && (
           <TraceabilityTab onNavigate={onNavigate} showSnackbar={showSnackbar} />
         )}
         {activeTab === "invoices" && (
-          <InvoicesTab onNavigate={onNavigate} />
+          <InvoicesTab onNavigate={onNavigate} isMobile={isMobile} />
         )}
         {activeTab === "attachments" && (
-          <AttachmentsTab onNavigate={onNavigate} showSnackbar={showSnackbar} />
+          <AttachmentsTab onNavigate={onNavigate} showSnackbar={showSnackbar} isMobile={isMobile} />
         )}
         {activeTab === "logs" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
@@ -2997,7 +3006,7 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
+                      gridTemplateColumns: labelGridColumns(2),
                       gap: "24px",
                       marginBottom: "28px",
                     }}
@@ -3007,20 +3016,22 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
                   </div>
 
                   <div style={{ display: "flex", flexDirection: "column" }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        paddingBottom: "12px",
-                        borderBottom: "1px solid var(--neutral-line-separator-1)",
-                        fontWeight: "var(--font-weight-bold)",
-                        fontSize: "var(--text-title-3)",
-                        color: "var(--neutral-on-surface-primary)",
-                      }}
-                    >
-                      <div style={{ flex: "1.1" }}>Approvers</div>
-                      <div style={{ width: "140px" }}>Status</div>
-                      <div style={{ flex: "2.4" }}>Comments</div>
-                    </div>
+                    {!isMobile ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          paddingBottom: "12px",
+                          borderBottom: "1px solid var(--neutral-line-separator-1)",
+                          fontWeight: "var(--font-weight-bold)",
+                          fontSize: "var(--text-title-3)",
+                          color: "var(--neutral-on-surface-primary)",
+                        }}
+                      >
+                        <div style={{ flex: "1.1" }}>Approvers</div>
+                        <div style={{ width: "140px" }}>Status</div>
+                        <div style={{ flex: "2.4" }}>Comments</div>
+                      </div>
+                    ) : null}
                     {approverList.map((approver, idx) => {
                       const rowStatus = getApprovalRowStatus();
                       const thisStatus =
@@ -3029,7 +3040,28 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
                           : { text: "Pending", variant: "grey-light" };
                       const thisComment =
                         idx === 0 ? getApprovalRowComment() : "-";
-                      return (
+                      return isMobile ? (
+                        <div
+                          key={approver.id || idx}
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "8px",
+                            padding: "16px 0",
+                            fontSize: "var(--text-title-3)",
+                            borderBottom:
+                              idx === approverList.length - 1
+                                ? "none"
+                                : "1px solid var(--neutral-line-separator-1)",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                            <span style={{ fontWeight: "var(--font-weight-bold)" }}>{approver.name}</span>
+                            <StatusBadge variant={thisStatus.variant}>{thisStatus.text}</StatusBadge>
+                          </div>
+                          <span style={{ color: "var(--neutral-on-surface-secondary)", lineHeight: "1.5" }}>{thisComment}</span>
+                        </div>
+                      ) : (
                         <div
                           key={approver.id || idx}
                           style={{
@@ -3100,89 +3132,112 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
               </div>
               <div style={{ padding: "24px" }}>
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      paddingBottom: "12px",
-                      borderBottom: "1px solid var(--neutral-line-separator-1)",
-                      fontWeight: "var(--font-weight-bold)",
-                      fontSize: "var(--text-title-3)",
-                      color: "var(--neutral-on-surface-primary)",
-                    }}
-                  >
-                    <div style={{ flex: "1.1" }}>Name</div>
-                    <div style={{ flex: "1.9" }}>Email</div>
-                    <div style={{ flex: "2.8" }}>Activity</div>
-                    <div style={{ width: "190px" }}>Timestamp</div>
-                  </div>
-
-                  {dynamicActivityLogs.map((log, idx, arr) => (
+                  {!isMobile ? (
                     <div
-                      key={idx}
                       style={{
                         display: "flex",
-                        alignItems: "flex-start",
-                        padding: "16px 0",
-                        borderBottom:
-                          idx === arr.length - 1
-                            ? "none"
-                            : "1px solid var(--neutral-line-separator-1)",
+                        paddingBottom: "12px",
+                        borderBottom: "1px solid var(--neutral-line-separator-1)",
+                        fontWeight: "var(--font-weight-bold)",
                         fontSize: "var(--text-title-3)",
+                        color: "var(--neutral-on-surface-primary)",
                       }}
                     >
+                      <div style={{ flex: "1.1" }}>Name</div>
+                      <div style={{ flex: "1.9" }}>Email</div>
+                      <div style={{ flex: "2.8" }}>Activity</div>
+                      <div style={{ width: "190px" }}>Timestamp</div>
+                    </div>
+                  ) : null}
+
+                  {dynamicActivityLogs.map((log, idx, arr) =>
+                    isMobile ? (
                       <div
+                        key={idx}
                         style={{
-                          flex: "1.1",
-                          color: "var(--neutral-on-surface-primary)",
-                        }}
-                      >
-                        {log.name}
-                      </div>
-                      <div
-                        style={{
-                          flex: "1.9",
-                          color: "var(--neutral-on-surface-primary)",
-                        }}
-                      >
-                        {log.email}
-                      </div>
-                      <div
-                        style={{
-                          flex: "2.8",
                           display: "flex",
                           flexDirection: "column",
-                          gap: log.desc ? "6px" : "0",
+                          gap: "4px",
+                          padding: "16px 0",
+                          borderBottom: idx === arr.length - 1 ? "none" : "1px solid var(--neutral-line-separator-1)",
+                          fontSize: "var(--text-title-3)",
                         }}
                       >
-                        <span
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                          <span style={{ fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>{log.title}</span>
+                          <span style={{ color: "var(--neutral-on-surface-secondary)", flexShrink: 0 }}>{log.timestamp}</span>
+                        </div>
+                        {log.desc ? <span style={{ color: "var(--neutral-on-surface-secondary)", lineHeight: "1.5" }}>{log.desc}</span> : null}
+                        <span style={{ color: "var(--neutral-on-surface-primary)" }}>{log.name}{log.email && log.email !== "-" ? ` · ${log.email}` : ""}</span>
+                      </div>
+                    ) : (
+                      <div
+                        key={idx}
+                        style={{
+                          display: "flex",
+                          alignItems: "flex-start",
+                          padding: "16px 0",
+                          borderBottom:
+                            idx === arr.length - 1
+                              ? "none"
+                              : "1px solid var(--neutral-line-separator-1)",
+                          fontSize: "var(--text-title-3)",
+                        }}
+                      >
+                        <div
                           style={{
-                            fontWeight: "var(--font-weight-bold)",
+                            flex: "1.1",
                             color: "var(--neutral-on-surface-primary)",
                           }}
                         >
-                          {log.title}
-                        </span>
-                        {log.desc ? (
+                          {log.name}
+                        </div>
+                        <div
+                          style={{
+                            flex: "1.9",
+                            color: "var(--neutral-on-surface-primary)",
+                          }}
+                        >
+                          {log.email}
+                        </div>
+                        <div
+                          style={{
+                            flex: "2.8",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: log.desc ? "6px" : "0",
+                          }}
+                        >
                           <span
                             style={{
-                              color: "var(--neutral-on-surface-secondary)",
-                              lineHeight: "1.5",
+                              fontWeight: "var(--font-weight-bold)",
+                              color: "var(--neutral-on-surface-primary)",
                             }}
                           >
-                            {log.desc}
+                            {log.title}
                           </span>
-                        ) : null}
+                          {log.desc ? (
+                            <span
+                              style={{
+                                color: "var(--neutral-on-surface-secondary)",
+                                lineHeight: "1.5",
+                              }}
+                            >
+                              {log.desc}
+                            </span>
+                          ) : null}
+                        </div>
+                        <div
+                          style={{
+                            width: "190px",
+                            color: "var(--neutral-on-surface-secondary)",
+                          }}
+                        >
+                          {log.timestamp}
+                        </div>
                       </div>
-                      <div
-                        style={{
-                          width: "190px",
-                          color: "var(--neutral-on-surface-secondary)",
-                        }}
-                      >
-                        {log.timestamp}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  )}
                 </div>
               </div>
             </div>
@@ -3252,16 +3307,19 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
           style={{
             position: "fixed",
             bottom: 0,
-            left: isSidebarCollapsed ? "82px" : "286px",
+            left: getShellLeftOffset(isSidebarCollapsed, isMobile),
             transition: "left 0.2s ease",
             right: 0,
             background: "var(--neutral-surface-primary)",
             borderTop: "1px solid var(--neutral-line-separator-1)",
             padding: "12px 24px",
             display: "flex",
+            flexWrap: "wrap",
             justifyContent: "flex-end",
             alignItems: "center",
-            gap: "16px",
+            gap: isMobile ? "8px" : "16px",
+            rowGap: "8px",
+            width: isMobile ? "100%" : "auto",
             zIndex: 100,
           }}
         >
@@ -3269,28 +3327,30 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
             <>
               {/* Reject (Secondary Red) */}
               <Button
-                size="large"
+                size={isMobile ? "medium" : "large"}
                 variant="outlined"
                 onClick={() => setIsCancelModalOpen(true)}
-                style={{ color: "var(--status-red-primary)", borderColor: "var(--status-red-primary)" }}
+                style={{ color: "var(--status-red-primary)", borderColor: "var(--status-red-primary)", ...(isMobile ? { flex: 1 } : null) }}
               >
                 Reject
               </Button>
 
               {/* Ask for Revision (Secondary Outlined) */}
               <Button
-                size="large"
+                size={isMobile ? "medium" : "large"}
                 variant="outlined"
                 onClick={() => setIsRevisionModalOpen(true)}
+                style={isMobile ? { flex: 1 } : undefined}
               >
                 Ask for Revision
               </Button>
 
               {/* Approve (Primary) */}
               <Button
-                size="large"
+                size={isMobile ? "medium" : "large"}
                 variant="filled"
                 onClick={() => setIsApproveModalOpen(true)}
+                style={isMobile ? { flex: 1 } : undefined}
               >
                 Approve
               </Button>
@@ -3299,10 +3359,10 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
             <>
               {/* Cancel Order (Secondary Red Button) */}
               <Button
-                size="large"
+                size={isMobile ? "medium" : "large"}
                 variant="outlined"
                 onClick={() => setIsCancelModalOpen(true)}
-                style={{ color: "var(--status-red-primary)", borderColor: "var(--status-red-primary)" }}
+                style={{ color: "var(--status-red-primary)", borderColor: "var(--status-red-primary)", ...(isMobile ? { flex: 1 } : null) }}
               >
                 Cancel Order
               </Button>
@@ -3310,9 +3370,10 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
               {/* Submit Order (Primary Button) for Draft / Not Started / Need Revision */}
               {["Draft", "Not Started", "Need Revision"].includes(orderData.status) && (
                 <Button
-                  size="large"
+                  size={isMobile ? "medium" : "large"}
                   variant="filled"
                   onClick={() => setIsSubmitModalOpen(true)}
+                  style={isMobile ? { flex: 1 } : undefined}
                 >
                   Submit Order
                 </Button>
@@ -3321,9 +3382,10 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
               {/* Update Status (Secondary Button) */}
               {["Confirmed", "In Progress", "Ready to Ship", "On Shipping"].includes(orderData.status) && (
                 <Button
-                  size="large"
+                  size={isMobile ? "medium" : "large"}
                   variant="outlined"
                   onClick={() => setIsUpdateModalOpen(true)}
+                  style={isMobile ? { flex: 1 } : undefined}
                 >
                   Update Status
                 </Button>
@@ -3332,9 +3394,10 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
               {/* Mark as Complete (Primary Button) */}
               {allWorkOrdersCompleted && (
                 <Button
-                  size="large"
+                  size={isMobile ? "medium" : "large"}
                   variant="filled"
                   onClick={() => setIsCompleteModalOpen(true)}
+                  style={isMobile ? { flex: 1 } : undefined}
                 >
                   Mark as Complete
                 </Button>

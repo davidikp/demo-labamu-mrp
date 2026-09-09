@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { getShellLeftOffset } from "../../../constants/layoutConstants.js";
 
 // Icons
 import { ImageAssetIcon, HelpCircle } from "../../../components/icons/Icons.jsx";
@@ -102,6 +103,7 @@ export const PurchaseOrderDetailPage = ({
   initialData,
   poApprovalSettings,
   isSidebarCollapsed = false,
+  isMobile = false,
   showPoSnackbar,
 }) => {
   const scrollToTop = () => {
@@ -2035,7 +2037,7 @@ export const PurchaseOrderDetailPage = ({
     <div
       ref={pageTopRef}
       style={{
-        padding: "24px",
+        padding: isMobile ? "16px" : "24px",
         boxSizing: "border-box",
         display: "flex",
         flexDirection: "column",
@@ -2125,6 +2127,7 @@ export const PurchaseOrderDetailPage = ({
         setActiveTab={setActiveTab}
         handleRevisePo={handleRevisePo}
         openDecisionModal={openDecisionModal}
+        isMobile={isMobile}
       />
 
       {activeTab === "details" ? (
@@ -2161,7 +2164,7 @@ export const PurchaseOrderDetailPage = ({
                 style={{
                   padding: "20px 24px 24px 24px",
                   display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gridTemplateColumns: isMobile ? "1fr" : "repeat(4, 1fr)",
                   gap: "24px",
                 }}
               >
@@ -2201,7 +2204,7 @@ export const PurchaseOrderDetailPage = ({
                 style={{
                   padding: "20px 24px 24px 24px",
                   display: "grid",
-                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gridTemplateColumns: isMobile ? "1fr" : "repeat(4, 1fr)",
                   gap: "24px",
                 }}
               >
@@ -2699,7 +2702,7 @@ export const PurchaseOrderDetailPage = ({
                 style={{
                   padding: "20px 24px 24px 24px",
                   display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
+                  gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
                   gap: "24px 40px",
                 }}
               >
@@ -2863,7 +2866,7 @@ export const PurchaseOrderDetailPage = ({
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
+                    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
                     gap: "24px",
                     marginBottom: "28px",
                   }}
@@ -2873,20 +2876,22 @@ export const PurchaseOrderDetailPage = ({
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column" }}>
-                  <div
-                    style={{
-                      display: "flex",
-                      paddingBottom: "12px",
-                      borderBottom: "1px solid var(--neutral-line-separator-1)",
-                      fontWeight: "var(--font-weight-bold)",
-                      fontSize: "var(--text-title-3)",
-                      color: "var(--neutral-on-surface-primary)",
-                    }}
-                  >
-                    <div style={{ flex: "1.1" }}>Approvers</div>
-                    <div style={{ width: "140px" }}>Status</div>
-                    <div style={{ flex: "2.4" }}>Comments</div>
-                  </div>
+                  {!isMobile ? (
+                    <div
+                      style={{
+                        display: "flex",
+                        paddingBottom: "12px",
+                        borderBottom: "1px solid var(--neutral-line-separator-1)",
+                        fontWeight: "var(--font-weight-bold)",
+                        fontSize: "var(--text-title-3)",
+                        color: "var(--neutral-on-surface-primary)",
+                      }}
+                    >
+                      <div style={{ flex: "1.1" }}>Approvers</div>
+                      <div style={{ width: "140px" }}>Status</div>
+                      <div style={{ flex: "2.4" }}>Comments</div>
+                    </div>
+                  ) : null}
                   {approverList.map((approver, idx) => {
                     const rowStatus = getApprovalRowStatus();
                     const showApproved =
@@ -2900,7 +2905,28 @@ export const PurchaseOrderDetailPage = ({
                         : { text: "Pending", variant: "grey-light" };
                     const thisComment =
                       idx === 0 ? getApprovalRowComment() : "-";
-                    return (
+                    return isMobile ? (
+                      <div
+                        key={approver.id || idx}
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                          padding: "16px 0",
+                          fontSize: "var(--text-title-3)",
+                          borderBottom:
+                            idx === approverList.length - 1
+                              ? "none"
+                              : "1px solid var(--neutral-line-separator-1)",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+                          <span style={{ fontWeight: "var(--font-weight-bold)" }}>{approver.name}</span>
+                          <StatusBadge variant={thisStatus.variant}>{thisStatus.text}</StatusBadge>
+                        </div>
+                        <span style={{ color: "var(--neutral-on-surface-secondary)", lineHeight: "1.5" }}>{thisComment}</span>
+                      </div>
+                    ) : (
                       <div
                         key={approver.id || idx}
                         style={{
@@ -2971,89 +2997,112 @@ export const PurchaseOrderDetailPage = ({
             </div>
             <div style={{ padding: "24px" }}>
               <div style={{ display: "flex", flexDirection: "column" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    paddingBottom: "12px",
-                    borderBottom: "1px solid var(--neutral-line-separator-1)",
-                    fontWeight: "var(--font-weight-bold)",
-                    fontSize: "var(--text-title-3)",
-                    color: "var(--neutral-on-surface-primary)",
-                  }}
-                >
-                  <div style={{ flex: "1.1" }}>Name</div>
-                  <div style={{ flex: "1.9" }}>Email</div>
-                  <div style={{ flex: "2.8" }}>Activity</div>
-                  <div style={{ width: "190px" }}>Timestamp</div>
-                </div>
-
-                {dynamicActivityLogs.map((log, idx, arr) => (
+                {!isMobile ? (
                   <div
-                    key={idx}
                     style={{
                       display: "flex",
-                      alignItems: "flex-start",
-                      padding: "16px 0",
-                      borderBottom:
-                        idx === arr.length - 1
-                          ? "none"
-                          : "1px solid var(--neutral-line-separator-1)",
+                      paddingBottom: "12px",
+                      borderBottom: "1px solid var(--neutral-line-separator-1)",
+                      fontWeight: "var(--font-weight-bold)",
                       fontSize: "var(--text-title-3)",
+                      color: "var(--neutral-on-surface-primary)",
                     }}
                   >
+                    <div style={{ flex: "1.1" }}>Name</div>
+                    <div style={{ flex: "1.9" }}>Email</div>
+                    <div style={{ flex: "2.8" }}>Activity</div>
+                    <div style={{ width: "190px" }}>Timestamp</div>
+                  </div>
+                ) : null}
+
+                {dynamicActivityLogs.map((log, idx, arr) =>
+                  isMobile ? (
                     <div
+                      key={idx}
                       style={{
-                        flex: "1.1",
-                        color: "var(--neutral-on-surface-primary)",
-                      }}
-                    >
-                      {log.name}
-                    </div>
-                    <div
-                      style={{
-                        flex: "1.9",
-                        color: "var(--neutral-on-surface-primary)",
-                      }}
-                    >
-                      {log.email}
-                    </div>
-                    <div
-                      style={{
-                        flex: "2.8",
                         display: "flex",
                         flexDirection: "column",
-                        gap: log.desc ? "6px" : "0",
+                        gap: "4px",
+                        padding: "16px 0",
+                        borderBottom: idx === arr.length - 1 ? "none" : "1px solid var(--neutral-line-separator-1)",
+                        fontSize: "var(--text-title-3)",
                       }}
                     >
-                      <span
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
+                        <span style={{ fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>{log.title}</span>
+                        <span style={{ color: "var(--neutral-on-surface-secondary)", flexShrink: 0 }}>{log.timestamp}</span>
+                      </div>
+                      {log.desc ? <span style={{ color: "var(--neutral-on-surface-secondary)", lineHeight: "1.5" }}>{log.desc}</span> : null}
+                      <span style={{ color: "var(--neutral-on-surface-primary)" }}>{log.name}{log.email && log.email !== "-" ? ` · ${log.email}` : ""}</span>
+                    </div>
+                  ) : (
+                    <div
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        padding: "16px 0",
+                        borderBottom:
+                          idx === arr.length - 1
+                            ? "none"
+                            : "1px solid var(--neutral-line-separator-1)",
+                        fontSize: "var(--text-title-3)",
+                      }}
+                    >
+                      <div
                         style={{
-                          fontWeight: "var(--font-weight-bold)",
+                          flex: "1.1",
                           color: "var(--neutral-on-surface-primary)",
                         }}
                       >
-                        {log.title}
-                      </span>
-                      {log.desc ? (
+                        {log.name}
+                      </div>
+                      <div
+                        style={{
+                          flex: "1.9",
+                          color: "var(--neutral-on-surface-primary)",
+                        }}
+                      >
+                        {log.email}
+                      </div>
+                      <div
+                        style={{
+                          flex: "2.8",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: log.desc ? "6px" : "0",
+                        }}
+                      >
                         <span
                           style={{
-                            color: "var(--neutral-on-surface-secondary)",
-                            lineHeight: "1.5",
+                            fontWeight: "var(--font-weight-bold)",
+                            color: "var(--neutral-on-surface-primary)",
                           }}
                         >
-                          {log.desc}
+                          {log.title}
                         </span>
-                      ) : null}
+                        {log.desc ? (
+                          <span
+                            style={{
+                              color: "var(--neutral-on-surface-secondary)",
+                              lineHeight: "1.5",
+                            }}
+                          >
+                            {log.desc}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div
+                        style={{
+                          width: "190px",
+                          color: "var(--neutral-on-surface-secondary)",
+                        }}
+                      >
+                        {log.timestamp}
+                      </div>
                     </div>
-                    <div
-                      style={{
-                        width: "190px",
-                        color: "var(--neutral-on-surface-secondary)",
-                      }}
-                    >
-                      {log.timestamp}
-                    </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -3095,7 +3144,7 @@ export const PurchaseOrderDetailPage = ({
           style={{
             position: "fixed",
             bottom: 0,
-            left: isSidebarCollapsed ? "82px" : "286px",
+            left: getShellLeftOffset(isSidebarCollapsed, isMobile),
             transition: "left 0.2s ease",
             right: 0,
             background: "var(--neutral-surface-primary)",
@@ -3107,12 +3156,13 @@ export const PurchaseOrderDetailPage = ({
             zIndex: 100,
           }}
         >
-          <div style={{ display: "flex", gap: "16px" }}>
+          <div style={{ display: "flex", gap: isMobile ? "8px" : "16px", flexWrap: "wrap", justifyContent: "flex-end", rowGap: "8px", width: isMobile ? "100%" : "auto" }}>
             {showFooterSubmit ? (
               <Button
-                size="medium"
+                size={isMobile ? "medium" : "large"}
                 variant="filled"
                 onClick={handleDetailSubmitClick}
+                style={isMobile ? { flex: 1 } : undefined}
               >
                 Submit PO
               </Button>
@@ -3120,23 +3170,26 @@ export const PurchaseOrderDetailPage = ({
             {showFooterApprovalActions ? (
               <>
                 <Button
-                  size="medium"
+                  size={isMobile ? "medium" : "large"}
                   variant="danger"
                   onClick={() => openDecisionModal("cancel")}
+                  style={isMobile ? { flex: 1 } : undefined}
                 >
                   Cancel PO
                 </Button>
                 <Button
-                  size="medium"
+                  size={isMobile ? "medium" : "large"}
                   variant="outlined"
                   onClick={() => openDecisionModal("revision")}
+                  style={isMobile ? { flex: 1 } : undefined}
                 >
                   Ask for Revision
                 </Button>
                 <Button
-                  size="medium"
+                  size={isMobile ? "medium" : "large"}
                   variant="filled"
                   onClick={() => openDecisionModal("approve")}
+                  style={isMobile ? { flex: 1 } : undefined}
                 >
                   Approve
                 </Button>
@@ -3145,16 +3198,18 @@ export const PurchaseOrderDetailPage = ({
             {showFooterIssuedCancel ? (
               <>
                 <Button
-                  size="medium"
+                  size={isMobile ? "medium" : "large"}
                   variant="danger"
                   onClick={() => openDecisionModal("cancel")}
+                  style={isMobile ? { flex: 1 } : undefined}
                 >
                   Cancel PO
                 </Button>
                 <Button
-                  size="medium"
+                  size={isMobile ? "medium" : "large"}
                   variant="outlined"
                   onClick={handleRevisePo}
+                  style={isMobile ? { flex: 1 } : undefined}
                 >
                   Revise PO
                 </Button>
