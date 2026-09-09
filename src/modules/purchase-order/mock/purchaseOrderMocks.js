@@ -156,12 +156,12 @@ export const MOCK_PO_TABLE_DATA = [
   {
     poNumber: "PO-202603-0005",
     vendorName: "CV Kayu Makmur",
-    amount: "IDR 11,000,000",
+    amount: "IDR 16,500,000",
     createdDate: "2026-03-24",
     status: "Completed",
     statusKey: "completed",
     sBadge: "green",
-    subtotal: 11000000,
+    subtotal: 16500000,
     lines: [
       {
         id: 1,
@@ -172,6 +172,18 @@ export const MOCK_PO_TABLE_DATA = [
         woRef: "-",
         qty: 110,
         price: 100000,
+      },
+      {
+        id: 2,
+        type: "wo",
+        item: "Outsourced - Cabinet Premium",
+        code: "CAB-PR-9921",
+        desc: "Generated from WO-2026-03-025-00008 with assignment WOA-0001. It covers these routing stages:\n• Step 2: Production Logistics - Advanced Assembly\n• Step 3: Cat / Finishing - Premium Painting",
+        woRef: "WO-2026-03-025-00008",
+        assignmentId: "WOA-0001",
+        outsourceSteps: [2, 3],
+        qty: 20,
+        price: 275000,
       }
     ],
     invoices: [

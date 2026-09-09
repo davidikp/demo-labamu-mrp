@@ -123,6 +123,12 @@ const INDONESIAN_EXACT_TEXT = {
   Step: "Tahap",
   Routing: "Routing",
   Operation: "Operation",
+  Hours: "Jam",
+  // Routing table's Hours cell renders as `{line.hours} hours` — the numeric
+  // value and the literal " hours" are separate JSX text nodes, so the
+  // dynamic "{n} hours" pattern below never sees them combined. This exact
+  // match catches the bare " hours" node instead.
+  hours: "jam",
   "Yet to Start": "Belum Dimulai",
   Progress: "Progres",
   Outsourced: "Dialihdayakan",
@@ -829,7 +835,7 @@ const INDONESIAN_EXACT_TEXT = {
   "Cost Composition": "Komposisi Biaya",
   "Hide Cost Breakdown": "Sembunyikan Rincian Biaya",
   "See Cost Breakdown": "Lihat Rincian Biaya",
-  "Average Cost": "Rata-rata Biaya",
+  "Average Cost": "Biaya Rata-Rata",
   "Search or select...": "Cari atau pilih...",
   "Enter quantity": "Masukkan jumlah",
   "Enter qty": "Masukkan jumlah",
@@ -860,7 +866,7 @@ const INDONESIAN_EXACT_TEXT = {
   "Request not found.": "Permintaan tidak ditemukan.",
   "Back to Material Request": "Kembali ke Permintaan Material",
   "Status successfully changed to Preparing": "Status berhasil diubah menjadi Sedang Disiapkan",
-  "Material successfully re-prepared": "Bahan baku berhasil disiapkan ulang",
+  "Material successfully re-prepared": "Material berhasil disiapkan ulang",
   "Material batch successfully updated": "Batch material berhasil diperbarui",
   "Request successfully confirmed": "Permintaan berhasil dikonfirmasi",
   "Request successfully cancelled": "Permintaan berhasil dibatalkan",
@@ -966,6 +972,9 @@ const INDONESIAN_EXACT_TEXT = {
   "Linked Bill of Materials:": "Bill of Materials Terkait:",
   "Auto-calculated": "Dihitung Otomatis",
   "Sum of BOM qty × avg stock cost per material": "Total kuantitas BOM × rata-rata biaya stok setiap material.",
+  "Cost of materials used during production": "Biaya material yang digunakan selama produksi",
+  "Cost of materials used during production, updated when requested materials are received":
+    "Biaya material yang digunakan selama produksi, diperbarui setelah material yang diminta diterima",
   "On forecast": "Sesuai Estimasi",
   "Cost Item": "Item Biaya",
   "Quantity Used": "Jumlah Digunakan",
@@ -977,6 +986,15 @@ const INDONESIAN_EXACT_TEXT = {
   "Cost of moving goods": "Biaya pengiriman barang",
   "Indirect factory costs not tied to a task": "Biaya operasional pabrik yang tidak terkait dengan proses produksi tertentu.",
   "Additional production cost not covered above": "Biaya produksi tambahan yang tidak termasuk dalam kategori di atas.",
+  "Cost of labour used during production": "Biaya tenaga kerja yang digunakan selama produksi",
+  "Cost of packaging used for the finished output": "Biaya bahan yang digunakan untuk mengemas hasil produksi",
+  "Cost of transporting goods related to production": "Biaya pengiriman barang yang berkaitan dengan produksi",
+  "Indirect production costs not tied to a specific task": "Biaya produksi tidak langsung yang tidak terkait dengan tugas tertentu",
+  "Additional production costs not covered by other categories": "Biaya produksi tambahan yang tidak termasuk dalam kategori lainnya",
+  "Cost of routing steps assigned to external vendors, updated when the related purchase order is received":
+    "Biaya tahapan produksi yang dikerjakan oleh vendor eksternal, diperbarui setelah pesanan pembelian terkait diterima",
+  "Calculated from the average cost of available stock. If stock is unavailable, the latest batch cost is used.":
+    "Dihitung dari biaya rata-rata stok yang tersedia. Jika stok tidak tersedia, biaya batch terbaru yang digunakan.",
   "e.g. Overtime labour": "Mis. Lembur Tenaga Kerja",
   "The estimated cost per finished unit from the Bill of Materials": "Estimasi biaya per unit produk jadi berdasarkan Bill of Materials (BOM).",
   "The actual cost allocated to produce one finished unit in this Work Order": "Biaya aktual yang dialokasikan untuk menghasilkan satu unit produk pada Perintah Kerja ini.",
@@ -1012,7 +1030,7 @@ const INDONESIAN_EXACT_TEXT = {
   "Packaging change": "Perubahan Kemasan",
   "Testing a new material or process not yet in the standard BOM": "Menguji material atau proses baru yang belum tercantum pada BOM standar.",
   "Product design was updated and needs a new material": "Desain produk diperbarui sehingga memerlukan material baru.",
-  "Original BOM material is unavailable, using a substitute": "Bahan baku pada BOM tidak tersedia sehingga menggunakan bahan pengganti.",
+  "Original BOM material is unavailable, using a substitute": "Material pada BOM tidak tersedia sehingga menggunakan material pengganti.",
   "An additional finishing step was added (e.g. coating, sanding, polishing)": "Ditambahkan proses finishing, seperti coating, sanding, atau polishing.",
   "Item needed to support the production process (e.g. adhesive, abrasive)": "Bahan habis pakai yang diperlukan untuk mendukung proses produksi, seperti perekat atau bahan abrasif.",
   "Packaging material changed by buyer or logistics team": "Material kemasan diubah oleh pembeli atau tim logistik.",
@@ -1027,7 +1045,7 @@ const INDONESIAN_EXACT_TEXT = {
   "Keeping extra in case of shortage or delay": "Menyiapkan tambahan material sebagai cadangan jika terjadi kekurangan atau keterlambatan.",
   "Extra needed in case some pieces need to be redone": "Tambahan material diperlukan jika sebagian produk perlu dikerjakan ulang.",
   "Customer changed the requirement and needs more material": "Pelanggan mengubah kebutuhan sehingga diperlukan tambahan material.",
-  "Material used during machine calibration before production starts": "Bahan baku digunakan saat proses kalibrasi mesin sebelum produksi dimulai.",
+  "Material used during machine calibration before production starts": "Material digunakan saat proses kalibrasi mesin sebelum produksi dimulai.",
 
   // --- WO Actual COGS — Add/Edit Cost Item modal ---
   "Cost Item Name": "Nama Item Biaya",

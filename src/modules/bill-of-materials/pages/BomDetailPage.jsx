@@ -10,9 +10,11 @@ import {
   Upload,
   Building2,
   CircleDollarSign,
+  Info,
 } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
+import { Tooltip } from "../../../components/atoms/Tooltip.jsx";
 import { LabelValue } from "../../../components/molecules/LabelValue.jsx";
 import { getBom, resolveMaterialOption } from "../mock/bomMocks.js";
 import {
@@ -32,13 +34,31 @@ const DETAIL_TABS = [
   { id: "cogs", label: "Forecasted COGS" },
 ];
 
+// Same wording as Actual COGS on the Work Order detail page (see
+// ACTUAL_COGS_FIELDS in WorkOrderDetailPage.jsx) so a cost item reads the
+// same whether it's being forecasted here or tracked as actual later.
 const COGS_FIELDS = [
-  { key: "labour", title: "Labour Cost", icon: Users, description: "Cost of human labour to produce one unit" },
-  { key: "packing", title: "Packing Cost", icon: FileText, description: "Cost of packaging this product for delivery" },
-  { key: "shipping", title: "Shipping Cost", icon: Upload, description: "Cost of moving goods" },
-  { key: "overhead", title: "Overhead Cost", icon: Building2, description: "Indirect factory costs not tied to a task" },
-  { key: "other", title: "Other Cost", icon: CircleDollarSign, description: "Additional production cost not covered above" },
+  { key: "labour", title: "Labour Cost", icon: Users, description: "Cost of labour used during production" },
+  { key: "packing", title: "Packing Cost", icon: FileText, description: "Cost of packaging used for the finished output" },
+  { key: "shipping", title: "Shipping Cost", icon: Upload, description: "Cost of transporting goods related to production" },
+  { key: "overhead", title: "Overhead Cost", icon: Building2, description: "Indirect production costs not tied to a specific task" },
+  { key: "other", title: "Other Cost", icon: CircleDollarSign, description: "Additional production costs not covered by other categories" },
 ];
+
+const AVERAGE_COST_TOOLTIP =
+  "Calculated from the average cost of available stock. If stock is unavailable, the latest batch cost is used.";
+
+// "Average Cost" column header with a helper tooltip explaining how it's derived.
+const AverageCostHeader = () => (
+  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+    Average Cost
+    <Tooltip content={AVERAGE_COST_TOOLTIP}>
+      <span style={{ display: "inline-flex" }}>
+        <Info size={14} color="var(--neutral-on-surface-tertiary)" />
+      </span>
+    </Tooltip>
+  </span>
+);
 
 // Colors reuse existing design tokens rather than introducing new ones —
 // see styles/tokens.css for the --feature-*/--status-* palette.
@@ -300,7 +320,7 @@ export const BomDetailPage = ({ onNavigate, initialData }) => {
                   <StatusBadge variant="grey-light">Auto-calculated</StatusBadge>
                 </span>
                 <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)" }}>
-                  Sum of BOM qty × avg stock cost per material
+                  Cost of materials used during production
                 </span>
               </div>
             </div>
@@ -346,7 +366,7 @@ export const BomDetailPage = ({ onNavigate, initialData }) => {
                 <div style={{ minWidth: "100%", width: "100%", display: "flex", flexDirection: "column" }}>
                   <div style={detailTableHeaderRowStyle(MATERIAL_COST_BREAKDOWN_GRID_COLUMNS)}>
                     <span>Material</span>
-                    <span>Average Cost</span>
+                    <AverageCostHeader />
                     <span>Quantity</span>
                     <span style={{ textAlign: "right" }}>Subtotal</span>
                   </div>

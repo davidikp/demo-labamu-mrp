@@ -451,6 +451,7 @@ export const MOCK_WO_TABLE_DATA = [
         assignmentId: "WOA-0001",
         name: "CV Kayu Makmur",
         output: "20",
+        sentOutput: "20",
         receivedOutput: 20,
         date: "2026-03-25",
         status: "Completed",

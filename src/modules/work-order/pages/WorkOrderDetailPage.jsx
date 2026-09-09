@@ -12,6 +12,7 @@ import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
 import { IconButton } from "../../../components/common/IconButton.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
+import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
 import { Card, DateInputControl, DateRangeInputControl, DocumentTypeBadge, FormField, ImageUploadField, InputField, InputGroup, LabelValue, PhoneInputField, ProgressRing, ProofDocumentList, SectionCard, UploadDescriptionCard, UploadDropzone, UnifiedInputShell, focusInputFrame, blurInputFrame } from "../components/WorkOrderDetailWidgets.jsx";
 import { Table, TextField } from "../../../ce-ui";
 import { Tooltip } from "../../../components/atoms/Tooltip.jsx";
@@ -620,6 +621,10 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, isMobile =
   const [isAdditionalOutputEditOpen, setIsAdditionalOutputEditOpen] = useState(false);
 
   const [activeTab, setActiveTab] = useState("details");
+  const [activityLogPage, setActivityLogPage] = useState(1);
+  const [activityLogRowsPerPage, setActivityLogRowsPerPage] = useState(5);
+  const [costingLogPage, setCostingLogPage] = useState(1);
+  const [costingLogRowsPerPage, setCostingLogRowsPerPage] = useState(5);
   const [activityLogs, setActivityLogs] = useState(() => {
     if (initialData?.wo && activityLogsCache[initialData.wo]) {
       return activityLogsCache[initialData.wo];
@@ -7319,7 +7324,15 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         )}
 
         {activeTab === "logs" && (() => {
-          const renderLogCard = (title, logs) => (
+          const renderLogCard = (title, logs, page, rowsPerPage, onPageChange, onRowsPerPageChange) => {
+            const totalRows = logs.length;
+            const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
+            const safePage = Math.min(page, totalPages);
+            const pagedLogs = logs.slice(
+              (safePage - 1) * rowsPerPage,
+              (safePage - 1) * rowsPerPage + rowsPerPage
+            );
+            return (
             <div
               style={{
                 background: "var(--neutral-surface-primary)",
@@ -7363,8 +7376,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                     <div style={{ width: "190px" }}>Timestamp</div>
                   </div>
 
-                  {logs.length ? (
-                    logs.map((log, idx, arr) => (
+                  {pagedLogs.length ? (
+                    pagedLogs.map((log, idx, arr) => (
                       <div
                         key={idx}
                         style={{
@@ -7447,13 +7460,42 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   )}
                 </div>
               </div>
+              {totalRows > 0 && (
+                <TablePaginationFooter
+                  totalRows={totalRows}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={(n) => {
+                    onRowsPerPageChange(n);
+                    onPageChange(1);
+                  }}
+                  rowsPerPageOptions={[5, 10, 25, 50]}
+                  currentPage={safePage}
+                  totalPages={totalPages}
+                  onPageChange={onPageChange}
+                />
+              )}
             </div>
-          );
+            );
+          };
 
           return (
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              {renderLogCard("Activity Log", activityLogs)}
-              {renderLogCard("Costing Log", costingLogs)}
+              {renderLogCard(
+                "Activity Log",
+                activityLogs,
+                activityLogPage,
+                activityLogRowsPerPage,
+                setActivityLogPage,
+                setActivityLogRowsPerPage
+              )}
+              {renderLogCard(
+                "Costing Log",
+                costingLogs,
+                costingLogPage,
+                costingLogRowsPerPage,
+                setCostingLogPage,
+                setCostingLogRowsPerPage
+              )}
             </div>
           );
         })()}

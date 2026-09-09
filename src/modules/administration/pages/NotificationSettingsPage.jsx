@@ -67,9 +67,9 @@ const ALL_TAB_LABEL = { en: "All", id: "Semua" };
 // edge-to-edge past the scroll container's 20px side padding via negative
 // margins, so it isn't inset like the notification cards.
 const sectionDividerStyle = {
-  height: "4px",
+  height: "1px",
   background: "var(--neutral-line-separator-2)",
-  margin: "4px -20px",
+  margin: "24px -20px",
   flexShrink: 0,
 };
 // Sticks to the top of the scrollable list (classic sectioned-list header):

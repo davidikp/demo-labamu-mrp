@@ -23,12 +23,15 @@ import { CostFieldAccordion } from "../components/CostFieldAccordion.jsx";
 import { MaterialLineModal } from "../components/MaterialLineModal.jsx";
 import { RoutingLineModal } from "../components/RoutingLineModal.jsx";
 
+// Same wording as Actual COGS on the Work Order detail page (see
+// ACTUAL_COGS_FIELDS in WorkOrderDetailPage.jsx) so a cost item reads the
+// same whether it's being forecasted here or tracked as actual later.
 const COGS_FIELDS = [
-  { key: "labour", title: "Labour Cost", icon: Users, description: "Cost of human labour to produce one unit" },
-  { key: "packing", title: "Packing Cost", icon: FileText, description: "Cost of packaging this product for delivery" },
-  { key: "shipping", title: "Shipping Cost", icon: Upload, description: "Cost of moving goods" },
-  { key: "overhead", title: "Overhead Cost", icon: Building2, description: "Indirect factory costs not tied to a task" },
-  { key: "other", title: "Other Cost", icon: CircleDollarSign, description: "Additional production cost not covered above" },
+  { key: "labour", title: "Labour Cost", icon: Users, description: "Cost of labour used during production" },
+  { key: "packing", title: "Packing Cost", icon: FileText, description: "Cost of packaging used for the finished output" },
+  { key: "shipping", title: "Shipping Cost", icon: Upload, description: "Cost of transporting goods related to production" },
+  { key: "overhead", title: "Overhead Cost", icon: Building2, description: "Indirect production costs not tied to a specific task" },
+  { key: "other", title: "Other Cost", icon: CircleDollarSign, description: "Additional production costs not covered by other categories" },
 ];
 
 const STATUS_OPTIONS = [
@@ -605,7 +608,7 @@ export const BomCreatePage = ({ onNavigate, initialData, isSidebarCollapsed, isM
                       <StatusBadge variant="grey-light">Auto-calculated</StatusBadge>
                     </span>
                     <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)" }}>
-                      Sum of BOM qty × avg stock cost per material
+                      Cost of materials used during production
                     </span>
                   </div>
                 </div>
