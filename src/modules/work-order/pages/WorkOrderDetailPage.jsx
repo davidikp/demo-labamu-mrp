@@ -41,6 +41,12 @@ import { AdditionalOutputEditDrawer } from "../components/AdditionalOutputEditDr
 
 export let activityLogsCache = {};
 export let costingLogsCache = {};
+// Non BOM materials are added to `materials` state purely in-session (there's
+// no BOM line to derive them from on remount), so without this cache they
+// silently vanish the moment the page remounts — e.g. navigating to the
+// Material Request page to confirm receipt and back. Mirrors
+// activityLogsCache/costingLogsCache's persistence pattern.
+export let materialsCache = {};
 
 let nextActualCostLineId = 1;
 
@@ -122,7 +128,7 @@ const initialBomMaterials = (woId, initialData) => {
 
   const savedMaterials = initialData?.materials || cachedWo?.materials;
 
-  return bom.materials.map((m, idx) => {
+  const bomRows = bom.materials.map((m, idx) => {
     const saved = Array.isArray(savedMaterials)
       ? savedMaterials.find((sm) => sm.sku === m.sku)
       : null;
@@ -137,9 +143,17 @@ const initialBomMaterials = (woId, initialData) => {
       unit: m.unit,
     };
   });
+
+  // Non BOM rows have no BOM line to rebuild from, so they only survive a
+  // remount via materialsCache (see note at its declaration).
+  const cachedNonBomRows = (materialsCache[woId] || []).filter((r) => r.type === "Non BOM");
+  let nextId = bomRows.length;
+  const nonBomRows = cachedNonBomRows.map((r) => ({ ...r, id: ++nextId }));
+
+  return [...bomRows, ...nonBomRows];
 };
 
-// Catalog of materials available for Non-BOM requests (outside the work order BOM)
+// Catalog of materials available for Non BOM requests (outside the work order BOM)
 const NON_BOM_CATALOG = [
   { name: "Screw", sku: "SCR-100200300", unit: "box" },
   { name: "Glue", sku: "GLU-400500600", unit: "tube" },
@@ -221,7 +235,7 @@ const ActualVsForecastBadge = ({ actual, forecast, style }) => {
         ...style,
       }}
     >
-      {isOver || isUnder ? (isOver ? "▲" : "▼") + ` ${Math.abs(diffPct).toFixed(1)}% ${isOver ? "over" : "under"} forecast` : "On forecast"}
+      {isOver || isUnder ? (isOver ? "▲" : "▼") + ` ${Math.abs(diffPct).toFixed(1)}% ${isOver ? "Over" : "Under"} Forecast` : "On Forecast"}
     </span>
   );
 };
@@ -622,9 +636,22 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, isMobile =
 
   const [activeTab, setActiveTab] = useState("details");
   const [activityLogPage, setActivityLogPage] = useState(1);
-  const [activityLogRowsPerPage, setActivityLogRowsPerPage] = useState(5);
+  const [activityLogRowsPerPage, setActivityLogRowsPerPage] = useState(25);
   const [costingLogPage, setCostingLogPage] = useState(1);
-  const [costingLogRowsPerPage, setCostingLogRowsPerPage] = useState(5);
+  const [costingLogRowsPerPage, setCostingLogRowsPerPage] = useState(25);
+  // Same pattern as OrderListPage's table body sizing: cap the log tables to
+  // whatever room is left below the viewport fold instead of a fixed pixel
+  // height, so a tall screen shows a full page of rows before it scrolls.
+  const [logsViewportHeight, setLogsViewportHeight] = useState(() =>
+    typeof window !== "undefined" ? window.innerHeight : 900
+  );
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handleResize = () => setLogsViewportHeight(window.innerHeight);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+  const logsTableMaxHeight = Math.max(300, logsViewportHeight - 460);
   const [activityLogs, setActivityLogs] = useState(() => {
     if (initialData?.wo && activityLogsCache[initialData.wo]) {
       return activityLogsCache[initialData.wo];
@@ -1289,6 +1316,12 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
 
   // --- Request Material flow state ---
   const [materials, setMaterials] = useState(() => initialBomMaterials(initialData?.wo, initialData));
+
+  useEffect(() => {
+    if (initialData?.wo) {
+      materialsCache[initialData.wo] = materials;
+    }
+  }, [materials, initialData?.wo]);
   const [requestHistory, setRequestHistory] = useState(() => {
     const cachedWo = initialData?.wo
       ? MOCK_WO_TABLE_DATA.find((w) => w.wo === initialData.wo)
@@ -1340,6 +1373,12 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
         if (isActive) {
           requestedQty += Number(item.requestedQty) || 0;
         }
+        // Preparing/Transferring requests already carry an allocated
+        // fulfillableQty, but nothing has actually been received into the
+        // work order until the request is Completed (see
+        // MaterialRequestDetailPage.jsx's "Confirm Receipt" flow) — so an
+        // in-flight request must not bump Received Qty yet.
+        if (r.status !== "completed") return;
         const fulfillable = item.allocation?.fulfillableQty;
         if (typeof fulfillable === "number") receivedQty += fulfillable;
       });
@@ -1536,7 +1575,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
       const cat = NON_BOM_CATALOG.find((c) => c.name === row.materialName);
       const sku = cat ? cat.sku : "";
       return {
-        type: "Non-BOM",
+        type: "Non BOM",
         name: row.materialName,
         sku,
         requestedQty: qtyNum,
@@ -1578,11 +1617,11 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
             ...next[idx],
             requestedQty: next[idx].requestedQty + qtyNum,
           };
-        } else if (row.type === "Non-BOM") {
+        } else if (row.type === "Non BOM") {
           const cat = NON_BOM_CATALOG.find((c) => c.name === row.materialName);
           next.push({
             id: next.length ? Math.max(...next.map((m) => m.id)) + 1 : 1,
-            type: "Non-BOM",
+            type: "Non BOM",
             name: row.materialName,
             sku: cat ? cat.sku : "",
             requiredQty: null,
@@ -1785,7 +1824,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
   };
   const openEditCostItemModal = (key, idx) => {
     const line = actualCogs[key].lines[idx];
-    setCostItemModal({ key, idx, label: line.label, amount: line.amount });
+    setCostItemModal({ key, idx, label: line.label, amount: line.amount, noForecast: !!line.noForecast });
     setCostItemModalTouched(false);
   };
   const closeCostItemModal = () => setCostItemModal(null);
@@ -4298,7 +4337,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                     <div style={{ width: "144px", flexShrink: 0 }}>
                       <DropdownSelect
                         value={row.type}
-                        options={["BOM", "Non-BOM"]}
+                        options={["BOM", "Non BOM"]}
                         onChange={(val) =>
                           updateDraftRow(row.rowId, {
                             type: val,
@@ -4486,8 +4525,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                     </div>
                   ) : null}
 
-                  {/* Justification (Non-BOM) */}
-                  {row.type === "Non-BOM" ? (
+                  {/* Justification (Non BOM) */}
+                  {row.type === "Non BOM" ? (
                     <div
                       style={{
                         display: "flex",
@@ -5046,7 +5085,8 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
               // tab only appears once the WO has left "Not Started".
               ...(woStatus === "not_started" ? [] : [{ id: "cogs", label: "Actual COGS" }]),
               ...(confirmedStockBuild ? [{ id: "confirm_build", label: "Confirm Build Detail" }] : []),
-              { id: "logs", label: "Logs" },
+              { id: "activity_log", label: "Activity Log" },
+              { id: "costing_log", label: "Costing Log" },
             ]}
             activeTab={activeTab}
             onChange={setActiveTab}
@@ -6611,7 +6651,39 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
 
         {activeTab === "cogs" && woStatus !== "not_started" && (() => {
           const linkedBom = actualCogsBomId ? getBom(actualCogsBomId) : null;
-          const materialCost = requestHistory.length > 0 ? computeActualMaterialCost(linkedBom?.materials || []) : 0;
+          // Same fallback chain the Activity Log's "Created" entry uses (see
+          // the mockLogs initializer above) so the tooltip's date always
+          // matches this work order's actual creation date instead of a
+          // hardcoded placeholder.
+          const woCreatedRaw = initialData?.createdDate || initialData?.start || "2025-12-08";
+          const woCreatedLabel = new Date(`${woCreatedRaw}T00:00:00`).toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          });
+          // Non BOM materials have no BOM line to price/forecast against, so
+          // they're tracked separately here and shown with a "-" Forecasted
+          // Cost per Unit rather than being silently dropped from Actual COGS.
+          const nonBomMaterials = materials.filter((m) => m.type === "Non BOM");
+          const nonBomMaterialCost = nonBomMaterials.reduce((sum, m) => {
+            const unitPrice = MOCK_MATERIALS_DATA.find((mm) => mm.sku === m.sku)?.averageCost || 0;
+            return sum + unitPrice * getLiveMaterialRequestTotals(m.sku).receivedQty;
+          }, 0);
+          const materialCost =
+            (requestHistory.length > 0 ? computeActualMaterialCost(linkedBom?.materials || []) : 0) + nonBomMaterialCost;
+          // A material with nothing received yet has no actual cost to show,
+          // so it's left out of the breakdown entirely rather than appearing
+          // as a zeroed-out row.
+          const receivedBomMaterials = (linkedBom?.materials || []).filter(
+            (line) => getLiveMaterialRequestTotals(line.sku).receivedQty > 0
+          );
+          const receivedNonBomMaterials = nonBomMaterials.filter(
+            (m) => getLiveMaterialRequestTotals(m.sku).receivedQty > 0
+          );
+          // The breakdown list only makes sense once something has actually
+          // been received — a request that's still pending has nothing to
+          // show per-material yet.
+          const hasMaterialReceipts = receivedBomMaterials.length > 0 || receivedNonBomMaterials.length > 0;
 
           // Only count a vendor's outsourcing cost once its assignment has
           // actually been released (sent) to them — an assigned-but-not-yet-
@@ -6772,15 +6844,17 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                                           onClick={() => openEditCostItemModal(key, idx)}
                                         />
                                       </Tooltip>
-                                      <Tooltip content="Delete Cost Item">
-                                        <IconButton
-                                          icon={DeleteIcon}
-                                          size="small"
-                                          color="var(--status-red-primary)"
-                                          hoverBackground="#FAE6E8"
-                                          onClick={() => openDeleteCostItemModal(key, idx)}
-                                        />
-                                      </Tooltip>
+                                      {!line.noForecast ? null : (
+                                        <Tooltip content="Delete Cost Item">
+                                          <IconButton
+                                            icon={DeleteIcon}
+                                            size="small"
+                                            color="var(--status-red-primary)"
+                                            hoverBackground="#FAE6E8"
+                                            onClick={() => openDeleteCostItemModal(key, idx)}
+                                          />
+                                        </Tooltip>
+                                      )}
                                     </>
                                   ) : null}
                                 </div>
@@ -6917,7 +6991,14 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 }}
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                  <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)" }}>Forecasted COGS (BOM)</span>
+                  <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                    Forecasted COGS (BOM)
+                    <Tooltip content={`Captured from the BOM when this work order was created on ${woCreatedLabel}. Later changes to the BOM won’t affect this value.`}>
+                      <span style={{ display: "inline-flex" }}>
+                        <Info size={13} color="var(--neutral-on-surface-tertiary)" />
+                      </span>
+                    </Tooltip>
+                  </span>
                   <span style={{ fontSize: "16px", fontWeight: "bold", color: "var(--neutral-on-surface-primary)" }}>
                     {formatIDR(forecastedPerUnit)} / unit{" "}
                     <span style={{ fontSize: "12px", fontWeight: "normal", color: "var(--neutral-on-surface-secondary)" }}>
@@ -6948,7 +7029,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                     <div style={{ display: "flex", flexDirection: "column" }}>
                       <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>
                         Material Cost
-                        <StatusBadge variant="grey-light">Auto-calculated</StatusBadge>
+                        <StatusBadge variant="grey-light">Auto Calculated</StatusBadge>
                       </span>
                       <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)" }}>
                         Cost of materials used during production, updated when requested materials are received
@@ -6968,7 +7049,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   </div>
                 </div>
 
-                {linkedBom?.materials?.length && requestHistory.length > 0 ? (
+                {hasMaterialReceipts ? (
                   <div style={{ paddingLeft: "24px" }}>
                     <Button
                       variant="tertiary"
@@ -7002,7 +7083,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   </div>
                 )}
 
-                {showActualMaterialBreakdown && linkedBom?.materials?.length && requestHistory.length > 0 ? (
+                {showActualMaterialBreakdown && hasMaterialReceipts ? (
                   <div style={{ paddingLeft: "32px" }}>
                     <div style={{ width: "100%", display: "flex", flexDirection: "column" }}>
                       <div style={detailTableHeaderRowStyle(MATERIAL_ACTUAL_COST_GRID_COLUMNS)}>
@@ -7013,7 +7094,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                         <span>Total Cost per Unit</span>
                         <span style={{ textAlign: "right" }}>Total Cost This WO</span>
                       </div>
-                      {linkedBom.materials.map((line, idx) => {
+                      {receivedBomMaterials.map((line, idx) => {
                         const option = resolveMaterialOption(line.materialId);
                         const unitPrice = option?.averageCost || 0;
                         const qty = getLiveMaterialRequestTotals(line.sku).receivedQty;
@@ -7022,7 +7103,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                         const batches = getStockBatchesForSku(line.sku) || [];
                         const batchNo = batches[0]?.batch || `BATCH-${line.materialId}`;
                         const isExpanded = !!expandedActualCostMaterials[line.materialId];
-                        const isLast = idx === linkedBom.materials.length - 1;
+                        const isLast = idx === receivedBomMaterials.length - 1 && receivedNonBomMaterials.length === 0;
                         return (
                           <React.Fragment key={line.materialId || idx}>
                             <div style={detailTableRowStyle(MATERIAL_ACTUAL_COST_GRID_COLUMNS, isLast && !isExpanded)}>
@@ -7066,9 +7147,66 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                                 <span style={{ fontSize: "var(--text-title-3)" }}>
                                   {qty} {line.unit || ""}
                                 </span>
-                                <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>
-                                  -
+                                <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }} />
+                                <span style={{ fontSize: "var(--text-title-3)" }}>{formatIDR(perUnit)}</span>
+                                <span style={{ fontSize: "var(--text-title-3)", textAlign: "right" }}>{formatIDR(rowTotal)}</span>
+                              </div>
+                            ) : null}
+                          </React.Fragment>
+                        );
+                      })}
+                      {receivedNonBomMaterials.map((m, idx) => {
+                        const unitPrice = MOCK_MATERIALS_DATA.find((mm) => mm.sku === m.sku)?.averageCost || 0;
+                        const qty = getLiveMaterialRequestTotals(m.sku).receivedQty;
+                        const rowTotal = unitPrice * qty;
+                        const perUnit = TOTAL_QTY > 0 ? rowTotal / TOTAL_QTY : 0;
+                        const batches = getStockBatchesForSku(m.sku) || [];
+                        const batchNo = batches[0]?.batch || `BATCH-${m.sku}`;
+                        const isExpanded = !!expandedActualCostMaterials[m.sku];
+                        const isLast = idx === receivedNonBomMaterials.length - 1;
+                        return (
+                          <React.Fragment key={m.id}>
+                            <div style={detailTableRowStyle(MATERIAL_ACTUAL_COST_GRID_COLUMNS, isLast && !isExpanded)}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <div
+                                  style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
+                                  onClick={() => toggleActualCostMaterial(m.sku)}
+                                >
+                                  {isExpanded ? (
+                                    <ChevronDownIcon size={14} color="var(--neutral-on-surface-secondary)" />
+                                  ) : (
+                                    <ChevronRightIcon size={14} color="var(--neutral-on-surface-secondary)" />
+                                  )}
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                                  <span style={{ fontSize: "var(--text-title-3)" }}>{m.name}</span>
+                                  <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)" }}>{m.sku}</span>
+                                </div>
+                              </div>
+                              <span style={{ fontSize: "var(--text-title-3)" }}>Non BOM</span>
+                              <span style={{ fontSize: "var(--text-title-3)" }}>
+                                {qty} {m.unit || ""}
+                              </span>
+                              {/* No BOM line means there's no forecast baseline for this item. */}
+                              <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }}>-</span>
+                              <span style={{ fontSize: "var(--text-title-3)" }}>{formatIDR(perUnit)}</span>
+                              <span style={{ fontSize: "var(--text-title-3)", textAlign: "right" }}>{formatIDR(rowTotal)}</span>
+                            </div>
+                            {isExpanded ? (
+                              <div
+                                style={{
+                                  ...detailTableRowStyle(MATERIAL_ACTUAL_COST_GRID_COLUMNS, isLast),
+                                  background: "var(--neutral-surface-grey-lighter)",
+                                }}
+                              >
+                                <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-secondary)", paddingLeft: "22px" }}>
+                                  {batchNo}
                                 </span>
+                                <span />
+                                <span style={{ fontSize: "var(--text-title-3)" }}>
+                                  {qty} {m.unit || ""}
+                                </span>
+                                <span style={{ fontSize: "var(--text-title-3)", color: "var(--neutral-on-surface-primary)" }} />
                                 <span style={{ fontSize: "var(--text-title-3)" }}>{formatIDR(perUnit)}</span>
                                 <span style={{ fontSize: "var(--text-title-3)", textAlign: "right" }}>{formatIDR(rowTotal)}</span>
                               </div>
@@ -7093,7 +7231,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                         <div style={{ display: "flex", flexDirection: "column" }}>
                           <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>
                             Outsourcing Cost
-                            <StatusBadge variant="grey-light">Auto-calculated</StatusBadge>
+                            <StatusBadge variant="grey-light">Auto Calculated</StatusBadge>
                           </span>
                           <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)" }}>
                             Cost of routing steps assigned to external vendors, updated when the related purchase order is received
@@ -7323,7 +7461,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
           </Card>
         )}
 
-        {activeTab === "logs" && (() => {
+        {(activeTab === "activity_log" || activeTab === "costing_log") && (() => {
           const renderLogCard = (title, logs, page, rowsPerPage, onPageChange, onRowsPerPageChange) => {
             const totalRows = logs.length;
             const totalPages = Math.max(1, Math.ceil(totalRows / rowsPerPage));
@@ -7359,7 +7497,9 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 </span>
               </div>
               <div style={{ padding: "24px" }}>
+                <div style={{ maxHeight: `${logsTableMaxHeight}px`, overflow: "auto" }}>
                 <div style={{ display: "flex", flexDirection: "column" }}>
+                  {pagedLogs.length ? (
                   <div
                     style={{
                       display: "flex",
@@ -7368,6 +7508,10 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                       fontWeight: "var(--font-weight-bold)",
                       fontSize: "var(--text-title-3)",
                       color: "var(--neutral-on-surface-primary)",
+                      position: "sticky",
+                      top: 0,
+                      background: "var(--neutral-surface-primary)",
+                      zIndex: 1,
                     }}
                   >
                     <div style={{ flex: "1.1" }}>Name</div>
@@ -7375,6 +7519,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                     <div style={{ flex: "2.8" }}>Activity</div>
                     <div style={{ width: "190px" }}>Timestamp</div>
                   </div>
+                  ) : null}
 
                   {pagedLogs.length ? (
                     pagedLogs.map((log, idx, arr) => (
@@ -7449,15 +7594,23 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                   ) : (
                     <div
                       style={{
-                        padding: "24px 0",
+                        padding: "48px 24px",
                         textAlign: "center",
                         color: "var(--neutral-on-surface-tertiary)",
                         fontSize: "var(--text-title-3)",
+                        background: "var(--neutral-surface-primary)",
+                        border: "1.5px dashed var(--neutral-line-separator-1)",
+                        borderRadius: "16px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        minHeight: "120px",
                       }}
                     >
-                      No entries yet.
+                      {title === "Costing Log" ? "No costing log yet." : "No entries yet."}
                     </div>
                   )}
+                </div>
                 </div>
               </div>
               {totalRows > 0 && (
@@ -7480,22 +7633,23 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
 
           return (
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              {renderLogCard(
-                "Activity Log",
-                activityLogs,
-                activityLogPage,
-                activityLogRowsPerPage,
-                setActivityLogPage,
-                setActivityLogRowsPerPage
-              )}
-              {renderLogCard(
-                "Costing Log",
-                costingLogs,
-                costingLogPage,
-                costingLogRowsPerPage,
-                setCostingLogPage,
-                setCostingLogRowsPerPage
-              )}
+              {activeTab === "activity_log"
+                ? renderLogCard(
+                    "Activity Log",
+                    activityLogs,
+                    activityLogPage,
+                    activityLogRowsPerPage,
+                    setActivityLogPage,
+                    setActivityLogRowsPerPage
+                  )
+                : renderLogCard(
+                    "Costing Log",
+                    costingLogs,
+                    costingLogPage,
+                    costingLogRowsPerPage,
+                    setCostingLogPage,
+                    setCostingLogRowsPerPage
+                  )}
             </div>
           );
         })()}
@@ -7565,7 +7719,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
               size="medium"
               onClick={openCompleteModal}
             >
-              {fulfillmentType === "StockBuild" ? "Confirm Stock Build" : "Complete"}
+              {fulfillmentType === "StockBuild" ? "Confirm Stock Build" : "Complete Work Order"}
             </Button>
           ) : null}
         </div>
@@ -10582,6 +10736,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
                 value={costItemModal.label}
                 onChange={(e) => setCostItemModal((prev) => ({ ...prev, label: e.target.value }))}
                 errorState={costItemModalErrors.label}
+                disabled={costItemModal.idx != null && !costItemModal.noForecast}
               />
               {costItemModalErrors.label ? (
                 <span style={{ fontSize: "var(--text-body)", color: "var(--status-red-primary)" }}>Field cannot be empty</span>

@@ -38,7 +38,7 @@ const makeItem = (overrides) => ({
   unit: "pcs",
   // Stock currently on hand for this material, per batch.
   availableBatches: [],
-  // For Non-BOM items: the reason the requester submitted this material.
+  // For Non BOM items: the reason the requester submitted this material.
   justification: "",
   // Set once the request has been prepared. null = not prepared yet.
   allocation: null,
@@ -84,13 +84,13 @@ const sampleItems = () => [
     ],
   }),
   makeItem({
-    type: "Non-BOM",
+    type: "Non BOM",
     name: "Nail Box with 1000000 pcs nails per bpx",
     sku: "NAI-9AIF0U092F",
     requestedQty: 10,
     unit: "box",
     availableBatches: [],
-    // Request reason + notes (entered in the Work Order for Non-BOM materials).
+    // Request reason + notes (entered in the Work Order for Non BOM materials).
     requestReason: "Packaging change",
     requestNotes:
       "Requested for additional reinforcement not covered by the BOM. Needed to complete the custom packaging for this work order.",
@@ -141,7 +141,7 @@ const conflictSampleItems = () => [
     ],
   }),
   makeItem({
-    type: "Non-BOM",
+    type: "Non BOM",
     name: "Nail Box with 1000000 pcs nails per bpx",
     sku: "NAI-9AIF0U092F",
     requestedQty: 10,
@@ -246,7 +246,7 @@ const paintStockChanged = () =>
 
 const nailBoxNoStock = () =>
   allocItem({
-    type: "Non-BOM",
+    type: "Non BOM",
     name: "Nail Box with 1000000 pcs nails per bpx",
     sku: "NAI-9AIF0U092F",
     requestedQty: 10,

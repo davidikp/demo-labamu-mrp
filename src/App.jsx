@@ -1276,6 +1276,10 @@ export default function App() {
     if (!rootNode || typeof MutationObserver === "undefined") return undefined;
 
     const runLocalization = () => {
+      // The Customer Portal manages its own independent language state (see
+      // usePortalLanguage) — skip here so this app-wide observer doesn't
+      // fight over the same DOM with the portal's own scoped one.
+      if (window.location.pathname.startsWith("/portal/")) return;
       if (isApplyingLocalizationRef.current) return;
       isApplyingLocalizationRef.current = true;
 

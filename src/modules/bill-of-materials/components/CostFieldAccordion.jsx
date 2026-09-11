@@ -3,10 +3,16 @@ import { AddIcon, ChevronDownIcon, ChevronRightIcon, DeleteIcon } from "../../..
 import { Button } from "../../../components/common/Button.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { InputField } from "../../../components/molecules/InputField.jsx";
+import { IconBtn } from "../../../ce-ui";
 import { fieldTotal, formatIDR } from "../utils/bomUtils.js";
 
 let nextLineId = 1;
-const newLine = () => ({ id: `new-line-${nextLineId++}`, label: "", amount: 0 });
+// amount starts empty (not 0) so a freshly added line shows the "Enter
+// amount" placeholder instead of a prefilled zero, and counts as untouched
+// for the "Field cannot be empty" validation below.
+const newLine = () => ({ id: `new-line-${nextLineId++}`, label: "", amount: "" });
+
+const isAmountEmpty = (amount) => amount === "" || amount === null || amount === undefined;
 
 // One COGS row, shared by the read-only detail view and the editable
 // create/edit form. Styled after the Orders module's Material Breakdown
@@ -41,7 +47,7 @@ export const CostFieldAccordion = ({ icon: Icon, title, description, isNew, fiel
   const isBreakdown = field.mode === "breakdown";
   const atMax = (field.lines?.length || 0) >= MAX_BREAKDOWN_ITEMS;
 
-  const setAmount = (amount) => onChange({ ...field, amount: Number(amount) || 0 });
+  const setAmount = (amount) => onChange({ ...field, amount });
   const updateLine = (idx, patch) =>
     onChange({ ...field, lines: field.lines.map((l, i) => (i === idx ? { ...l, ...patch } : l)) });
   const addLine = () => {
@@ -89,7 +95,14 @@ export const CostFieldAccordion = ({ icon: Icon, title, description, isNew, fiel
             </span>
           ) : (
             <div style={{ width: "200px" }}>
-              <InputField type="number" prefix="IDR" value={field.amount} onChange={(e) => setAmount(e.target.value)} disabled={disabled} />
+              <InputField
+                type="number"
+                prefix="IDR"
+                placeholder="Enter amount"
+                value={field.amount}
+                onChange={(e) => setAmount(e.target.value)}
+                disabled={disabled}
+              />
             </div>
           )}
         </div>
@@ -166,6 +179,7 @@ export const CostFieldAccordion = ({ icon: Icon, title, description, isNew, fiel
                 // every keystroke — so a freshly added row never shows an error until
                 // Save is pressed again, while fixing a flagged row still clears it live.
                 const lineError = invalidLineIds?.has(l.id) && !l.label?.trim() ? "Field cannot be empty" : null;
+                const amountError = invalidLineIds?.has(l.id) && isAmountEmpty(l.amount) ? "Field cannot be empty" : null;
                 const isLast = idx === field.lines.length - 1;
                 return (
                   <div
@@ -175,7 +189,7 @@ export const CostFieldAccordion = ({ icon: Icon, title, description, isNew, fiel
                       gap: "12px",
                       alignItems: "center",
                       paddingBottom: "12px",
-                      marginBottom: lineError ? "20px" : 0,
+                      marginBottom: lineError || amountError ? "20px" : 0,
                       borderBottom: isLast ? "none" : "1px solid var(--neutral-line-separator-1)",
                     }}
                   >
@@ -184,6 +198,8 @@ export const CostFieldAccordion = ({ icon: Icon, title, description, isNew, fiel
                         placeholder="Breakdown item name"
                         value={l.label}
                         onChange={(e) => updateLine(idx, { label: e.target.value })}
+                        maxLength={40}
+                        showCounter
                         errorState={!!lineError}
                         disabled={disabled}
                       />
@@ -203,25 +219,40 @@ export const CostFieldAccordion = ({ icon: Icon, title, description, isNew, fiel
                         </div>
                       ) : null}
                     </div>
-                    <div style={{ width: "180px" }}>
+                    <div style={{ width: "180px", position: "relative" }}>
                       <InputField
                         type="number"
                         prefix="IDR"
+                        placeholder="Enter amount"
                         value={l.amount}
-                        onChange={(e) => updateLine(idx, { amount: Number(e.target.value) || 0 })}
+                        onChange={(e) => updateLine(idx, { amount: e.target.value })}
+                        errorState={!!amountError}
                         disabled={disabled}
                       />
+                      {amountError ? (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            color: "var(--status-red-primary)",
+                            fontSize: "var(--text-body)",
+                            marginTop: "4px",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {amountError}
+                        </div>
+                      ) : null}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
+                      <IconBtn
+                        variant="danger"
+                        size="sm"
+                        icon={<DeleteIcon size={16} />}
                         onClick={() => removeLine(idx)}
-                        disabled={disabled}
-                        style={disabled ? undefined : { borderColor: "var(--status-red-primary)" }}
-                      >
-                        <DeleteIcon size={16} color={disabled ? undefined : "var(--status-red-primary)"} />
-                      </Button>
+                        disabled={disabled || field.lines.length <= 1}
+                      />
                     </div>
                   </div>
                 );

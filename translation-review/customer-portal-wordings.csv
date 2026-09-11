@@ -1,0 +1,60 @@
+Location,Key,English,Bahasa Indonesia
+Quote page — top bar,role toggle option,approver,pemberi persetujuan
+Quote page — top bar,role toggle option,viewer,pemantau
+Quote page — header,page title,QUOTE,PENAWARAN
+Quote page — header,status,Pending,Menunggu
+Quote page — header,status (viewer POV while pending),Waiting Approval,Menunggu Persetujuan
+Quote page — header,status (once approved),Accepted,Diterima
+Quote page — seller/quote info,label,Issued By,Diterbitkan Oleh
+Quote page — seller/quote info,label,Issued On,Diterbitkan Pada
+Quote page — seller/quote info,label,Valid Until,Berlaku Hingga
+Quote page — seller/quote info,label,Down Payment,Uang Muka
+Quote page,section title,Customer Information,Informasi Pelanggan
+Quote page,section title,PIC Information,Informasi PIC
+Quote page,empty state,No PIC added yet.,Belum ada PIC yang ditambahkan.
+Quote page,section title,Attachment,Lampiran
+Quote page,empty state,No attachments found.,Tidak ada lampiran.
+Quote page,section title,Product List,Daftar Produk
+Quote page,section title,Terms and Conditions,Syarat dan Ketentuan
+Quote page — terms,label,Payment Terms,Syarat Pembayaran
+Quote page — terms,label,Incoterms,Incoterms
+Quote page — terms,label,Shipping Method,Metode Pengiriman
+Quote page — terms,label,Estimated Delivery,Estimasi Pengiriman
+Quote page — terms,label,Risk Level,Tingkat Risiko
+Quote page — terms,label,Dispute Resolution Method,Metode Penyelesaian Sengketa
+Quote page — terms,label,Force Majeure,Keadaan Kahar
+Quote page — terms,label,Late Payment Penalties,Denda Keterlambatan Pembayaran
+Quote page — terms,label,Performance Guarantees,Jaminan Pelaksanaan
+Quote page — terms,label,Governing Law,Hukum yang Berlaku
+Quote page — action footer,button,Download,Unduh
+Quote page — action footer,button,Reject Quote,Tolak Penawaran
+Quote page — action footer,button,Request Revision,Minta Revisi
+Quote page — action footer,button,Accept Quote,Terima Penawaran
+Quote page — decision modal,reject title,Reject Quote,Tolak Penawaran
+Quote page — decision modal,reject helper text,Add a reason for rejecting this quote.,Tambahkan alasan penolakan penawaran ini.
+Quote page — decision modal,revision title,Request Revision,Minta Revisi
+Quote page — decision modal,revision helper text,Add revision notes for the seller.,Tambahkan catatan revisi untuk penjual.
+Quote page — decision modal,accept title,Accept Quote,Terima Penawaran
+Quote page — decision modal,accept helper text,Add a comment for acceptance if needed.,Tambahkan komentar jika diperlukan.
+Quote page — decision modal,validation error,Field cannot be empty,Kolom tidak boleh kosong
+Quote page — result toast,reject message,Quote rejected,Penawaran ditolak
+Quote page — result toast,accept message,Quote accepted,Penawaran diterima
+Quote page — result toast,dismiss button,Okay,Oke
+Quote page — screening-blocked modal,title,Unable to Accept Quote,Penawaran Tidak Dapat Diterima
+Quote page — screening-blocked modal,description,"This quote can’t be accepted right now. Please contact the company that issued the quote for assistance.","Penawaran ini belum dapat diterima. Hubungi perusahaan yang menerbitkan penawaran untuk mendapatkan bantuan."
+Quote page — screening-blocked modal,dismiss button,Understood,Mengerti
+Quote page — accept-processing modal,title,Accepting your quote,Menerima penawaran Anda
+Quote page — accept-processing modal,description,This may take a moment. Please keep this page open.,Proses ini mungkin memerlukan waktu. Tetap buka halaman ini.
+Quote page — not-found state,message,Quote not found.,Penawaran tidak ditemukan.
+Quote page — PIC card,role badge,Approver,Pemberi Persetujuan
+Quote page — actions log table,section title,Actions,Aksi
+Quote page — actions log table,column header,PIC,PIC
+Quote page — actions log table,column header,Action,Aksi
+Quote page — actions log table,column header,Time,Waktu
+Quote page — actions log table,empty state,No actions yet.,Belum ada aksi.
+Revision-requested page,heading,Revision Requested,Revisi Diminta
+Revision-requested page,body text,You've submitted a revision request. Please wait while the seller reviews your changes.,Permintaan revisi Anda telah dikirim. Tunggu hingga penjual meninjau perubahan Anda.
+Simulate Screening panel (internal QA tool — not real customer-facing content; optional to translate),header,Simulate Screening,Simulasikan Screening
+Simulate Screening panel (internal QA tool — not real customer-facing content; optional to translate),subtext (no customer linked),No customer linked to this quote,Tidak ada pelanggan yang terhubung ke penawaran ini
+Simulate Screening panel (internal QA tool — not real customer-facing content; optional to translate),helper text,"Check a scenario, then use Accept Quote to see the result.","Pilih skenario, lalu gunakan Terima Penawaran untuk melihat hasilnya."
+Simulate Screening panel (internal QA tool — not real customer-facing content; optional to translate),button,Reset customer to Not Screened,Atur ulang pelanggan ke Belum Disaring

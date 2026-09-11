@@ -1,4 +1,23 @@
 import React from "react";
+import { Info } from "../../../components/icons/Icons.jsx";
+import { Tooltip } from "../../../components/atoms/Tooltip.jsx";
+
+export const AVERAGE_COST_TOOLTIP =
+  "Calculated from the average cost of available stock. If stock is unavailable, the latest batch cost is used.";
+
+// "Average Cost" column header with a helper tooltip explaining how it's
+// derived. Shared by the BOM create/edit form and the BOM detail page so
+// both stay in sync with the Forecasted COGS material cost table's wording.
+export const AverageCostHeader = () => (
+  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+    Average Cost
+    <Tooltip content={AVERAGE_COST_TOOLTIP}>
+      <span style={{ display: "inline-flex" }}>
+        <Info size={14} color="var(--neutral-on-surface-tertiary)" />
+      </span>
+    </Tooltip>
+  </span>
+);
 
 // Local section/card/table style helpers for the Bill of Materials module,
 // mirroring the pattern in modules/purchase-order/components/detail/shared/PoDetailSharedComponents.jsx

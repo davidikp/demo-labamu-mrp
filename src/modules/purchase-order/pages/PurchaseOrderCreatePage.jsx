@@ -4762,27 +4762,26 @@ const CancelledWorkOrderBlockerModal = ({
         style={{
           width: "100%",
           display: "flex",
-          flexDirection: "column",
           gap: "12px",
         }}
       >
         {mode === "detail" ? (
           <>
             <Button
+              variant="outlined"
+              size="large"
+              onClick={onClose}
+              style={{ flex: 1, height: "56px", fontSize: "18px" }}
+            >
+              Close
+            </Button>
+            <Button
               variant="filled"
               size="large"
               onClick={onEditPO}
-              style={{ width: "100%", height: "56px", fontSize: "18px" }}
+              style={{ flex: 1, height: "56px", fontSize: "18px" }}
             >
               Edit PO
-            </Button>
-            <Button
-              variant="outline"
-              size="large"
-              onClick={onClose}
-              style={{ width: "100%", height: "56px", fontSize: "18px" }}
-            >
-              Close
             </Button>
           </>
         ) : (

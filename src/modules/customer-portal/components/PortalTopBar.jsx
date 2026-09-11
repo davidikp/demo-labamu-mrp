@@ -1,6 +1,7 @@
 import React from "react";
 import { BrandLogoLockup, LogOutIcon } from "../../../components/icons/Icons.jsx";
 import { useIsMobile } from "../../../hooks/useIsMobile.js";
+import { PortalLanguageSelector } from "./PortalLanguageSelector.jsx";
 
 // Standalone top bar for Customer Portal pages — intentionally not the
 // app's own TopHeader (no sidebar/notification-bell dependencies), just the
@@ -8,7 +9,13 @@ import { useIsMobile } from "../../../hooks/useIsMobile.js";
 // customer auth in this demo), the (mock) signed-in customer email, and a
 // logout icon, matching the Figma reference. Sticky so it stays visible
 // while the (often long) quote content scrolls underneath it.
-export const PortalTopBar = ({ email = "dev@mail.com", role = "approver", onRoleChange }) => {
+export const PortalTopBar = ({
+  email = "dev@mail.com",
+  role = "approver",
+  onRoleChange,
+  language,
+  onLanguageChange,
+}) => {
   const isMobile = useIsMobile();
 
   return (
@@ -61,6 +68,7 @@ export const PortalTopBar = ({ email = "dev@mail.com", role = "approver", onRole
           ))}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+          <PortalLanguageSelector language={language} onLanguageChange={onLanguageChange} />
           <span
             style={{
               fontSize: "var(--text-title-3)",

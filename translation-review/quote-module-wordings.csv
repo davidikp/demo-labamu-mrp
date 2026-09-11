@@ -1,0 +1,302 @@
+Location,Key,English,Bahasa Indonesia
+Quote List — header,page title,Quotes,Penawaran
+Quote List — header,button,Settings,Pengaturan
+Quote List — header,button,New Quote,Penawaran Baru
+Quote List — status cards,status,Draft,Draf
+Quote List — status cards,status,Submitted,Diajukan
+Quote List — status cards,status,Issued,Diterbitkan
+Quote List — status cards,status,Approved,Disetujui
+Quote List — status cards,status,Rejected,Ditolak
+Quote List — status cards,status,Need Revision,Perlu Revisi
+Quote List — table,column header,Quote No,No. Penawaran
+Quote List — table,column header,RFQ No,No. RFQ
+Quote List — table,column header,Customer Name,Nama Pelanggan
+Quote List — table,column header,Created By,Dibuat Oleh
+Quote List — table,column header,Created At,Dibuat Pada
+Quote List — table,column header,Status,Status
+Quote List — filters,filter label,Customer,Pelanggan
+Quote List — filters,search placeholder,"Search quote number, RFQ number, or customer","Cari nomor penawaran, nomor RFQ, atau pelanggan"
+Quote List — empty state,title,No quotes found,Penawaran tidak ditemukan
+Quote List — empty state,description,Try adjusting your filters or search keywords.,Coba sesuaikan filter atau kata kunci pencarian Anda.
+Quote Create/Edit — header,page title,Add New Quote,Tambah Penawaran Baru
+Quote Create/Edit — header,page title,Edit Quote,Ubah Penawaran
+Quote Create/Edit — header,breadcrumb link,Quotes,Penawaran
+Quote Create/Edit — Quote Details section,section title,Quote Details,Detail Penawaran
+Quote Create/Edit — Quote Details section,field label,Currency,Mata Uang
+Quote Create/Edit — Quote Details section,field label,Down Payment Percentage,Persentase Uang Muka
+Quote Create/Edit — Quote Details section,field label,Valid Until,Berlaku Hingga
+Quote Create/Edit — Quote Details section,placeholder,Enter date,Masukkan tanggal
+Quote Create/Edit — Customer Information section,section title,Customer Information,Informasi Pelanggan
+Quote Create/Edit — Customer Information section,field label,Customer Name,Nama Pelanggan
+Quote Create/Edit — Customer Information section,placeholder,e.g. PT ABC Manufacturing,contoh: PT ABC Manufacturing
+Quote Create/Edit — Customer Information section,suggestion action,"+ Add ""{name}"" as new customer","+ Tambah ""{name}"" sebagai pelanggan baru"
+Quote Create/Edit — Customer Information section,field label,Customer Email,Email Pelanggan
+Quote Create/Edit — Customer Information section,placeholder,customer@example.com,customer@example.com
+Quote Create/Edit — Customer Information section,helper text,Use official company email address,Gunakan alamat email resmi perusahaan
+Quote Create/Edit — Customer Information section,field label,Customer Phone,Telepon Pelanggan
+Quote Create/Edit — Customer Information section,helper text,Use main office/HQ phone number,Gunakan nomor telepon kantor utama/pusat
+Quote Create/Edit — Customer Information section,field label,Customer Tag,Tag Pelanggan
+Quote Create/Edit — Customer Information section,helper text,Max 5 tags,Maks. 5 tag
+Quote Create/Edit — Customer Information section,placeholder,Select customer tags,Pilih tag pelanggan
+Quote Create/Edit — Customer Information section,field label,Customer Country,Negara Pelanggan
+Quote Create/Edit — Customer Information section,placeholder,Select customer country,Pilih negara pelanggan
+Quote Create/Edit — Customer Information section,field label,Customer Address,Alamat Pelanggan
+Quote Create/Edit — Customer Information section,placeholder,Enter registered company address,Masukkan alamat perusahaan yang terdaftar
+Quote Create/Edit — Customer Information section,helper text,Will be used for document purposes,Akan digunakan untuk keperluan dokumen
+Quote Create/Edit — Person In Charge subsection,section title,Person In Charge,PIC
+Quote Create/Edit — Products section,section title,Products,Produk
+Quote Create/Edit — Products section,button,Add Product,Tambah Produk
+Quote Create/Edit — Products section,error message,Please add at least one product,Tambahkan minimal satu produk
+Quote Create/Edit — Products section,table column header,Product Name,Nama Produk
+Quote Create/Edit — Products section,table column header,SKU,SKU
+Quote Create/Edit — Products section,table column header,Qty,Jumlah
+Quote Create/Edit — Products section,table column header,Unit Price,Harga Satuan
+Quote Create/Edit — Products section,table column header,Discount,Diskon
+Quote Create/Edit — Products section,table column header,Total Price,Total Harga
+Quote Create/Edit — Products section,table column header,Actions,Aksi
+Quote Create/Edit — Products section,row action button,Edit,Ubah
+Quote Create/Edit — Products section,row action button,Delete,Hapus
+Quote Create/Edit — Products section,empty state,"No products added yet. Click ""Add Product"" to get started.","Belum ada produk yang ditambahkan. Klik ""Tambah Produk"" untuk memulai."
+Quote Create/Edit — Total Amount section,section title,Total Amount,Total Nilai
+Quote Create/Edit — Total Amount section,field label,Subtotal,Subtotal
+Quote Create/Edit — Total Amount section,field label,Tax,Pajak
+Quote Create/Edit — Total Amount section,field label,Shipping Fee,Biaya Pengiriman
+Quote Create/Edit — Total Amount section,placeholder,Enter amount,Masukkan jumlah
+Quote Create/Edit — Total Amount section,field label,Other Fee,Biaya Lainnya
+Quote Create/Edit — Total Amount section,field label,Total,Total
+Quote Create/Edit — Attachments section,section title,Attachments,Lampiran
+Quote Create/Edit — Attachments section,field label,Upload Documents,Unggah Dokumen
+Quote Create/Edit — Bank Account section,section title,Bank Account,Rekening Bank
+Quote Create/Edit — Bank Account section,field label,Bank Account,Rekening Bank
+Quote Create/Edit — Bank Account section,placeholder,Select bank account,Pilih rekening bank
+Quote Create/Edit — Bank Account section,helper text,Selected bank account is not supported for {currency} currency,Rekening bank yang dipilih tidak mendukung mata uang {currency}
+Quote Create/Edit — Bank Account section,field label,Account Name,Nama Rekening
+Quote Create/Edit — Bank Account section,field label,Account Number,Nomor Rekening
+Quote Create/Edit — Bank Account section,field label,Bank Name,Nama Bank
+Quote Create/Edit — Bank Account section,field label,Supported Currencies,Mata Uang yang Didukung
+Quote Create/Edit — Bank Account section,field label,SWIFT Code,Kode SWIFT
+Quote Create/Edit — Bank Account section,field label,Branch,Cabang
+Quote Create/Edit — Bank Account section,field label,Branch Address,Alamat Cabang
+Quote Create/Edit — Terms and Conditions section,section title,Terms and Conditions,Syarat dan Ketentuan
+Quote Create/Edit — Terms and Conditions section,field label,Payment Terms,Syarat Pembayaran
+Quote Create/Edit — Terms and Conditions section,placeholder,Select payment terms,Pilih syarat pembayaran
+Quote Create/Edit — Terms and Conditions section,field label,Incoterms,Incoterms
+Quote Create/Edit — Terms and Conditions section,placeholder,Select incoterms,Pilih Incoterms
+Quote Create/Edit — Terms and Conditions section,field label,Risk Level,Tingkat Risiko
+Quote Create/Edit — Terms and Conditions section,field label,Shipping Method,Metode Pengiriman
+Quote Create/Edit — Terms and Conditions section,placeholder,Select shipping method,Pilih metode pengiriman
+Quote Create/Edit — Terms and Conditions section,field label,Estimated Delivery,Estimasi Pengiriman
+Quote Create/Edit — Terms and Conditions section,placeholder,"e.g., 2-3 weeks",contoh: 2–3 minggu
+Quote Create/Edit — Terms and Conditions section,field label,Dispute Resolution Method,Metode Penyelesaian Sengketa
+Quote Create/Edit — Terms and Conditions section,placeholder,Select dispute resolution method,Pilih metode penyelesaian sengketa
+Quote Create/Edit — Terms and Conditions section,field label,Governing Law,Hukum yang Berlaku
+Quote Create/Edit — Terms and Conditions section,placeholder,Enter governing law,Masukkan hukum yang berlaku
+Quote Create/Edit — Terms and Conditions section,tooltip text,"Specify the payment schedule and conditions agreed between buyer and seller (e.g., Net 30, Net 60, Net 90, COD, etc).","Tentukan jadwal dan ketentuan pembayaran yang disepakati antara pembeli dan penjual (misalnya Net 30, Net 60, Net 90, COD, dll.)."
+Quote Create/Edit — Terms and Conditions section,tooltip text,"Choose the international trade term that defines delivery point, risk transfer, and cost responsibility (e.g., FOB, CIF, EXW).","Pilih ketentuan perdagangan internasional yang menentukan titik pengiriman, perpindahan risiko, dan tanggung jawab biaya (misalnya FOB, CIF, EXW)."
+Quote Create/Edit — Terms and Conditions section,tooltip text,Indicates the level of risk for the buyer or seller based on the selected Incoterms (risk transfers according to delivery terms).,Menunjukkan tingkat risiko bagi pembeli atau penjual berdasarkan Incoterms yang dipilih (risiko berpindah sesuai ketentuan pengiriman).
+Quote Create/Edit — Terms and Conditions section,tooltip text,"Select the mode of transportation for goods delivery (e.g., Air Freight, Sea Freight, Land Courier).","Pilih moda transportasi untuk pengiriman barang (misalnya angkutan udara, laut, atau kurir darat)."
+Quote Create/Edit — Terms and Conditions section,tooltip text,Enter the estimated time frame for delivery or completion after order confirmation.,Masukkan perkiraan waktu pengiriman atau penyelesaian setelah pesanan dikonfirmasi.
+Quote Create/Edit — Terms and Conditions section,tooltip text,"Define the agreed process to resolve disputes, such as arbitration, mediation, or court settlement.","Tentukan proses yang disepakati untuk menyelesaikan sengketa, seperti arbitrase, mediasi, atau penyelesaian melalui pengadilan."
+Quote Create/Edit — Terms and Conditions section,tooltip text,Indicate the legal jurisdiction or country law that governs the agreement.,Tentukan yurisdiksi atau hukum negara yang mengatur perjanjian.
+Quote Create/Edit — Terms and Conditions section,tooltip text,"Include a clause to protect both parties if contract obligations cannot be met due to events beyond control (e.g., natural disasters, war).","Sertakan klausul untuk melindungi kedua pihak jika kewajiban kontrak tidak dapat dipenuhi karena kejadian di luar kendali (misalnya bencana alam atau perang)."
+Quote Create/Edit — Terms and Conditions section,tooltip text,Apply financial penalties or interest charges when payment is delayed beyond the agreed term.,Terapkan denda atau bunga jika pembayaran terlambat melewati jangka waktu yang disepakati.
+Quote Create/Edit — Terms and Conditions section,tooltip text,Require the supplier to provide assurance of product quality or project completion as agreed.,Wajibkan pemasok memberikan jaminan kualitas produk atau penyelesaian proyek sesuai kesepakatan.
+Quote Create/Edit — Terms and Conditions section,checkbox label,Include Force Majeure Clause,Sertakan Klausul Keadaan Kahar
+Quote Create/Edit — Terms and Conditions section,placeholder,Enter force majeure clause,Masukkan klausul keadaan kahar
+Quote Create/Edit — Terms and Conditions section,checkbox label,Include Late Payment Penalties,Sertakan Denda Keterlambatan Pembayaran
+Quote Create/Edit — Terms and Conditions section,placeholder,Enter late payment penalties,Masukkan denda keterlambatan pembayaran
+Quote Create/Edit — Terms and Conditions section,checkbox label,Include Performance Guarantees,Sertakan Jaminan Pelaksanaan
+Quote Create/Edit — Terms and Conditions section,placeholder,Enter performance guarantees,Masukkan jaminan pelaksanaan
+Quote Create/Edit — Terms and Conditions section,field label,Additional,Tambahan
+Quote Create/Edit — Terms and Conditions section,placeholder,Enter additional,Masukkan tambahan
+Quote Create/Edit — validation,error message,Field cannot be empty,Kolom tidak boleh kosong
+Quote Create/Edit — footer,button,Cancel,Batal
+Quote Create/Edit — footer,button,Save Draft,Simpan Draf
+Quote Create/Edit — footer,button,Submit,Kirim
+Quote Create/Edit — toasts,success message,Quote draft successfully updated,Draf penawaran berhasil diperbarui
+Quote Create/Edit — toasts,success message,Quote draft successfully saved,Draf penawaran berhasil disimpan
+Quote Create/Edit — toasts,success message,Quote successfully updated,Penawaran berhasil diperbarui
+Quote Create/Edit — toasts,success message,Quote successfully created,Penawaran berhasil dibuat
+Quote Create/Edit — toasts,error message,Maximum {n} files,Maksimal {n} file
+Quote Create/Edit — toasts,error message,{n} file(s) exceed the 30MB limit,{n} file melebihi batas 30 MB
+Quote Detail — not-found state,empty state,Quote not found.,Penawaran tidak ditemukan.
+Quote Detail — header,breadcrumb,Quotes,Penawaran
+Quote Detail — header,breadcrumb,Quote Detail,Detail Penawaran
+Quote Detail — header,page title,Quote Detail,Detail Penawaran
+Quote Detail — header,button,Edit Quote,Ubah Penawaran
+Quote Detail — header,button,Download,Unduh
+Quote Detail — header,button,Customer Action,Aksi Pelanggan
+Quote Detail — header Customer Action menu,menu item,Approve,Setujui
+Quote Detail — header Customer Action menu,menu item,Mark as Rejected,Tandai sebagai Ditolak
+Quote Detail — header Customer Action menu,menu item,Request Revision,Minta Revisi
+Quote Detail — summary card,field label,RFQ No,No. RFQ
+Quote Detail — summary card,field label,Currency,Mata Uang
+Quote Detail — summary card,field label,Down Payment,Uang Muka
+Quote Detail — summary card,field label,Valid Until,Berlaku Hingga
+Quote Detail — summary card,field label,Created By,Dibuat Oleh
+Quote Detail — summary card,field label,Created Date,Tanggal Dibuat
+Quote Detail — summary card,field label,Customer Approval Status,Status Persetujuan Pelanggan
+Quote Detail — summary card,status fallback,Pending,Menunggu
+Quote Detail — tabs,tab label,Customer Info,Info Pelanggan
+Quote Detail — tabs,tab label,Products,Produk
+Quote Detail — tabs,tab label,Attachments,Lampiran
+Quote Detail — tabs,tab label,Bank Account,Rekening Bank
+Quote Detail — tabs,tab label,Terms and Conditions,Syarat dan Ketentuan
+Quote Detail — tabs,tab label,Logs,Log
+Quote Detail — Customer Info tab,section title,Customer Information,Informasi Pelanggan
+Quote Detail — Customer Info tab,field label,Customer Name,Nama Pelanggan
+Quote Detail — Customer Info tab,field label,Customer Email,Email Pelanggan
+Quote Detail — Customer Info tab,field label,Customer Phone,Telepon Pelanggan
+Quote Detail — Customer Info tab,field label,Sanctions Screening Status,Status Pemeriksaan Sanksi
+Quote Detail — Customer Info tab,field label,Customer Tags,Tag Pelanggan
+Quote Detail — Customer Info tab,field label,Customer Country,Negara Pelanggan
+Quote Detail — Customer Info tab,field label,Customer Address,Alamat Pelanggan
+Quote Detail — Customer Info tab,section title,Person In Charge,PIC
+Quote Detail — Products tab,section title,Products,Produk
+Quote Detail — Products tab,section title,Total Amount,Total Nilai
+Quote Detail — Attachments tab,section title,Attachments,Lampiran
+Quote Detail — Attachments tab,empty state,No attachments found.,Tidak ada lampiran.
+Quote Detail — Bank Account tab,section title,Bank Account,Rekening Bank
+Quote Detail — Bank Account tab,field label,Account Name,Nama Rekening
+Quote Detail — Bank Account tab,field label,Account Number,Nomor Rekening
+Quote Detail — Bank Account tab,field label,Bank Name,Nama Bank
+Quote Detail — Bank Account tab,field label,Supported Currencies,Mata Uang yang Didukung
+Quote Detail — Bank Account tab,field label,SWIFT Code,Kode SWIFT
+Quote Detail — Bank Account tab,field label,Branch,Cabang
+Quote Detail — Bank Account tab,field label,Branch Address,Alamat Cabang
+Quote Detail — Terms and Conditions tab,section title,Terms and Conditions,Syarat dan Ketentuan
+Quote Detail — Terms and Conditions tab,field label,Payment Terms,Syarat Pembayaran
+Quote Detail — Terms and Conditions tab,field label,Incoterms,Incoterms
+Quote Detail — Terms and Conditions tab,field label,Shipping Method,Metode Pengiriman
+Quote Detail — Terms and Conditions tab,field label,Estimated Delivery,Estimasi Pengiriman
+Quote Detail — Terms and Conditions tab,field label,Risk Level,Tingkat Risiko
+Quote Detail — Terms and Conditions tab,field label,Dispute Resolution Method,Metode Penyelesaian Sengketa
+Quote Detail — Terms and Conditions tab,field label,Governing Law,Hukum yang Berlaku
+Quote Detail — Terms and Conditions tab,field label,Force Majeure,Keadaan Kahar
+Quote Detail — Terms and Conditions tab,field label,Late Payment Penalties,Denda Keterlambatan Pembayaran
+Quote Detail — Terms and Conditions tab,field label,Performance Guarantees,Jaminan Pelaksanaan
+Quote Detail — Terms and Conditions tab,field label,Additional,Tambahan
+Quote Detail — Logs tab (Approval Logs),section title,Approval Logs,Log Persetujuan
+Quote Detail — Logs tab (Approval Logs),field label,Requested By,Diminta Oleh
+Quote Detail — Logs tab (Approval Logs),field label,Requested At,Diminta Pada
+Quote Detail — Logs tab (Approval Logs),column header,Approvers,Pemberi Persetujuan (existing sitewide translation kept — see note)
+Quote Detail — Logs tab (Approval Logs),column header,Status,Status
+Quote Detail — Logs tab (Approval Logs),column header,Comments,Komentar
+Quote Detail — Logs tab (Approval Logs),status fallback,Pending,Menunggu
+Quote Detail — Logs tab (Activity Logs),section title,Activity Logs,Log Aktivitas
+Quote Detail — Logs tab (Activity Logs),column header,Name,Nama
+Quote Detail — Logs tab (Activity Logs),column header,Email,Email
+Quote Detail — Logs tab (Activity Logs),column header,Activity,Aktivitas
+Quote Detail — Logs tab (Activity Logs),column header,Timestamp,Waktu
+Quote Detail — Logs tab (Activity Logs),activity title,Approved,Disetujui
+Quote Detail — Logs tab (Activity Logs),activity title,Rejected,Ditolak
+Quote Detail — Logs tab (Activity Logs),activity title,Need Revision,Perlu Revisi
+Quote Detail — Logs tab (Activity Logs),activity title,Sent to Customer,Dikirim ke Pelanggan
+Quote Detail — Logs tab (Activity Logs),activity title,Submitted for Approval,Diajukan untuk Persetujuan
+Quote Detail — Logs tab (Activity Logs),activity title,Created,Dibuat
+Quote Detail — action footer,button,Submit,Kirim
+Quote Detail — action footer,button,Reject,Tolak
+Quote Detail — action footer,button,Ask for Revision,Minta Revisi
+Quote Detail — action footer,button,Approve,Setujui
+Quote Detail — action footer,button,Send to Customer,Kirim ke Pelanggan
+Quote Detail — decision modal (reject),modal title,Reject Quote,Tolak Penawaran
+Quote Detail — decision modal (reject),helper text,Add a reason for rejecting this quote.,Tambahkan alasan penolakan penawaran ini.
+Quote Detail — decision modal (revision),modal title,Ask for Revision,Minta Revisi
+Quote Detail — decision modal (revision),helper text,Add revision notes for the requester.,Tambahkan catatan revisi untuk pemohon.
+Quote Detail — decision modal (approve),modal title,Approve Quote,Setujui Penawaran
+Quote Detail — decision modal (approve),helper text,Add a comment for approval if needed.,Tambahkan komentar persetujuan jika diperlukan.
+Quote Detail — decision modal,validation error,Field cannot be empty,Kolom tidak boleh kosong
+Quote Detail — sanctions screening loading modal,modal title,Running sanctions screening,Menjalankan pemeriksaan sanksi
+Quote Detail — sanctions screening loading modal,modal body,Checking the customer against applicable sanctions lists. This may take a moment.,Memeriksa pelanggan berdasarkan daftar sanksi yang berlaku. Proses ini mungkin memerlukan beberapa saat.
+Quote Detail — sanctions screening result (failed),modal title,Sanctions screening failed and account suspended,Pemeriksaan sanksi gagal dan akun ditangguhkan
+Quote Detail — sanctions screening result (failed),modal body,The customer did not pass sanctions screening. The quote was automatically rejected and your Labamu Manufacturing account has been suspended. Contact Customer Support at cs@labamu.co.id to appeal.,Pelanggan tidak lolos pemeriksaan sanksi. Penawaran otomatis ditolak dan akun Labamu Manufacturing Anda ditangguhkan. Hubungi Customer Support di cs@labamu.co.id untuk mengajukan banding.
+Quote Detail — sanctions screening result (failed),button,Understood,Mengerti
+Quote Detail — sanctions screening result (error),modal title,Unable to approve quote,Penawaran tidak dapat disetujui
+Quote Detail — sanctions screening result (error),modal body,The sanctions screening could not be completed due to a technical issue. Please try approving the quote again.,Pemeriksaan sanksi tidak dapat diselesaikan karena kendala teknis. Coba setujui penawaran lagi.
+Quote Detail — sanctions screening result (error),button,Close,Tutup
+Quote Detail — sanctions screening result (error),button,Try Again,Coba Lagi
+Quote Detail — Add Customer Country modal,modal title,Add Customer Country,Tambah Negara Pelanggan
+Quote Detail — Add Customer Country modal,description,Sanctions screening requires the customer's country. Select it below to continue.,Pemeriksaan sanksi memerlukan negara pelanggan. Pilih negara di bawah untuk melanjutkan.
+Quote Detail — Add Customer Country modal,field label,Customer Country,Negara Pelanggan
+Quote Detail — Add Customer Country modal,placeholder,Select customer country,Pilih negara pelanggan
+Quote Detail — Add Customer Country modal,validation error,Field cannot be empty,Kolom tidak boleh kosong
+Quote Detail — Add Customer Country modal,button,Cancel,Batal
+Quote Detail — Add Customer Country modal,button,Save & Continue,Simpan & Lanjutkan
+Quote Detail — toasts,toast message,No customer is linked to this quote. Add a customer before approving.,Tidak ada pelanggan yang terhubung ke penawaran ini. Tambahkan pelanggan sebelum menyetujui penawaran.
+Quote Detail — toasts,toast message,This customer did not pass sanctions screening. The account remains suspended.,Pelanggan ini tidak lolos pemeriksaan sanksi. Akun tetap ditangguhkan.
+Quote Detail — toasts,toast message,Quote successfully approved. Sanctions screening passed.,Penawaran berhasil disetujui. Pemeriksaan sanksi berhasil.
+Quote Detail — toasts,toast message,Customer country saved. Continuing sanctions screening.,Negara pelanggan berhasil disimpan. Pemeriksaan sanksi dilanjutkan.
+Quote Detail — toasts,toast message,Quote status successfully updated,Status penawaran berhasil diperbarui
+Quote Detail — toasts,toast message,Customer screening state reset.,Status pemeriksaan pelanggan berhasil diatur ulang.
+Quote Detail — toasts,toast message,Quote successfully sent to customer,Penawaran berhasil dikirim ke pelanggan
+Quote Detail — toasts,toast message,Preparing quote download...,Menyiapkan unduhan penawaran...
+Quote Detail — toasts,toast message,Quote submitted for approval.,Penawaran diajukan untuk persetujuan.
+Quote Detail — toasts,toast message,Quote successfully rejected,Penawaran berhasil ditolak
+Quote Detail — toasts,toast message,Revision requested,Revisi berhasil diminta
+Quote Detail — toasts,toast message,Quote approved and issued to customer,Penawaran disetujui dan diterbitkan kepada pelanggan
+Quote Settings — header,page title,Settings,Pengaturan
+Quote Settings — header,breadcrumb link,Quotes,Penawaran
+Quote Settings — header,breadcrumb text,Settings,Pengaturan
+Quote Settings — Approval Settings,section title,Approval Settings,Pengaturan Persetujuan
+Quote Settings — Approval Settings,toggle label,Activate Approval Setting,Aktifkan Pengaturan Persetujuan
+Quote Settings — Approval Settings,helper text,Enable approval workflow for Quote,Aktifkan alur persetujuan untuk penawaran
+Quote Settings — Approval Settings,toggle label,Require Comment for Approval,Wajibkan Komentar untuk Persetujuan
+Quote Settings — Approval Settings,helper text,"When enabled, approvers must provide a comment. When disabled, the comment field is still shown but optional.","Jika diaktifkan, penyetuju wajib memberikan komentar. Jika dinonaktifkan, kolom komentar tetap ditampilkan tetapi bersifat opsional."
+Quote Settings — Approval Settings,field label,Approvers,Pemberi Persetujuan (existing sitewide translation kept — see note)
+Quote Settings — Approval Settings,helper text,Select users who can approve Quote,Pilih pengguna yang dapat menyetujui penawaran
+Quote Settings — Approval Settings,error message,Field cannot be empty,Kolom tidak boleh kosong
+Quote Settings — approvers table,table column header,Name,Nama
+Quote Settings — approvers table,table column header,Email,Email
+Quote Settings — approvers table,table column header,User Group,Grup Pengguna
+Quote Settings — approvers table,table column header,Action,Aksi
+Quote Settings — approver search,placeholder text,Search by name or user group...,Cari berdasarkan nama atau grup pengguna...
+Quote Settings — approver dropdown,empty state,No user found.,Pengguna tidak ditemukan.
+Quote Settings — footer,button,Cancel,Batal
+Quote Settings — footer,button,Save,Simpan
+Quote Settings — toast,toast message,Quote settings successfully saved,Pengaturan penawaran berhasil disimpan
+Quote Settings — toast,button,Okay,Oke
+Quote Settings — discard changes modal,modal title,Discard changes?,Batalkan perubahan?
+Quote Settings — discard changes modal,button,"Yes, Discard","Ya, Batalkan"
+Quote Settings — discard changes modal,button,Keep Editing,Lanjut Edit
+Quote Product modal,modal title,Add Product to Quote,Tambah Produk ke Penawaran
+Quote Product modal,modal title,Edit Product in Quote,Ubah Produk dalam Penawaran
+Quote Product modal,field label,Product,Produk
+Quote Product modal,placeholder,Search or select...,Cari atau pilih...
+Quote Product modal,field label,Quantity,Jumlah
+Quote Product modal,field label,Unit Price,Harga Satuan
+Quote Product modal,field label,Discount Percentage,Persentase Diskon
+Quote Product modal,field label,Total Price,Total Harga
+Quote Product modal,helper text,"Auto calculated based on quantity, unit price, and discount","Dihitung otomatis berdasarkan jumlah, harga satuan, dan diskon"
+Quote Product modal,field label,Notes,Catatan
+Quote Product modal,placeholder,Enter notes (optional),Masukkan catatan (opsional)
+Quote Product modal,field label,Attachments,Lampiran
+Quote Product modal,helper text,"Max 3 files, 30MB each","Maks. 3 file, masing-masing 30 MB"
+Quote Product modal,helper text,Accepts any file type,Mendukung semua jenis file
+Quote Product modal,button,Save Product,Simpan Produk
+Quote Product modal,button,Add Product,Tambah Produk
+Quote Product modal,button,Cancel,Batal
+Quote Product modal,validation error,Field cannot be empty,Kolom tidak boleh kosong
+Quote Product modal,validation error,Quantity must be above 0,Jumlah harus lebih dari 0
+Quote Product modal,validation error,Must be between 0 and 100,Harus antara 0 dan 100
+Quote Decision modal (shared component),button,Back,Kembali
+Quote Decision modal (shared component),button,Submit,Kirim
+Quote Decision modal (shared component),field label,Comment,Komentar
+Quote Product table (shared component),column header,Image,Gambar
+Quote Product table (shared component),column header,Product Name,Nama Produk
+Quote Product table (shared component),column header,Notes,Catatan
+Quote Product table (shared component),column header,Attachments,Lampiran
+Quote Product table (shared component),column header,Qty,Jumlah
+Quote Product table (shared component),column header,Unit Price,Harga Satuan
+Quote Product table (shared component),column header,Discount,Diskon
+Quote Product table (shared component),column header,Total Price,Total Harga
+Quote Product table (shared component),empty state,No products added yet.,Belum ada produk yang ditambahkan.
+Quote Totals summary (shared component),label,Subtotal,Subtotal
+Quote Totals summary (shared component),label,Tax Rate (,Tarif Pajak (
+Quote Totals summary (shared component),label,Shipping Fee,Biaya Pengiriman
+Quote Totals summary (shared component),label,Other Fee,Biaya Lainnya
+Quote Totals summary (shared component),label,Total,Total
+Quote Detail page,floating button,Customer Portal,Portal Pelanggan
+Simulate Screening panel (internal QA tool — not real customer-facing content; optional to translate),header,Simulate Screening,Simulasikan Pemeriksaan (also used by Customer Portal's own panel — see note)
+Simulate Screening panel (internal QA tool — not real customer-facing content; optional to translate),subtext,No customer linked to this quote,Tidak ada pelanggan yang terhubung ke penawaran ini
+Simulate Screening panel (internal QA tool — not real customer-facing content; optional to translate),helper text,"Check a scenario, then use Customer Action → Approve to trigger it.","Pilih skenario, lalu gunakan Aksi Pelanggan → Setujui untuk menjalankannya."
+Simulate Screening panel (internal QA tool — not real customer-facing content; optional to translate),button,Reset customer to Not Screened,Atur ulang pelanggan ke Belum Diperiksa (also used by Customer Portal's own panel — see note)

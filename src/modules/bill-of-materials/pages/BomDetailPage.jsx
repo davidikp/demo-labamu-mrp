@@ -10,11 +10,9 @@ import {
   Upload,
   Building2,
   CircleDollarSign,
-  Info,
 } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
-import { Tooltip } from "../../../components/atoms/Tooltip.jsx";
 import { LabelValue } from "../../../components/molecules/LabelValue.jsx";
 import { getBom, resolveMaterialOption } from "../mock/bomMocks.js";
 import {
@@ -24,7 +22,7 @@ import {
   fieldTotal,
   formatIDR,
 } from "../utils/bomUtils.js";
-import { AbcClassificationBadge, DetailCard, detailTableHeaderRowStyle, detailTableRowStyle } from "../components/BomShared.jsx";
+import { AbcClassificationBadge, AverageCostHeader, DetailCard, detailTableHeaderRowStyle, detailTableRowStyle } from "../components/BomShared.jsx";
 import { CostFieldAccordion } from "../components/CostFieldAccordion.jsx";
 import { ChipTabBar } from "../../../components/molecules/ChipTabBar.jsx";
 
@@ -44,21 +42,6 @@ const COGS_FIELDS = [
   { key: "overhead", title: "Overhead Cost", icon: Building2, description: "Indirect production costs not tied to a specific task" },
   { key: "other", title: "Other Cost", icon: CircleDollarSign, description: "Additional production costs not covered by other categories" },
 ];
-
-const AVERAGE_COST_TOOLTIP =
-  "Calculated from the average cost of available stock. If stock is unavailable, the latest batch cost is used.";
-
-// "Average Cost" column header with a helper tooltip explaining how it's derived.
-const AverageCostHeader = () => (
-  <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
-    Average Cost
-    <Tooltip content={AVERAGE_COST_TOOLTIP}>
-      <span style={{ display: "inline-flex" }}>
-        <Info size={14} color="var(--neutral-on-surface-tertiary)" />
-      </span>
-    </Tooltip>
-  </span>
-);
 
 // Colors reuse existing design tokens rather than introducing new ones —
 // see styles/tokens.css for the --feature-*/--status-* palette.
@@ -168,7 +151,7 @@ export const BomDetailPage = ({ onNavigate, initialData }) => {
                 <span>Category</span>
                 <span>ABC Classification</span>
                 <span>Type</span>
-                <span>Average Cost</span>
+                <AverageCostHeader />
                 <span>Quantity</span>
                 <span style={{ textAlign: "right" }}>Subtotal</span>
               </div>
@@ -317,7 +300,7 @@ export const BomDetailPage = ({ onNavigate, initialData }) => {
               <div style={{ display: "flex", flexDirection: "column" }}>
                 <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>
                   Material Cost
-                  <StatusBadge variant="grey-light">Auto-calculated</StatusBadge>
+                  <StatusBadge variant="grey-light">Auto Calculated</StatusBadge>
                 </span>
                 <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)" }}>
                   Cost of materials used during production

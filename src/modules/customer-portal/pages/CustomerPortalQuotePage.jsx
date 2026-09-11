@@ -28,6 +28,7 @@ import { PortalActionsLogTable } from "../components/PortalActionsLogTable.jsx";
 import { PortalToast } from "../components/PortalToast.jsx";
 import { PortalSimulateScreeningPanel } from "../components/PortalSimulateScreeningPanel.jsx";
 import { useIsMobile } from "../../../hooks/useIsMobile.js";
+import { usePortalLanguage } from "../hooks/usePortalLanguage.js";
 
 const sectionCardStyle = {
   background: "var(--neutral-surface-primary)",
@@ -102,6 +103,8 @@ export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) =
   const [quoteData, setQuoteData] = useState(() => MOCK_QUOTES.find((q) => q.quoteNo === quoteNo) || null);
   const [toast, setToast] = useState(null);
   const [role, setRole] = useState(initialRole);
+  const portalRootRef = useRef(null);
+  const [portalLanguage, setPortalLanguage] = usePortalLanguage(portalRootRef);
 
   useEffect(
     () =>
@@ -338,11 +341,16 @@ export const CustomerPortalQuotePage = ({ quoteNo, initialRole = "approver" }) =
   const products = quoteData.products || [];
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--neutral-background-primary, #F5F5F7)", overflowX: "hidden" }}>
+    <div
+      ref={portalRootRef}
+      style={{ minHeight: "100vh", background: "var(--neutral-background-primary, #F5F5F7)", overflowX: "hidden" }}
+    >
       <PortalTopBar
         email={actingPic?.email || quoteData.customer?.email || "dev@mail.com"}
         role={role}
         onRoleChange={setRole}
+        language={portalLanguage}
+        onLanguageChange={setPortalLanguage}
       />
 
       {toast ? (

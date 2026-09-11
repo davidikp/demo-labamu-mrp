@@ -1,13 +1,22 @@
-import React from "react";
+import React, { useRef } from "react";
 import { BrandLogoLockup, HourglassIcon } from "../../../components/icons/Icons.jsx";
+import { PortalLanguageSelector } from "../components/PortalLanguageSelector.jsx";
+import { usePortalLanguage } from "../hooks/usePortalLanguage.js";
 
 // Standalone full-screen confirmation shown after a customer submits a
 // Request Revision decision in the Customer Portal — mirrors
 // SuspendedAccountPage.jsx's fixed-inset/centered-card takeover pattern, but
-// on its own blue background per the Figma reference, with no top bar and no
-// quote content (the customer's turn is over until the seller responds).
-export const PortalRevisionRequestedPage = () => (
+// on its own blue background per the Figma reference, with no quote content
+// (the customer's turn is over until the seller responds) and no full top
+// bar — just a language selector in the top-right corner, since there's no
+// profile/email here to anchor it against.
+export const PortalRevisionRequestedPage = () => {
+  const portalRootRef = useRef(null);
+  const [language, setLanguage] = usePortalLanguage(portalRootRef);
+
+  return (
   <div
+    ref={portalRootRef}
     style={{
       position: "fixed",
       inset: 0,
@@ -20,6 +29,10 @@ export const PortalRevisionRequestedPage = () => (
       overflowY: "auto",
     }}
   >
+    <div style={{ position: "absolute", top: "24px", right: "24px" }}>
+      <PortalLanguageSelector language={language} onLanguageChange={setLanguage} />
+    </div>
+
     <div
       style={{
         maxWidth: "420px",
@@ -68,4 +81,5 @@ export const PortalRevisionRequestedPage = () => (
       </p>
     </div>
   </div>
-);
+  );
+};

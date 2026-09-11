@@ -212,7 +212,8 @@ export const MOCK_WO_TABLE_DATA = [
     status: "Not Started",
     statusKey: "not_started",
     sBadge: "grey",
-    bomId: "BOM-000005",
+    // Intentionally no bomId — demo data for the "missing Bill of Materials"
+    // guard on Submit/Approve Order (see OrderDetailPage.jsx productsMissingBom).
   },
   {
     wo: "WO-202604-006",

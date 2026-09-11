@@ -17,11 +17,14 @@ import { Button } from "../../../components/common/Button.jsx";
 import { StatusBadge } from "../../../components/common/StatusBadge.jsx";
 import { InputField } from "../../../components/molecules/InputField.jsx";
 import { RadioButton } from "../../../ce-ui";
+import { GeneralModal } from "../../../components/modal/GeneralModal.jsx";
 import { createBom, updateBom, getBom, resolveMaterialOption, DEFAULT_COGS } from "../mock/bomMocks.js";
 import { computeMaterialCost, fieldTotal, formatIDR } from "../utils/bomUtils.js";
 import { CostFieldAccordion } from "../components/CostFieldAccordion.jsx";
 import { MaterialLineModal } from "../components/MaterialLineModal.jsx";
+import { AverageCostHeader } from "../components/BomShared.jsx";
 import { RoutingLineModal } from "../components/RoutingLineModal.jsx";
+import { setNavigationGuard, clearNavigationGuard } from "../../../utils/navigationGuard.js";
 
 // Same wording as Actual COGS on the Work Order detail page (see
 // ACTUAL_COGS_FIELDS in WorkOrderDetailPage.jsx) so a cost item reads the
@@ -170,6 +173,52 @@ export const BomCreatePage = ({ onNavigate, initialData, isSidebarCollapsed, isM
   const [showErrors, setShowErrors] = useState(false);
   const [invalidCogsLineIds, setInvalidCogsLineIds] = useState(new Set());
 
+  // Discard-changes guard — mirrors PurchaseOrderCreatePage's dirty-snapshot
+  // pattern (compare current form state to what it was at mount) combined
+  // with NotificationSettingsPage's shared navigationGuard.js hookup, so
+  // leaving this page with unsaved changes prompts to discard, whether the
+  // user clicks Cancel/Back or navigates to a different module entirely via
+  // the sidebar.
+  const [pendingLeave, setPendingLeave] = useState(null); // { proceed } | null
+  const buildDirtySnapshot = () =>
+    JSON.stringify({
+      name,
+      description,
+      status,
+      materials,
+      routing: routing.map(({ _uid, ...r }) => r),
+      cogs,
+    });
+  const initialDirtySnapshotRef = useRef(null);
+  if (initialDirtySnapshotRef.current === null) {
+    initialDirtySnapshotRef.current = buildDirtySnapshot();
+  }
+  const isDirty = buildDirtySnapshot() !== initialDirtySnapshotRef.current;
+  const isDirtyRef = useRef(false);
+  useEffect(() => {
+    isDirtyRef.current = isDirty;
+  }, [isDirty]);
+  useEffect(() => {
+    const guard = (proceed) => {
+      if (!isDirtyRef.current) return true;
+      setPendingLeave({ proceed });
+      return false;
+    };
+    setNavigationGuard(guard);
+    return () => clearNavigationGuard(guard);
+  }, []);
+
+  // Used by Cancel, the back chevron, and the "Bill of Materials" breadcrumb
+  // link — all three are "leave this page" actions, so all three prompt the
+  // same way when dirty.
+  const attemptLeave = (navigateAway) => {
+    if (isDirty) {
+      setPendingLeave({ proceed: navigateAway });
+      return;
+    }
+    navigateAway();
+  };
+
   // Custom (non-native) drag for Routing rows: a floating card follows the
   // cursor while a grey placeholder box — sized to the real row — marks the
   // drop position in the list. Native HTML5 drag-and-drop can't render both
@@ -279,14 +328,23 @@ export const BomCreatePage = ({ onNavigate, initialData, isSidebarCollapsed, isM
   const materialsError = showErrors && materials.length === 0 ? "Please add at least one material" : null;
   const routingError = showErrors && routing.length === 0 ? "Please add at least one routing step" : null;
 
+  const isCogsAmountEmpty = (amount) => amount === "" || amount === null || amount === undefined;
+
   const cogsLinesValid = COGS_FIELDS.every(({ key }) => {
     const field = cogs[key];
     if (field?.mode !== "breakdown") return true;
-    return (field.lines || []).every((l) => l.label?.trim());
+    return (field.lines || []).every((l) => l.label?.trim() && !isCogsAmountEmpty(l.amount));
   });
   const canSave = name.trim().length > 0 && materials.length > 0 && routing.length > 0 && cogsLinesValid;
 
-  const handleCancel = () => onNavigate(isEdit ? "detail" : "list", existingBom);
+  const handleCancel = () => attemptLeave(() => onNavigate(isEdit ? "detail" : "list", existingBom));
+
+  const confirmDiscardLeave = () => {
+    const action = pendingLeave;
+    setPendingLeave(null);
+    clearNavigationGuard();
+    action?.proceed?.();
+  };
 
   const handleSave = () => {
     if (!canSave) {
@@ -296,7 +354,7 @@ export const BomCreatePage = ({ onNavigate, initialData, isSidebarCollapsed, isM
         const field = cogs[key];
         if (field?.mode !== "breakdown") return;
         (field.lines || []).forEach((l) => {
-          if (!l.label?.trim()) invalidIds.add(l.id);
+          if (!l.label?.trim() || isCogsAmountEmpty(l.amount)) invalidIds.add(l.id);
         });
       });
       setInvalidCogsLineIds(invalidIds);
@@ -332,7 +390,7 @@ export const BomCreatePage = ({ onNavigate, initialData, isSidebarCollapsed, isM
           <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "var(--text-title-3)" }}>
             <span
               style={{ color: "var(--neutral-on-surface-secondary)", cursor: "pointer" }}
-              onClick={() => onNavigate("list")}
+              onClick={() => attemptLeave(() => onNavigate("list"))}
             >
               Bill of Materials
             </span>
@@ -410,7 +468,7 @@ export const BomCreatePage = ({ onNavigate, initialData, isSidebarCollapsed, isM
                     <span>SKU</span>
                     <span>Category</span>
                     <span>Type</span>
-                    <span>Average Cost</span>
+                    <AverageCostHeader />
                     <span>Quantity</span>
                     <span>Subtotal</span>
                     <span style={{ textAlign: "right" }}>Actions</span>
@@ -605,7 +663,7 @@ export const BomCreatePage = ({ onNavigate, initialData, isSidebarCollapsed, isM
                   <div style={{ display: "flex", flexDirection: "column" }}>
                     <span style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--neutral-on-surface-primary)", fontWeight: "bold" }}>
                       Material Cost
-                      <StatusBadge variant="grey-light">Auto-calculated</StatusBadge>
+                      <StatusBadge variant="grey-light">Auto Calculated</StatusBadge>
                     </span>
                     <span style={{ fontSize: "12px", color: "var(--neutral-on-surface-secondary)" }}>
                       Cost of materials used during production
@@ -660,9 +718,27 @@ export const BomCreatePage = ({ onNavigate, initialData, isSidebarCollapsed, isM
           Cancel
         </Button>
         <Button size="medium" variant="filled" onClick={handleSave}>
-          Save
+          {isEdit ? "Save Changes" : "Save"}
         </Button>
       </div>
+
+      <GeneralModal
+        isOpen={pendingLeave !== null}
+        onClose={() => setPendingLeave(null)}
+        title="Discard changes?"
+        description="Any changes you made on this page will be lost."
+        hideFooterDivider
+        footer={
+          <div style={{ display: "flex", gap: "12px", width: "100%" }}>
+            <Button variant="outlined" size="large" style={{ flex: 1 }} onClick={() => setPendingLeave(null)}>
+              Keep Editing
+            </Button>
+            <Button variant="filled" size="large" style={{ flex: 1 }} onClick={confirmDiscardLeave}>
+              Yes, Discard
+            </Button>
+          </div>
+        }
+      />
 
       {materialModal ? (
         <MaterialLineModal

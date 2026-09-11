@@ -896,6 +896,8 @@ const INDONESIAN_EXACT_TEXT = {
   "Submit Request": "Kirim Permintaan",
   "Input Reason": "Masukkan Alasan",
   "Expired Materials Detected": "Material Kedaluwarsa Terdeteksi",
+  "Expired Materials:": "Material Kedaluwarsa:",
+  "Expired on": "Kedaluwarsa pada",
   "Confirm Anyway": "Tetap Konfirmasi",
   "Material Preparation": "Persiapan Material",
   "Confirm the allocated materials to begin preparing the requested items": "Konfirmasikan alokasi material untuk memulai proses persiapan sesuai rincian yang ditampilkan",
@@ -975,7 +977,7 @@ const INDONESIAN_EXACT_TEXT = {
   "Cost of materials used during production": "Biaya material yang digunakan selama produksi",
   "Cost of materials used during production, updated when requested materials are received":
     "Biaya material yang digunakan selama produksi, diperbarui setelah material yang diminta diterima",
-  "On forecast": "Sesuai Estimasi",
+  "On Forecast": "Sesuai Estimasi",
   "Cost Item": "Item Biaya",
   "Quantity Used": "Jumlah Digunakan",
   "Forecasted Cost per Unit": "Estimasi Biaya per Unit",
@@ -1266,6 +1268,223 @@ const INDONESIAN_EXACT_TEXT = {
   "Duplicate SKU found in this file": "SKU duplikat ditemukan pada file ini",
   "Duplicate name found in this file": "Nama duplikat ditemukan pada file ini",
   "Saved — no duplicate values found.": "Tersimpan — tidak ditemukan nilai duplikat.",
+
+  // --- Customer Portal wordings (translation review, 2026-09-10) — see
+  // translation-review/customer-portal-wordings-bahasa-indonesia.csv ---
+  approver: "pemberi persetujuan",
+  viewer: "pemantau",
+  QUOTE: "PENAWARAN",
+  "Waiting Approval": "Menunggu Persetujuan",
+  Accepted: "Diterima",
+  "Issued By": "Diterbitkan Oleh",
+  "Issued On": "Diterbitkan Pada",
+  "Valid Until": "Berlaku Hingga",
+  "Down Payment": "Uang Muka",
+  "Customer Information": "Informasi Pelanggan",
+  "PIC Information": "Informasi PIC",
+  "No PIC added yet.": "Belum ada PIC yang ditambahkan.",
+  Attachment: "Lampiran",
+  "No attachments found.": "Tidak ada lampiran.",
+  "Product List": "Daftar Produk",
+  "Terms and Conditions": "Syarat dan Ketentuan",
+  "Shipping Method": "Metode Pengiriman",
+  "Estimated Delivery": "Estimasi Pengiriman",
+  "Risk Level": "Tingkat Risiko",
+  "Dispute Resolution Method": "Metode Penyelesaian Sengketa",
+  "Force Majeure": "Keadaan Kahar",
+  "Late Payment Penalties": "Denda Keterlambatan Pembayaran",
+  "Performance Guarantees": "Jaminan Pelaksanaan",
+  "Governing Law": "Hukum yang Berlaku",
+  "Reject Quote": "Tolak Penawaran",
+  "Request Revision": "Minta Revisi",
+  "Accept Quote": "Terima Penawaran",
+  "Add a reason for rejecting this quote.": "Tambahkan alasan penolakan penawaran ini.",
+  "Add revision notes for the seller.": "Tambahkan catatan revisi untuk penjual.",
+  "Add a comment for acceptance if needed.": "Tambahkan komentar jika diperlukan.",
+  "Quote rejected": "Penawaran ditolak",
+  "Quote accepted": "Penawaran diterima",
+  "Unable to Accept Quote": "Penawaran Tidak Dapat Diterima",
+  "This quote can’t be accepted right now. Please contact the company that issued the quote for assistance.":
+    "Penawaran ini belum dapat diterima. Hubungi perusahaan yang menerbitkan penawaran untuk mendapatkan bantuan.",
+  Understood: "Mengerti",
+  "Accepting your quote": "Menerima penawaran Anda",
+  "This may take a moment. Please keep this page open.": "Proses ini mungkin memerlukan waktu. Tetap buka halaman ini.",
+  "Quote not found.": "Penawaran tidak ditemukan.",
+  Time: "Waktu",
+  "No actions yet.": "Belum ada aksi.",
+  // "Revision Requested" already has a dictionary entry (Purchase Order
+  // module, "Permintaan Revisi") — reused as-is here rather than adding a
+  // conflicting duplicate key for the same exact source string.
+  "You've submitted a revision request. Please wait while the seller reviews your changes.":
+    "Permintaan revisi Anda telah dikirim. Tunggu hingga penjual meninjau perubahan Anda.",
+  // NOTE: "Simulate Screening" and "Reset customer to Not Screened" are
+  // shared verbatim by the Customer Portal's SimulateScreeningPanel and the
+  // internal Quote module's own SimulateScreeningPanel — one dictionary key
+  // can only hold one Indonesian value, so both panels use the wording from
+  // the later (quote-module) translation review.
+  "Simulate Screening": "Simulasikan Pemeriksaan",
+  "No customer linked to this quote": "Tidak ada pelanggan yang terhubung ke penawaran ini",
+  "Check a scenario, then use Accept Quote to see the result.":
+    "Pilih skenario, lalu gunakan Terima Penawaran untuk melihat hasilnya.",
+  "Reset customer to Not Screened": "Atur ulang pelanggan ke Belum Diperiksa",
+
+  // Quote Product List / Totals summary (QuoteProductTable.jsx,
+  // QuoteTotalsSummary.jsx) — shared by the internal Quote module and the
+  // Customer Portal's read view.
+  "Product Name": "Nama Produk",
+  "No products added yet.": "Belum ada produk yang ditambahkan.",
+  Discount: "Diskon",
+  "Total Price": "Total Harga",
+  // "Tax Rate ({n}%)" renders as separate JSX text nodes ("Tax Rate (" then
+  // the number then "%)") — same shape as the Routing "Hours" cell fix, so
+  // only the static prefix needs an entry; the "%)" suffix is unchanged.
+  "Tax Rate (": "Tarif Pajak (",
+  "Shipping Fee": "Biaya Pengiriman",
+  "Other Fee": "Biaya Lainnya",
+
+  // --- Quote module wordings (translation review, 2026-09-10) — see
+  // translation-review/quote-module-wordings-bahasa-indonesia.csv ---
+  "New Quote": "Penawaran Baru",
+  "Quote No": "No. Penawaran",
+  "RFQ No": "No. RFQ",
+  "Search quote number, RFQ number, or customer": "Cari nomor penawaran, nomor RFQ, atau pelanggan",
+  "No quotes found": "Penawaran tidak ditemukan",
+  "Add New Quote": "Tambah Penawaran Baru",
+  "Edit Quote": "Ubah Penawaran",
+  "Quote Details": "Detail Penawaran",
+  "Down Payment Percentage": "Persentase Uang Muka",
+  "Enter date": "Masukkan tanggal",
+  "e.g. PT ABC Manufacturing": "contoh: PT ABC Manufacturing",
+  "Customer Email": "Email Pelanggan",
+  "Use official company email address": "Gunakan alamat email resmi perusahaan",
+  "Customer Phone": "Telepon Pelanggan",
+  "Use main office/HQ phone number": "Gunakan nomor telepon kantor utama/pusat",
+  "Customer Tag": "Tag Pelanggan",
+  "Max 5 tags": "Maks. 5 tag",
+  "Select customer tags": "Pilih tag pelanggan",
+  "Customer Country": "Negara Pelanggan",
+  "Select customer country": "Pilih negara pelanggan",
+  "Customer Address": "Alamat Pelanggan",
+  "Enter registered company address": "Masukkan alamat perusahaan yang terdaftar",
+  "Will be used for document purposes": "Akan digunakan untuk keperluan dokumen",
+  "Person In Charge": "PIC",
+  "Add Product": "Tambah Produk",
+  "Please add at least one product": "Tambahkan minimal satu produk",
+  "No products added yet. Click \"Add Product\" to get started.":
+    "Belum ada produk yang ditambahkan. Klik \"Tambah Produk\" untuk memulai.",
+  "Enter amount": "Masukkan jumlah",
+  "Upload Documents": "Unggah Dokumen",
+  "Bank Account": "Rekening Bank",
+  "Select bank account": "Pilih rekening bank",
+  "Supported Currencies": "Mata Uang yang Didukung",
+  "SWIFT Code": "Kode SWIFT",
+  Branch: "Cabang",
+  "Branch Address": "Alamat Cabang",
+  "Select payment terms": "Pilih syarat pembayaran",
+  "Select incoterms": "Pilih Incoterms",
+  "Select shipping method": "Pilih metode pengiriman",
+  "e.g., 2-3 weeks": "contoh: 2–3 minggu",
+  "Select dispute resolution method": "Pilih metode penyelesaian sengketa",
+  "Enter governing law": "Masukkan hukum yang berlaku",
+  "Specify the payment schedule and conditions agreed between buyer and seller (e.g., Net 30, Net 60, Net 90, COD, etc).":
+    "Tentukan jadwal dan ketentuan pembayaran yang disepakati antara pembeli dan penjual (misalnya Net 30, Net 60, Net 90, COD, dll.).",
+  "Choose the international trade term that defines delivery point, risk transfer, and cost responsibility (e.g., FOB, CIF, EXW).":
+    "Pilih ketentuan perdagangan internasional yang menentukan titik pengiriman, perpindahan risiko, dan tanggung jawab biaya (misalnya FOB, CIF, EXW).",
+  "Indicates the level of risk for the buyer or seller based on the selected Incoterms (risk transfers according to delivery terms).":
+    "Menunjukkan tingkat risiko bagi pembeli atau penjual berdasarkan Incoterms yang dipilih (risiko berpindah sesuai ketentuan pengiriman).",
+  "Select the mode of transportation for goods delivery (e.g., Air Freight, Sea Freight, Land Courier).":
+    "Pilih moda transportasi untuk pengiriman barang (misalnya angkutan udara, laut, atau kurir darat).",
+  "Enter the estimated time frame for delivery or completion after order confirmation.":
+    "Masukkan perkiraan waktu pengiriman atau penyelesaian setelah pesanan dikonfirmasi.",
+  "Define the agreed process to resolve disputes, such as arbitration, mediation, or court settlement.":
+    "Tentukan proses yang disepakati untuk menyelesaikan sengketa, seperti arbitrase, mediasi, atau penyelesaian melalui pengadilan.",
+  "Indicate the legal jurisdiction or country law that governs the agreement.":
+    "Tentukan yurisdiksi atau hukum negara yang mengatur perjanjian.",
+  "Include a clause to protect both parties if contract obligations cannot be met due to events beyond control (e.g., natural disasters, war).":
+    "Sertakan klausul untuk melindungi kedua pihak jika kewajiban kontrak tidak dapat dipenuhi karena kejadian di luar kendali (misalnya bencana alam atau perang).",
+  "Apply financial penalties or interest charges when payment is delayed beyond the agreed term.":
+    "Terapkan denda atau bunga jika pembayaran terlambat melewati jangka waktu yang disepakati.",
+  "Require the supplier to provide assurance of product quality or project completion as agreed.":
+    "Wajibkan pemasok memberikan jaminan kualitas produk atau penyelesaian proyek sesuai kesepakatan.",
+  "Include Force Majeure Clause": "Sertakan Klausul Keadaan Kahar",
+  "Enter force majeure clause": "Masukkan klausul keadaan kahar",
+  "Include Late Payment Penalties": "Sertakan Denda Keterlambatan Pembayaran",
+  "Enter late payment penalties": "Masukkan denda keterlambatan pembayaran",
+  "Include Performance Guarantees": "Sertakan Jaminan Pelaksanaan",
+  "Enter performance guarantees": "Masukkan jaminan pelaksanaan",
+  Additional: "Tambahan",
+  "Enter additional": "Masukkan tambahan",
+  "Save Draft": "Simpan Draf",
+  "Quote draft successfully updated": "Draf penawaran berhasil diperbarui",
+  "Quote draft successfully saved": "Draf penawaran berhasil disimpan",
+  "Quote successfully updated": "Penawaran berhasil diperbarui",
+  "Quote successfully created": "Penawaran berhasil dibuat",
+  "Quote Detail": "Detail Penawaran",
+  "Customer Action": "Aksi Pelanggan",
+  "Mark as Rejected": "Tandai sebagai Ditolak",
+  "Customer Approval Status": "Status Persetujuan Pelanggan",
+  "Sanctions Screening Status": "Status Pemeriksaan Sanksi",
+  "Customer Tags": "Tag Pelanggan",
+  "Sent to Customer": "Dikirim ke Pelanggan",
+  "Submitted for Approval": "Diajukan untuk Persetujuan",
+  Reject: "Tolak",
+  "Send to Customer": "Kirim ke Pelanggan",
+  "Approve Quote": "Setujui Penawaran",
+  "Running sanctions screening": "Menjalankan pemeriksaan sanksi",
+  "Checking the customer against applicable sanctions lists. This may take a moment.":
+    "Memeriksa pelanggan berdasarkan daftar sanksi yang berlaku. Proses ini mungkin memerlukan beberapa saat.",
+  "Sanctions screening failed and account suspended": "Pemeriksaan sanksi gagal dan akun ditangguhkan",
+  "The customer did not pass sanctions screening. The quote was automatically rejected and your Labamu Manufacturing account has been suspended. Contact Customer Support at cs@labamu.co.id to appeal.":
+    "Pelanggan tidak lolos pemeriksaan sanksi. Penawaran otomatis ditolak dan akun Labamu Manufacturing Anda ditangguhkan. Hubungi Customer Support di cs@labamu.co.id untuk mengajukan banding.",
+  "Unable to approve quote": "Penawaran tidak dapat disetujui",
+  "The sanctions screening could not be completed due to a technical issue. Please try approving the quote again.":
+    "Pemeriksaan sanksi tidak dapat diselesaikan karena kendala teknis. Coba setujui penawaran lagi.",
+  "Try Again": "Coba Lagi",
+  "Add Customer Country": "Tambah Negara Pelanggan",
+  "Sanctions screening requires the customer's country. Select it below to continue.":
+    "Pemeriksaan sanksi memerlukan negara pelanggan. Pilih negara di bawah untuk melanjutkan.",
+  "Save & Continue": "Simpan & Lanjutkan",
+  "No customer is linked to this quote. Add a customer before approving.":
+    "Tidak ada pelanggan yang terhubung ke penawaran ini. Tambahkan pelanggan sebelum menyetujui penawaran.",
+  "This customer did not pass sanctions screening. The account remains suspended.":
+    "Pelanggan ini tidak lolos pemeriksaan sanksi. Akun tetap ditangguhkan.",
+  "Quote successfully approved. Sanctions screening passed.":
+    "Penawaran berhasil disetujui. Pemeriksaan sanksi berhasil.",
+  "Customer country saved. Continuing sanctions screening.":
+    "Negara pelanggan berhasil disimpan. Pemeriksaan sanksi dilanjutkan.",
+  "Quote status successfully updated": "Status penawaran berhasil diperbarui",
+  "Customer screening state reset.": "Status pemeriksaan pelanggan berhasil diatur ulang.",
+  "Quote successfully sent to customer": "Penawaran berhasil dikirim ke pelanggan",
+  "Preparing quote download...": "Menyiapkan unduhan penawaran...",
+  "Quote submitted for approval.": "Penawaran diajukan untuk persetujuan.",
+  "Quote successfully rejected": "Penawaran berhasil ditolak",
+  "Revision requested": "Revisi berhasil diminta",
+  "Quote approved and issued to customer": "Penawaran disetujui dan diterbitkan kepada pelanggan",
+  "Enable approval workflow for Quote": "Aktifkan alur persetujuan untuk penawaran",
+  "When enabled, approvers must provide a comment. When disabled, the comment field is still shown but optional.":
+    "Jika diaktifkan, penyetuju wajib memberikan komentar. Jika dinonaktifkan, kolom komentar tetap ditampilkan tetapi bersifat opsional.",
+  "Select users who can approve Quote": "Pilih pengguna yang dapat menyetujui penawaran",
+  "User Group": "Grup Pengguna",
+  "Search by name or user group...": "Cari berdasarkan nama atau grup pengguna...",
+  "Quote settings successfully saved": "Pengaturan penawaran berhasil disimpan",
+  "Add Product to Quote": "Tambah Produk ke Penawaran",
+  "Edit Product in Quote": "Ubah Produk dalam Penawaran",
+  "Discount Percentage": "Persentase Diskon",
+  "Auto calculated based on quantity, unit price, and discount":
+    "Dihitung otomatis berdasarkan jumlah, harga satuan, dan diskon",
+  "Enter notes (optional)": "Masukkan catatan (opsional)",
+  "Max 3 files, 30MB each": "Maks. 3 file, masing-masing 30 MB",
+  "Accepts any file type": "Mendukung semua jenis file",
+  "Save Product": "Simpan Produk",
+  "Quantity must be above 0": "Jumlah harus lebih dari 0",
+  "Must be between 0 and 100": "Harus antara 0 dan 100",
+  Comment: "Komentar",
+  "Customer Portal": "Portal Pelanggan",
+  // "+ Add "{name}" as new customer" renders as separate JSX text nodes
+  // (literal text, the typed name expression, literal text) — same shape as
+  // the Routing "Hours" cell fix, so only the static fragments can match.
+  '+ Add "': '+ Tambah "',
+  '" as new customer': '" sebagai pelanggan baru',
 };
 
 const INDONESIAN_FRAGMENT_REPLACEMENTS = [
@@ -1309,6 +1528,20 @@ const INDONESIAN_FRAGMENT_REPLACEMENTS = [
 ];
 
 const INDONESIAN_DYNAMIC_TEXT = [
+  {
+    // Quote Create/Edit — attachment upload validation (QuoteCreatePage.jsx).
+    pattern: /^Maximum (\d+) files$/i,
+    replacer: (_, n) => `Maksimal ${n} file`,
+  },
+  {
+    pattern: /^(\d+) file\(s\) exceed the 30MB limit$/i,
+    replacer: (_, n) => `${n} file melebihi batas 30 MB`,
+  },
+  {
+    // Quote Create/Edit — Bank Account section currency-mismatch helper text.
+    pattern: /^Selected bank account is not supported for (.+) currency$/i,
+    replacer: (_, currency) => `Rekening bank yang dipilih tidak mendukung mata uang ${currency}`,
+  },
   {
     pattern: /^Remind Day must be between (\d+)-(\d+) days$/i,
     replacer: (_, min, max) => `Hari pengingat harus di antara ${min}-${max} hari`,

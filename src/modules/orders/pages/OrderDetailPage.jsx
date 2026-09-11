@@ -29,6 +29,7 @@ import {
   createUploadDocumentRecord 
 } from "../../../utils/upload/uploadUtils.js";
 import { MOCK_WO_TABLE_DATA } from "../../work-order/mock/workOrderMocks.js";
+import { getBom } from "../../bill-of-materials/mock/bomMocks.js";
 import { MOCK_ORDER_TABLE_DATA, MOCK_ORDER_MATERIALS_DATA, MOCK_ORDER_PRODUCTS_DATA } from "../mock/orderMocks.js";
 import { MOCK_PO_TABLE_DATA } from "../../../modules/purchase-order/mock/purchaseOrderMocks.js";
 import { TraceabilityTab } from "../components/TraceabilityTab.jsx";
@@ -2518,6 +2519,26 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
   const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
   const [isApproveModalOpen, setIsApproveModalOpen] = useState(false);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [missingBomProducts, setMissingBomProducts] = useState(null);
+
+  // Products without a Bill of Materials can't be costed/produced, so Submit
+  // and Approve are blocked until every product on the order has one —
+  // caught here rather than left to fail silently downstream.
+  const productsMissingBom = React.useMemo(() => {
+    let rawData = MOCK_WO_TABLE_DATA.filter(wo => wo.ord === orderData.orderNo);
+    if (rawData.length === 0) {
+      rawData = MOCK_WO_TABLE_DATA.slice(0, 15).map(wo => ({
+        ...wo,
+        ord: orderData.orderNo
+      }));
+    }
+    const seen = new Set();
+    return rawData.filter((wo) => {
+      if (seen.has(wo.product)) return false;
+      seen.add(wo.product);
+      return !wo.bomId || !getBom(wo.bomId);
+    });
+  }, [orderData.orderNo]);
 
   const allWorkOrdersCompleted = React.useMemo(() => {
     let rawData = MOCK_WO_TABLE_DATA.filter(wo => wo.ord === orderData.orderNo);
@@ -3300,6 +3321,63 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
           setIsSubmitModalOpen(false);
         }}
       />
+      <GeneralModal
+        isOpen={!!missingBomProducts}
+        onClose={() => setMissingBomProducts(null)}
+        title="Bill of Materials Required"
+        width="520px"
+        description="This order can’t proceed because one or more products don’t have a Bill of Materials. Contact the Product team to set them up before trying again."
+      >
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+          <div
+            style={{
+              width: "100%",
+              background: "var(--feature-brand-container-lighter)",
+              borderRadius: "12px",
+              padding: "16px 20px",
+              display: "flex",
+              gap: "16px",
+              alignItems: "flex-start",
+              textAlign: "left",
+              marginBottom: "32px",
+            }}
+          >
+            <div style={{ marginTop: "2px" }}>
+              <Info size={20} color="var(--feature-brand-primary)" />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <span style={{ fontSize: "14px", fontWeight: "bold", color: "var(--feature-brand-primary)" }}>
+                Affected Products
+              </span>
+              {(missingBomProducts || []).map((wo) => (
+                <div
+                  key={wo.product}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    color: "var(--feature-brand-primary)",
+                    fontSize: "16px",
+                    fontWeight: "500",
+                  }}
+                >
+                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--feature-brand-primary)" }} />
+                  {wo.product}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <Button
+            variant="filled"
+            size="large"
+            onClick={() => setMissingBomProducts(null)}
+            style={{ width: "100%", height: "56px", fontSize: "18px" }}
+          >
+            Understood
+          </Button>
+        </div>
+      </GeneralModal>
 
       {/* Sticky Bottom Action Footer */}
       {orderData.status !== "Completed" && orderData.status !== "Cancelled" && (
@@ -3349,7 +3427,13 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
               <Button
                 size={isMobile ? "medium" : "large"}
                 variant="filled"
-                onClick={() => setIsApproveModalOpen(true)}
+                onClick={() => {
+                  if (productsMissingBom.length > 0) {
+                    setMissingBomProducts(productsMissingBom);
+                    return;
+                  }
+                  setIsApproveModalOpen(true);
+                }}
                 style={isMobile ? { flex: 1 } : undefined}
               >
                 Approve
@@ -3372,7 +3456,13 @@ export const OrderDetailPage = ({ onNavigate, initialData, showSnackbar, isSideb
                 <Button
                   size={isMobile ? "medium" : "large"}
                   variant="filled"
-                  onClick={() => setIsSubmitModalOpen(true)}
+                  onClick={() => {
+                    if (productsMissingBom.length > 0) {
+                      setMissingBomProducts(productsMissingBom);
+                      return;
+                    }
+                    setIsSubmitModalOpen(true);
+                  }}
                   style={isMobile ? { flex: 1 } : undefined}
                 >
                   Submit Order
