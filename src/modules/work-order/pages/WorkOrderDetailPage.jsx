@@ -631,6 +631,17 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, isMobile =
   // routing) are driven by the main output quantity alone — additional
   // outputs don't factor into routing progress math.
   const ROUTING_QTY = mainQty;
+  // The one true "created" date for this work order — same fallback chain
+  // the Activity Log's "Created" entry uses (see baseCreatedTs below) — so
+  // every place that shows a creation date (the Details tab's "Created On"
+  // field, the Forecasted COGS tooltip) reads the same value instead of
+  // drifting out of sync with each other.
+  const woCreatedRaw = initialData?.createdDate || initialData?.start || "2025-12-08";
+  const woCreatedLabel = new Date(`${woCreatedRaw}T00:00:00`).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
   const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
   const [isAdditionalOutputEditOpen, setIsAdditionalOutputEditOpen] = useState(false);
 
@@ -719,9 +730,8 @@ export const WorkOrderDetailPage = ({ onNavigate, isSidebarCollapsed, isMobile =
       });
     }
     
-    const baseCreatedTs = initialData?.createdDate || initialData?.start || "2025-12-08";
     mockLogs.push({
-      name: "Natasha Smith", email: "natasha@company.com", title: "Created", timestamp: `${baseCreatedTs} at 08:00`
+      name: "Natasha Smith", email: "natasha@company.com", title: "Created", timestamp: `${woCreatedRaw} at 08:00`
     });
 
     // Work orders with a seeded material request history: record each request
@@ -2028,7 +2038,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
   // to be the active tab when the status lands there, fall back to Details so
   // the panel area is never left blank.
   useEffect(() => {
-    if (woStatus === "not_started" && activeTab === "cogs") {
+    if (woStatus === "not_started" && (activeTab === "cogs" || activeTab === "costing_log")) {
       setActiveTab("details");
     }
   }, [woStatus, activeTab]);
@@ -4968,7 +4978,7 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
               }}
             />
 
-            <LabelValue label="Created On" value={`2025-12-08; 15:00`} />
+            <LabelValue label="Created On" value={`${woCreatedRaw}; 08:00`} />
             <LabelValue
               label="Fulfillment Type"
               value={fulfillmentType === "StockBuild" ? "Stock Build" : "Customer Order"}
@@ -5086,7 +5096,9 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
               ...(woStatus === "not_started" ? [] : [{ id: "cogs", label: "Actual COGS" }]),
               ...(confirmedStockBuild ? [{ id: "confirm_build", label: "Confirm Build Detail" }] : []),
               { id: "activity_log", label: "Activity Log" },
-              { id: "costing_log", label: "Costing Log" },
+              // Costing Log has nothing to show before production starts —
+              // same gating as the Actual COGS tab above.
+              ...(woStatus === "not_started" ? [] : [{ id: "costing_log", label: "Costing Log" }]),
             ]}
             activeTab={activeTab}
             onChange={setActiveTab}
@@ -6651,16 +6663,6 @@ const [isUploadProofModalOpen, setIsUploadProofModalOpen] = useState(false);
 
         {activeTab === "cogs" && woStatus !== "not_started" && (() => {
           const linkedBom = actualCogsBomId ? getBom(actualCogsBomId) : null;
-          // Same fallback chain the Activity Log's "Created" entry uses (see
-          // the mockLogs initializer above) so the tooltip's date always
-          // matches this work order's actual creation date instead of a
-          // hardcoded placeholder.
-          const woCreatedRaw = initialData?.createdDate || initialData?.start || "2025-12-08";
-          const woCreatedLabel = new Date(`${woCreatedRaw}T00:00:00`).toLocaleDateString("en-GB", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          });
           // Non BOM materials have no BOM line to price/forecast against, so
           // they're tracked separately here and shown with a "-" Forecasted
           // Cost per Unit rather than being silently dropped from Actual COGS.

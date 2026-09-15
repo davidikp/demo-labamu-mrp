@@ -51,6 +51,9 @@ import { CustomerCreatePage } from "./modules/customer/pages/CustomerCreatePage.
 import { CustomerDetailPage } from "./modules/customer/pages/CustomerDetailPage.jsx";
 import { MaterialUploadListPage } from "./modules/materials/pages/MaterialUploadListPage.jsx";
 import { MaterialUploadNewPage } from "./modules/materials/pages/MaterialUploadNewPage.jsx";
+import { StockOpnameListPage } from "./modules/materials/pages/StockOpnameListPage.jsx";
+import { StockOpnameNewPage } from "./modules/materials/pages/StockOpnameNewPage.jsx";
+import { StockOpnameResultPage } from "./modules/materials/pages/StockOpnameResultPage.jsx";
 import { ProductCatalogPage } from "./modules/product-catalog/pages/ProductCatalogPage.jsx";
 import { ProductCatalogManagePage } from "./modules/product-catalog/pages/ProductCatalogManagePage.jsx";
 import { BulkUploadListPage } from "./modules/product-catalog/pages/BulkUploadListPage.jsx";
@@ -86,6 +89,7 @@ import { LocaleProvider } from "./ce-ui";
 import { NotificationSeeder } from "./components/notification/NotificationSeeder.jsx";
 import { BulkUploadNotifier } from "./modules/product-catalog/components/BulkUploadNotifier.jsx";
 import { MaterialUploadNotifier } from "./modules/materials/components/MaterialUploadNotifier.jsx";
+import { StockOpnameNotifier } from "./modules/materials/components/StockOpnameNotifier.jsx";
 import { SimulateEventPanel } from "./components/notification/SimulateEventPanel.jsx";
 import { DashboardPage } from "./modules/dashboard/pages/DashboardPage.jsx";
 import { EmailOutboxPage } from "./modules/notification/pages/EmailOutboxPage.jsx";
@@ -466,7 +470,7 @@ const ModuleRenderer = ({
     viewState.data = { id, poNumber: id, wo: id, material: { sku: id } };
   }
 
-  const isSpecialView = ["list", "create", "create_material", "settings", "manage", "bulk_upload_list", "bulk_upload_new"].includes(viewState.view) ||
+  const isSpecialView = ["list", "create", "create_material", "settings", "manage", "bulk_upload_list", "bulk_upload_new", "stock_opname_list", "stock_opname_new", "stock_opname_result"].includes(viewState.view) ||
                         activeModule === "dashboard" ||
                         activeModule === "email_outbox" ||
                         activeModule === "notification_preferences" ||
@@ -1081,6 +1085,33 @@ const ModuleRenderer = ({
     if (viewState.view === "bulk_upload_list") {
       return <MaterialUploadListPage onNavigate={onNavigate} showSnackbar={showPoSnackbar} t={t} />;
     }
+    if (viewState.view === "stock_opname_list") {
+      return <StockOpnameListPage onNavigate={onNavigate} showSnackbar={showPoSnackbar} t={t} />;
+    }
+    if (viewState.view === "stock_opname_new") {
+      return (
+        <StockOpnameNewPage
+          key={viewState.data?.resumeStockOpnameId || viewState.data?.startMethod || "stock-opname-new"}
+          onNavigate={onNavigate}
+          showSnackbar={showPoSnackbar}
+          t={t}
+          initialData={viewState.data}
+          isSidebarCollapsed={isSidebarCollapsed}
+          isMobile={isMobile}
+        />
+      );
+    }
+    if (viewState.view === "stock_opname_result") {
+      return (
+        <StockOpnameResultPage
+          key={viewState.data?.stockOpnameId || "stock-opname-result"}
+          onNavigate={onNavigate}
+          showSnackbar={showPoSnackbar}
+          t={t}
+          initialData={viewState.data}
+        />
+      );
+    }
     if (viewState.view === "bulk_upload_new") {
       return (
         <MaterialUploadNewPage
@@ -1489,6 +1520,7 @@ export default function App() {
       <NotificationSeeder />
       <BulkUploadNotifier />
       <MaterialUploadNotifier />
+      <StockOpnameNotifier />
       {currentActiveModule === "dashboard" ? <SimulateEventPanel /> : null}
       {manufacturerAccountStatus === "Suspended" && location.pathname === "/login" ? (
         <>

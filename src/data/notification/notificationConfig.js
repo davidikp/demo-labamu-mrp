@@ -104,6 +104,13 @@ export const NOTIFICATION_MODULES = {
     route: "materials/bulk-upload-list",
     color: "#0D9488",
   },
+  stock_opname: {
+    key: "stock_opname",
+    label: { en: "Materials", id: "Material" },
+    noun: { en: "Stock Opname", id: "Stock Opname" },
+    route: "materials/stock-opname-list",
+    color: "#7C3AED",
+  },
   compliance: {
     key: "compliance",
     label: { en: "Compliance", id: "Kepatuhan" },

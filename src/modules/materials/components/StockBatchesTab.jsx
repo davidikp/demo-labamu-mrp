@@ -131,7 +131,7 @@ const Tooltip = ({ content, children }) => {
 
 
 
-const DocumentTypeBadge = ({ fileName = "" }) => {
+export const DocumentTypeBadge = ({ fileName = "" }) => {
   const extension = (fileName.split(".").pop() || "PDF").toUpperCase();
   const palette = {
     PDF: { bg: "#E0001B", fold: "#F3A0AA" },

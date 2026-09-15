@@ -1449,6 +1449,100 @@ NOTIFICATION_CATALOG.material_bulk_upload = {
   },
 };
 
+// Stock Opname (PRD "Stock Opname - Notification"). Ready for Review only
+// fires for the upload path (manual Stock Opname opens Review Data
+// directly, so there's nothing to "become ready"); Completed and Canceled
+// cover both paths. Only a system-initiated cancellation notifies — the user
+// cancelling their own Stock Opname before Processing does not (handled by
+// StockOpnameNotifier only reacting to a Processing -> Cancelled transition).
+NOTIFICATION_CATALOG.stock_opname = {
+  stock_opname_ready_for_review: {
+    recipientRule: "eligible_users",
+    channels: { inApp: true, email: true },
+    todo: {
+      type: "stock_opname",
+      tag: { en: "Review Stock Opname", id: "Tinjau Stock Opname" },
+      action: { en: "Review", id: "Tinjau" },
+    },
+    inApp: (c) => ({
+      title: {
+        en: `Your Stock Opname is ready for review`,
+        id: `Stock Opname Anda siap untuk ditinjau`,
+      },
+      body: {
+        en: `Your Stock Opname data has been processed and is ready for review before applying the stock adjustment.`,
+        id: `Data Stock Opname Anda telah diproses dan siap ditinjau sebelum penyesuaian stok diterapkan.`,
+      },
+      cta: { en: "Review Stock Opname", id: "Tinjau Stock Opname" },
+    }),
+    email: (c) => ({
+      subject: {
+        en: `Your Stock Opname is Ready for Review`,
+        id: `Stock Opname Anda Siap untuk Ditinjau`,
+      },
+      body: {
+        en: `Hi ${c.requesterName}, your Stock Opname data has been processed and is ready for review. You can open the Stock Opname page to review the data before applying the stock adjustment.\nStock Opname No: ${c.entityId}\nFile: ${c.fileName || "-"}`,
+        id: `Halo ${c.requesterName}, data Stock Opname Anda telah diproses dan siap ditinjau. Anda dapat membuka halaman Stock Opname untuk meninjau data sebelum penyesuaian stok diterapkan.\nStock Opname No: ${c.entityId}\nFile: ${c.fileName || "-"}`,
+      },
+      cta: { en: "Review Stock Opname", id: "Tinjau Stock Opname" },
+    }),
+  },
+  stock_opname_completed: {
+    recipientRule: "eligible_users",
+    channels: { inApp: true, email: true },
+    todo: null,
+    inApp: (c) => ({
+      title: {
+        en: `Your Stock Opname is complete`,
+        id: `Stock Opname Anda selesai`,
+      },
+      body: {
+        en: `Your Stock Opname has been completed. You can open the Stock Opname page to review the result.`,
+        id: `Stock Opname Anda telah selesai. Anda dapat membuka halaman Stock Opname untuk melihat hasilnya.`,
+      },
+      cta: { en: "View Result", id: "Lihat Hasil" },
+    }),
+    email: (c) => ({
+      subject: {
+        en: `Your Stock Opname is Completed`,
+        id: `Stock Opname Anda Selesai`,
+      },
+      body: {
+        en: `Hi ${c.requesterName}, your Stock Opname has been completed. You can open the Stock Opname page to review the result.\nStock Opname No: ${c.entityId}\nFile: ${c.fileName || "-"}`,
+        id: `Halo ${c.requesterName}, Stock Opname Anda telah selesai. Anda dapat membuka halaman Stock Opname untuk melihat hasilnya.\nStock Opname No: ${c.entityId}\nFile: ${c.fileName || "-"}`,
+      },
+      cta: { en: "View Stock Opname Result", id: "Lihat Hasil Stock Opname" },
+    }),
+  },
+  stock_opname_canceled: {
+    recipientRule: "eligible_users",
+    channels: { inApp: true, email: true },
+    todo: null,
+    inApp: (c) => ({
+      title: {
+        en: `Your Stock Opname was canceled`,
+        id: `Stock Opname Anda dibatalkan`,
+      },
+      body: {
+        en: `Your Stock Opname was canceled by the system because an error occurred during processing. Please try again or contact support if the issue continues.`,
+        id: `Stock Opname Anda dibatalkan oleh sistem karena terjadi kesalahan saat proses berlangsung. Silakan coba kembali atau hubungi tim support jika masalah berlanjut.`,
+      },
+      cta: { en: "View Detail", id: "Lihat Detail" },
+    }),
+    email: (c) => ({
+      subject: {
+        en: `Your Stock Opname was Canceled`,
+        id: `Stock Opname Anda Dibatalkan`,
+      },
+      body: {
+        en: `Hi ${c.requesterName}, your Stock Opname was canceled by the system because an error occurred during processing. Please try again or contact our support team if the issue continues.\nStock Opname No: ${c.entityId}\nFile: ${c.fileName || "-"}`,
+        id: `Halo ${c.requesterName}, Stock Opname Anda dibatalkan oleh sistem karena terjadi kesalahan saat proses berlangsung. Silakan coba kembali atau hubungi tim support kami jika masalah berlanjut.\nStock Opname No: ${c.entityId}\nFile: ${c.fileName || "-"}`,
+      },
+      cta: { en: "View Detail", id: "Lihat Detail" },
+    }),
+  },
+};
+
 // Compliance — Sanctions Screening (PRD: Customer Sanctions Screening).
 // Single trigger: a Failed screening result during Quote approval suspends
 // the manufacturer account and emails the Account Owner + the user who

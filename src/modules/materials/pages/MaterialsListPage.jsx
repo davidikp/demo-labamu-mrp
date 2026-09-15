@@ -363,6 +363,9 @@ export const MaterialsListPage = ({ onNavigate, showSnackbar, t }) => {
           <Button variant="outlined" leftIcon={Upload} onClick={() => onNavigate("materials_bulk-upload-list")}>
             Bulk Upload
           </Button>
+          <Button variant="outlined" leftIcon={Box} onClick={() => onNavigate("materials_stock-opname-list")}>
+            Stock Opname
+          </Button>
           <Button variant="outlined" leftIcon={Settings} onClick={() => onNavigate("settings")}>
             Manage
           </Button>
