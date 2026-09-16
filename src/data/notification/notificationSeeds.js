@@ -13,6 +13,12 @@
 // timestamp, then builds the records directly (bypassing the 60s dedupe).
 
 export const SEED_NOTIFICATION_EVENTS = [
+  // ---- Stock Opname ---- (listed first so these are the newest/top of the
+  // notification popover and Todo list on load)
+  { module: "stock_opname", trigger: "stock_opname_ready_for_review", ctx: { entityId: "SO-20260908-0001", fileName: "warehouse_b_counting_sheet.csv", requesterName: "Naomi" } },
+  { module: "stock_opname", trigger: "stock_opname_completed", ctx: { entityId: "SO-20260901-0001", fileName: "stock_opname_sep_week1.xlsx", requesterName: "David" } },
+  { module: "stock_opname", trigger: "stock_opname_canceled", ctx: { entityId: "SO-20260803-0001", fileName: "aug_recount_cancelled.csv", requesterName: "Joko" } },
+
   // ---- RFQ ----
   { module: "rfq", trigger: "submitted", ctx: { entityId: "RFQ-202606-001", submitterName: "Budi Santoso" } },
   { module: "rfq", trigger: "one_approved", ctx: { entityId: "RFQ-202606-002", approverName: "Joko" } },

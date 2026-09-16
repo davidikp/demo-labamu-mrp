@@ -164,7 +164,7 @@ const TRANSLATIONS = {
     bill_of_materials: {
       title: "Bill of Materials",
       description: "Manage the mapping of products to Bill of Materials",
-      new: "Add BOM",
+      new: "New BOM",
     },
   },
   id: {
@@ -233,7 +233,7 @@ const TRANSLATIONS = {
     bill_of_materials: {
       title: "Bill of Materials",
       description: "Kelola pemetaan produk ke Bill of Materials",
-      new: "Tambah BOM",
+      new: "BOM Baru",
     },
   },
 };

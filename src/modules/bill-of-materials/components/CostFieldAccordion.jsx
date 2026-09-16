@@ -195,7 +195,7 @@ export const CostFieldAccordion = ({ icon: Icon, title, description, isNew, fiel
                   >
                     <div style={{ flex: 2, position: "relative" }}>
                       <InputField
-                        placeholder="Breakdown item name"
+                        placeholder="Enter cost item name"
                         value={l.label}
                         onChange={(e) => updateLine(idx, { label: e.target.value })}
                         maxLength={40}

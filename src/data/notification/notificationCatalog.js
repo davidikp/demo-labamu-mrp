@@ -1466,8 +1466,8 @@ NOTIFICATION_CATALOG.stock_opname = {
     },
     inApp: (c) => ({
       title: {
-        en: `Your Stock Opname is ready for review`,
-        id: `Stock Opname Anda siap untuk ditinjau`,
+        en: `Stock Opname ${c.entityId} is ready for review`,
+        id: `Stock Opname ${c.entityId} siap untuk ditinjau`,
       },
       body: {
         en: `Your Stock Opname data has been processed and is ready for review before applying the stock adjustment.`,
@@ -1493,8 +1493,8 @@ NOTIFICATION_CATALOG.stock_opname = {
     todo: null,
     inApp: (c) => ({
       title: {
-        en: `Your Stock Opname is complete`,
-        id: `Stock Opname Anda selesai`,
+        en: `Stock Opname ${c.entityId} is complete`,
+        id: `Stock Opname ${c.entityId} selesai`,
       },
       body: {
         en: `Your Stock Opname has been completed. You can open the Stock Opname page to review the result.`,
@@ -1520,8 +1520,8 @@ NOTIFICATION_CATALOG.stock_opname = {
     todo: null,
     inApp: (c) => ({
       title: {
-        en: `Your Stock Opname was canceled`,
-        id: `Stock Opname Anda dibatalkan`,
+        en: `Stock Opname ${c.entityId} was canceled`,
+        id: `Stock Opname ${c.entityId} dibatalkan`,
       },
       body: {
         en: `Your Stock Opname was canceled by the system because an error occurred during processing. Please try again or contact support if the issue continues.`,

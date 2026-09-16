@@ -851,7 +851,7 @@ const INDONESIAN_EXACT_TEXT = {
   "Enter hours": "Masukkan jam",
   "No results": "Tidak ada hasil",
   "Add Cost Item": "Tambah Item Biaya",
-  "Breakdown item name": "Nama item biaya",
+  "Enter cost item name": "Nama item biaya",
   "Request ID": "ID Permintaan",
   "Total Item": "Total Item",
   "Requested Date": "Tanggal Permintaan",
