@@ -384,7 +384,7 @@ const FileCard = ({ attachment, onRemove, onDescriptionChange }) => (
 
 
 
-const DateInputControl = ({
+export const DateInputControl = ({
   value = "",
   onChange,
   disabled = false,

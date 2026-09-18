@@ -7,6 +7,7 @@ import { DropdownSelect } from "../../../components/common/DropdownSelect.jsx";
 import { FormField, InputField } from "../../../components/index.js";
 import { TextField } from "../../../ce-ui";
 import { MOCK_VENDORS } from "../../../data/vendors.js";
+import { DateInputControl } from "./StockBatchesTab.jsx";
 
 // Same layout as the shared LabelValue, but lets the "Review Batch" view
 // de-emphasize the lower fields (Cost per Unit onward) while keeping the
@@ -174,22 +175,27 @@ export const StockOpnameNewBatchDrawer = ({ isOpen, onClose, onSave, materialUni
                 prefix="IDR"
               />
 
-              <InputField
-                label="Purchase Date"
-                type="date"
-                required
-                value={form.purchaseDate}
-                onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })}
-                error={errors.purchaseDate}
-                max={new Date().toISOString().split("T")[0]}
-              />
+              <FormField label="Purchase Date" required error={errors.purchaseDate}>
+                <DateInputControl
+                  value={form.purchaseDate}
+                  onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })}
+                  hasError={!!errors.purchaseDate}
+                  maxDate={new Date().toISOString().split("T")[0]}
+                />
+              </FormField>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-                <InputField label="Expiry Date" type="date" value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} />
-                <InputField label="Expected Date" type="date" value={form.expectedDate} onChange={(e) => setForm({ ...form, expectedDate: e.target.value })} />
+                <FormField label="Expiry Date">
+                  <DateInputControl value={form.expiryDate} onChange={(e) => setForm({ ...form, expiryDate: e.target.value })} />
+                </FormField>
+                <FormField label="Expected Date">
+                  <DateInputControl value={form.expectedDate} onChange={(e) => setForm({ ...form, expectedDate: e.target.value })} />
+                </FormField>
               </div>
 
-              <InputField label="Received Date" type="date" value={form.receivedDate} onChange={(e) => setForm({ ...form, receivedDate: e.target.value })} />
+              <FormField label="Received Date">
+                <DateInputControl value={form.receivedDate} onChange={(e) => setForm({ ...form, receivedDate: e.target.value })} />
+              </FormField>
 
               <InputField
                 label="Storage Location"
@@ -205,6 +211,7 @@ export const StockOpnameNewBatchDrawer = ({ isOpen, onClose, onSave, materialUni
                   options={MOCK_VENDORS.map((v) => ({ value: v.name, label: v.name }))}
                   placeholder="Select vendor"
                   searchable
+                  hideSearchIcon
                 />
               </FormField>
 

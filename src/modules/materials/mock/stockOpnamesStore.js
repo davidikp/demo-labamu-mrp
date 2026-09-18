@@ -59,11 +59,15 @@ const makeLog = (actor, title, desc, timestamp) => ({
 // transition (e.g. a system-simulated processing failure).
 export const STATUS_LOG_COPY = {
   Mapping: { title: "Mapping Started", desc: "Uploaded columns are ready to be mapped." },
-  "Normalizing Data": { title: "Normalization Started", desc: "Mapped rows are being matched and validated in the background." },
+  // No entry for "Normalizing Data" on purpose — unlike Bulk Upload, Stock
+  // Opname's PRD says Normalizing Data "is not shown as a separate user
+  // step" (see updateStockOpname below, which skips logging this
+  // transition entirely rather than falling back to a generic status-change
+  // line).
   Review: { title: "Ready for Review", desc: "Data is ready for review." },
   Processing: { title: "Apply Started", desc: "Stock adjustments are being applied in the background." },
-  Completed: { title: "Stock Opname Completed", desc: "Stock adjustments were applied successfully." },
-  Cancelled: { title: "Stock Opname Cancelled", desc: "This Stock Opname was cancelled and no stock was adjusted." },
+  Completed: { title: "Completed", desc: "Stock adjustments were applied successfully." },
+  Cancelled: { title: "Cancelled", desc: "This Stock Opname was cancelled and no stock was adjusted." },
 };
 
 // Display-only relabeling for the two backend-sounding statuses — the
@@ -132,10 +136,9 @@ const SEED_STOCK_OPNAMES = [
     logs: [
       makeLog(actorForName(CURRENT_USER.name), "Upload Created", "File \"stock_opname_sep_week1.xlsx\" was uploaded.", "2026-09-01T08:30:00Z"),
       makeLog(actorForName(CURRENT_USER.name), "Mapping Started", "Uploaded columns are ready to be mapped.", "2026-09-01T08:30:30Z"),
-      makeLog(actorForName(CURRENT_USER.name), "Normalization Started", "Mapped rows are being matched and validated in the background.", "2026-09-01T08:32:00Z"),
       makeLog(actorForName(SYSTEM_ACTOR_NAME), "Ready for Review", "Data is ready for review.", "2026-09-01T08:32:20Z"),
       makeLog(actorForName(CURRENT_USER.name), "Apply Started", "Stock adjustments are being applied in the background.", "2026-09-01T08:44:00Z"),
-      makeLog(actorForName(SYSTEM_ACTOR_NAME), "Stock Opname Completed", "Stock adjustments were applied successfully.", "2026-09-01T08:45:00Z"),
+      makeLog(actorForName(SYSTEM_ACTOR_NAME), "Completed", "Stock adjustments were applied successfully.", "2026-09-01T08:45:00Z"),
     ],
   },
   {
@@ -157,7 +160,7 @@ const SEED_STOCK_OPNAMES = [
     ],
     result: null,
     logs: [
-      makeLog(actorForName(NOTIFICATION_USERS[1].name), "Stock Opname Created", "Manual Stock Opname was saved as draft (6 rows).", "2026-09-05T10:00:00Z"),
+      makeLog(actorForName(NOTIFICATION_USERS[1].name), "Created", "Manual Stock Opname was saved as draft (6 rows).", "2026-09-05T10:00:00Z"),
     ],
   },
   // Demo-only: an upload-originated draft that's already normalized and
@@ -227,7 +230,6 @@ const SEED_STOCK_OPNAMES = [
     logs: [
       makeLog(actorForName(CURRENT_USER.name), "Upload Created", "File \"warehouse_recount_demo.csv\" was uploaded.", "2026-09-06T09:00:00Z"),
       makeLog(actorForName(CURRENT_USER.name), "Mapping Started", "Uploaded columns are ready to be mapped.", "2026-09-06T09:00:30Z"),
-      makeLog(actorForName(CURRENT_USER.name), "Normalization Started", "Mapped rows are being matched and validated in the background.", "2026-09-06T09:02:00Z"),
       makeLog(actorForName(SYSTEM_ACTOR_NAME), "Ready for Review", "Data is ready for review.", "2026-09-06T09:02:20Z"),
     ],
   },
@@ -245,7 +247,6 @@ const SEED_STOCK_OPNAMES = [
     logs: [
       makeLog(actorForName(NOTIFICATION_USERS[2].name), "Upload Created", "File \"warehouse_b_counting_sheet.csv\" was uploaded.", "2026-09-08T14:12:00Z"),
       makeLog(actorForName(NOTIFICATION_USERS[2].name), "Mapping Started", "Uploaded columns are ready to be mapped.", "2026-09-08T14:12:30Z"),
-      makeLog(actorForName(NOTIFICATION_USERS[2].name), "Normalization Started", "Mapped rows are being matched and validated in the background.", "2026-09-08T14:14:00Z"),
     ],
   },
   {
@@ -293,7 +294,7 @@ const SEED_STOCK_OPNAMES = [
     rows: [],
     result: null,
     logs: [
-      makeLog(actorForName(CURRENT_USER.name), "Stock Opname Created", "Manual Stock Opname was saved as draft (4 rows).", "2026-09-12T13:00:00Z"),
+      makeLog(actorForName(CURRENT_USER.name), "Created", "Manual Stock Opname was saved as draft (4 rows).", "2026-09-12T13:00:00Z"),
       makeLog(actorForName(CURRENT_USER.name), "Apply Started", "Stock adjustments are being applied in the background.", "2026-09-12T13:20:00Z"),
     ],
   },
@@ -311,7 +312,6 @@ const SEED_STOCK_OPNAMES = [
     logs: [
       makeLog(actorForName(NOTIFICATION_USERS[0].name), "Upload Created", "File \"warehouse_c_recount.xlsx\" was uploaded.", "2026-09-13T10:30:00Z"),
       makeLog(actorForName(NOTIFICATION_USERS[0].name), "Mapping Started", "Uploaded columns are ready to be mapped.", "2026-09-13T10:30:30Z"),
-      makeLog(actorForName(NOTIFICATION_USERS[0].name), "Normalization Started", "Mapped rows are being matched and validated in the background.", "2026-09-13T10:32:00Z"),
       makeLog(actorForName(NOTIFICATION_USERS[0].name), "Review Started", "Normalized rows are ready to be reviewed.", "2026-09-13T10:35:00Z"),
       makeLog(actorForName(NOTIFICATION_USERS[0].name), "Apply Started", "Stock adjustments are being applied in the background.", "2026-09-13T10:45:00Z"),
     ],
@@ -344,9 +344,8 @@ const SEED_STOCK_OPNAMES = [
     logs: [
       makeLog(actorForName(NOTIFICATION_USERS[1].name), "Upload Created", "File \"aug_recount_cancelled.csv\" was uploaded.", "2026-08-03T11:00:00Z"),
       makeLog(actorForName(NOTIFICATION_USERS[1].name), "Mapping Started", "Uploaded columns are ready to be mapped.", "2026-08-03T11:00:30Z"),
-      makeLog(actorForName(NOTIFICATION_USERS[1].name), "Normalization Started", "Mapped rows are being matched and validated in the background.", "2026-08-03T11:02:00Z"),
       makeLog(actorForName(SYSTEM_ACTOR_NAME), "Ready for Review", "Data is ready for review.", "2026-08-03T11:02:20Z"),
-      makeLog(actorForName(NOTIFICATION_USERS[1].name), "Stock Opname Cancelled", "This Stock Opname was cancelled and no stock was adjusted.", "2026-08-03T11:10:00Z"),
+      makeLog(actorForName(NOTIFICATION_USERS[1].name), "Cancelled", "This Stock Opname was cancelled and no stock was adjusted.", "2026-08-03T11:10:00Z"),
     ],
   },
 ];
@@ -387,7 +386,7 @@ export const addStockOpname = (data) => {
     logs: [
       makeLog(
         actor,
-        data.method === "upload" ? "Upload Created" : "Stock Opname Created",
+        data.method === "upload" ? "Upload Created" : "Created",
         data.method === "upload"
           ? `File "${data.sourceFile || "untitled.csv"}" was uploaded.`
           : `Manual Stock Opname was saved as draft (${data.totalRows || 0} rows).`
@@ -408,7 +407,7 @@ export const updateStockOpname = (id, patch) => {
   stockOpnames = stockOpnames.map((s) => {
     if (s.id !== id) return s;
     const next = { ...s, ...rest, id: s.id };
-    if (rest.status && rest.status !== s.status) {
+    if (rest.status && rest.status !== s.status && rest.status !== "Normalizing Data") {
       const copy = STATUS_LOG_COPY[rest.status];
       const actor = actorForName(logActorName || CURRENT_USER.name);
       const log = makeLog(actor, logTitle || copy?.title || `Status Changed To "${rest.status}"`, logDesc || copy?.desc);

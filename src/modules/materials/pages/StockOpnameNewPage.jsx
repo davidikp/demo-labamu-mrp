@@ -21,6 +21,7 @@ import { useNotifications } from "../../../context/NotificationContext.jsx";
 import { setNavigationGuard, clearNavigationGuard } from "../../../utils/navigationGuard.js";
 import { DiscardChangesConfirmModal } from "../components/DiscardChangesConfirmModal.jsx";
 import { CancelStockOpnameConfirmModal } from "../components/CancelStockOpnameConfirmModal.jsx";
+import { ApplyStockOpnameConfirmModal } from "../components/ApplyStockOpnameConfirmModal.jsx";
 
 // New Stock Opname wizard shell. The "+ New Stock Opname" choice (manual vs.
 // upload) is made in NewStockOpnameModal.jsx on the list page — this page is
@@ -69,7 +70,13 @@ export const StockOpnameNewPage = ({ onNavigate, showSnackbar, initialData, isSi
   // list — the user can still delete it, but there's no reason to make
   // "+ New Row" the very first click of the flow.
   const [rows, setRows] = useState(() => {
-    if (resumeRecord?.rows?.length) return resumeRecord.rows;
+    // A resumed record's rows are pre-existing data being reviewed again
+    // (from an earlier Save as Draft, possibly one made before Apply was
+    // ever attempted) — surface their inline errors immediately rather than
+    // waiting for the user to touch each field or click Apply again. Only a
+    // brand-new "+ New Row" (makeEmptyRow, below) should start blank with no
+    // error styling.
+    if (resumeRecord?.rows?.length) return resumeRecord.rows.map((r) => ({ ...r, __showErrors: true }));
     if (!resumeRecord && startMethod === "manual") return [makeEmptyRow()];
     return [];
   });
@@ -90,7 +97,9 @@ export const StockOpnameNewPage = ({ onNavigate, showSnackbar, initialData, isSi
   const [mappingSnapshot, setMappingSnapshot] = useState(() => JSON.stringify(mapping));
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showApplyConfirm, setShowApplyConfirm] = useState(false);
   const pendingNavRef = useRef(null);
+  const reviewStepRef = useRef(null);
 
   const missingRequired = REQUIRED_STOCK_OPNAME_FIELD_KEYS.filter((key) => !mapping[key] || mapping[key] === NOT_MAPPED);
   const analyzeCancelRef = useRef(null);
@@ -241,7 +250,10 @@ export const StockOpnameNewPage = ({ onNavigate, showSnackbar, initialData, isSi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAddRow = () => setRows((prev) => [...prev, makeEmptyRow()]);
+  // New rows are prepended so the user always sees the row they just added
+  // without hunting for it — StockOpnameReviewStep's own handleAddRow jumps
+  // pagination back to page 1 right after this runs.
+  const handleAddRow = () => setRows((prev) => [makeEmptyRow(), ...prev]);
   const handleDeleteRows = (rowIds) => setRows((prev) => prev.filter((r) => !rowIds.includes(r.__rowId)));
 
   const handleSaveDraft = () => {
@@ -257,8 +269,8 @@ export const StockOpnameNewPage = ({ onNavigate, showSnackbar, initialData, isSi
 
   const processTimeoutRef = useRef(null);
 
-  const runProcessing = (recordId, rowsToApply) => {
-    const { rows: resultRows, summary } = applyStockOpnameRows(rowsToApply);
+  const runProcessing = (recordId, rowsToApply, applyReason) => {
+    const { rows: resultRows, summary } = applyStockOpnameRows(rowsToApply, applyReason);
     // StockOpnameNotifier fires "Stock Opname Completed" on its own once it
     // sees this Processing -> Completed transition.
     updateStockOpname(recordId, {
@@ -276,8 +288,22 @@ export const StockOpnameNewPage = ({ onNavigate, showSnackbar, initialData, isSi
   // another user adjusted the same Batch in the meantime). For a manual
   // Stock Opname that was never saved as a draft, Apply is also what first
   // creates the persistent record (PRD "Start Method" AC 5).
+  // Clicking "Apply Stock Opname" only opens the reason confirm modal —
+  // the actual apply/validation runs in handleConfirmApply once a reason is
+  // confirmed. The button itself is always enabled (rather than disabled
+  // while invalid) so clicking it while something's wrong actively shows the
+  // user where the problem is instead of leaving them to guess why nothing
+  // happens.
   const handleApply = () => {
-    if (!canApply) return;
+    if (!canApply) {
+      setRows((prev) => prev.map((r) => ({ ...r, __showErrors: true })));
+      reviewStepRef.current?.scrollToFirstInvalidRow();
+      return;
+    }
+    setShowApplyConfirm(true);
+  };
+
+  const handleConfirmApply = (applyReason) => {
     const { rows: rehydratedRows, isValid } = revalidateForApply(rows);
     // Apply is the point manual rows' inline field errors start showing —
     // before this they're only reflected in the "need attention" count/
@@ -290,7 +316,7 @@ export const StockOpnameNewPage = ({ onNavigate, showSnackbar, initialData, isSi
     }
 
     const appliedAt = new Date().toISOString();
-    const payload = { method: method || "manual", status: "Processing", appliedAt, rows: rehydratedRows, totalRows: rehydratedRows.length };
+    const payload = { method: method || "manual", status: "Processing", appliedAt, applyReason, rows: rehydratedRows, totalRows: rehydratedRows.length };
     const record = editingId ? updateStockOpname(editingId, payload) : addStockOpname(payload);
     setEditingId(record.id);
     setRowsSnapshot(JSON.stringify(rehydratedRows));
@@ -298,7 +324,7 @@ export const StockOpnameNewPage = ({ onNavigate, showSnackbar, initialData, isSi
     // created (upload path's Ready for Review notification).
     resolveTodo("stock_opname", record.id, "stock_opname");
     setStep("processing");
-    processTimeoutRef.current = setTimeout(() => runProcessing(record.id, rehydratedRows), 5000);
+    processTimeoutRef.current = setTimeout(() => runProcessing(record.id, rehydratedRows, applyReason), 5000);
   };
 
   // Demo-only: lets the Processing interstitial's "Simulate" control abandon
@@ -327,7 +353,7 @@ export const StockOpnameNewPage = ({ onNavigate, showSnackbar, initialData, isSi
   // Data above.
   useEffect(() => {
     if (resumeAtProcessing && resumeRecord) {
-      processTimeoutRef.current = setTimeout(() => runProcessing(resumeRecord.id, resumeRecord.rows || []), 5000);
+      processTimeoutRef.current = setTimeout(() => runProcessing(resumeRecord.id, resumeRecord.rows || [], resumeRecord.applyReason), 5000);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -458,7 +484,7 @@ export const StockOpnameNewPage = ({ onNavigate, showSnackbar, initialData, isSi
           />
         )}
         {step === "review" && (
-          <StockOpnameReviewStep rows={rows} onRowsChange={setRows} onAddRow={handleAddRow} onDeleteRows={handleDeleteRows} />
+          <StockOpnameReviewStep ref={reviewStepRef} rows={rows} onRowsChange={setRows} onAddRow={handleAddRow} onDeleteRows={handleDeleteRows} />
         )}
         {step === "processing" && (
           <div style={{ position: "relative" }}>
@@ -549,7 +575,7 @@ export const StockOpnameNewPage = ({ onNavigate, showSnackbar, initialData, isSi
               </div>
               <div style={{ display: "flex", gap: "12px" }}>
                 <Button variant="outlined" size="large" onClick={handleSaveDraft}>Save as Draft</Button>
-                <Button variant="filled" size="large" disabled={!canApply} onClick={handleApply}>
+                <Button variant="filled" size="large" onClick={handleApply}>
                   Apply Stock Opname
                 </Button>
               </div>
@@ -571,6 +597,13 @@ export const StockOpnameNewPage = ({ onNavigate, showSnackbar, initialData, isSi
         isOpen={showCancelConfirm}
         onClose={() => setShowCancelConfirm(false)}
         onConfirm={handleCancel}
+      />
+
+      <ApplyStockOpnameConfirmModal
+        isOpen={showApplyConfirm}
+        onClose={() => setShowApplyConfirm(false)}
+        onConfirm={handleConfirmApply}
+        stockOpnameNo={editingId}
       />
     </div>
   );

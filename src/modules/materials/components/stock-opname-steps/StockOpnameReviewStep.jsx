@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { AddIcon, DeleteIcon, CloseIcon, SearchNotFoundIllustration } from "../../../../components/icons/Icons.jsx";
 import { Table, EmptyState } from "../../../../ce-ui";
 import { Button } from "../../../../components/common/Button.jsx";
@@ -52,7 +52,7 @@ const withUnit = (value, unit) => (value == null ? "-" : unit ? `${value} ${unit
 // Batch" / "Review Batch" drawer flow). Built on the same ce-ui `Table` +
 // toolbar + TablePaginationFooter structure as the Bulk Upload wizard's own
 // Review step (upload-steps/ReviewStep.jsx).
-export const StockOpnameReviewStep = ({ rows, onRowsChange, onAddRow, onDeleteRows }) => {
+export const StockOpnameReviewStep = forwardRef(({ rows, onRowsChange, onAddRow, onDeleteRows }, ref) => {
   const [showNeedAttentionOnly, setShowNeedAttentionOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIds, setSelectedIds] = useState([]);
@@ -99,8 +99,48 @@ export const StockOpnameReviewStep = ({ rows, onRowsChange, onAddRow, onDeleteRo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalPages]);
 
-  const updateRow = (rowId, patch) => {
-    onRowsChange(rows.map((r) => (r.__rowId === rowId ? hydrateRow({ ...r, ...patch }) : r)));
+  // Lets StockOpnameNewPage's Apply button (always enabled — PRD-adjacent
+  // demo behavior: clicking Apply with invalid data should surface exactly
+  // where the problem is rather than just staying disabled) jump straight to
+  // the first invalid row instead of leaving the user to hunt for it across
+  // pages/filters. Clears search + the Need Attention toggle first since
+  // either could otherwise hide the very row being scrolled to.
+  useImperativeHandle(ref, () => ({
+    scrollToFirstInvalidRow: () => {
+      const firstInvalid = rowsWithErrors.find((r) => r.errors.length > 0);
+      if (!firstInvalid) return;
+      setSearchQuery("");
+      setShowNeedAttentionOnly(false);
+      const idx = rows.findIndex((r) => r.__rowId === firstInvalid.row.__rowId);
+      if (idx >= 0) setCurrentPage(Math.floor(idx / rowsPerPage) + 1);
+      // Two rAFs: one for the state updates above to flush and re-render,
+      // one more for the resulting page's rows to actually paint before the
+      // target row's DOM node can be found.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          document.getElementById(`so-review-row-${firstInvalid.row.__rowId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      });
+    },
+  }));
+
+  // Per-field (not per-row) "has this been touched" tracking — showing a
+  // field's own inline error live once *that* field has been edited, rather
+  // than the whole row's errors the moment any one field changes. Without
+  // this, picking a Material SKU on a brand-new "+ New Row" would instantly
+  // paint the still-untouched Batch/Counted Qty fields red too, which is
+  // exactly the noise makeEmptyRow's own __showErrors: false was meant to
+  // avoid. `row.__showErrors` (set wholesale on resume/Apply — see
+  // StockOpnameNewPage) still overrides this per-field gate everywhere, for
+  // reviewing pre-existing data or a failed Apply attempt.
+  const isFieldTouched = (row, field) => row.__showErrors || !!row.__touched?.[field];
+
+  const updateRow = (rowId, patch, touchedField) => {
+    onRowsChange(rows.map((r) => {
+      if (r.__rowId !== rowId) return r;
+      const touched = touchedField ? { ...r.__touched, [touchedField]: true } : r.__touched;
+      return hydrateRow({ ...r, ...patch, __touched: touched });
+    }));
   };
 
   const deleteRows = (ids) => {
@@ -123,18 +163,22 @@ export const StockOpnameReviewStep = ({ rows, onRowsChange, onAddRow, onDeleteRo
       header: "* Material SKU",
       width: COLUMN_WIDTH.materialSku,
       render: (_, row) => {
-        const skuError = row.__showErrors ? getMaterialSkuError(row) : null;
+        const skuError = isFieldTouched(row, "materialSku") ? getMaterialSkuError(row) : null;
         return (
-          <div onClick={stopRowToggle} onMouseDown={stopRowToggle}>
+          <div id={`so-review-row-${row.__rowId}`} onClick={stopRowToggle} onMouseDown={stopRowToggle}>
             <SearchableFieldSelect
               value={row.materialId}
               onChange={(materialId) =>
-                updateRow(row.__rowId, {
-                  materialId: materialId || null,
-                  materialSku: materialId ? materials.find((m) => m.id === materialId)?.sku || "" : "",
-                  batchId: null,
-                  pendingBatch: null,
-                })
+                updateRow(
+                  row.__rowId,
+                  {
+                    materialId: materialId || null,
+                    materialSku: materialId ? materials.find((m) => m.id === materialId)?.sku || "" : "",
+                    batchId: null,
+                    pendingBatch: null,
+                  },
+                  "materialSku"
+                )
               }
               options={materialOptions}
               placeholder="Search by SKU or name"
@@ -155,7 +199,8 @@ export const StockOpnameReviewStep = ({ rows, onRowsChange, onAddRow, onDeleteRo
     },
     {
       key: "batch",
-      header: "* Batch",
+      header: "* Batch Number",
+      tooltip: "The specific batch being counted. Select an existing batch or create a new one if it doesn't exist yet.",
       width: COLUMN_WIDTH.batch,
       render: (_, row) => {
         if (row.pendingBatch) {
@@ -190,7 +235,7 @@ export const StockOpnameReviewStep = ({ rows, onRowsChange, onAddRow, onDeleteRo
                 <span
                   role="button"
                   tabIndex={-1}
-                  onClick={() => updateRow(row.__rowId, { pendingBatch: null, batchId: null })}
+                  onClick={() => updateRow(row.__rowId, { pendingBatch: null, batchId: null }, "batch")}
                   style={{ position: "absolute", right: "12px", top: "20px", transform: "translateY(-50%)", display: "flex", cursor: "pointer" }}
                   aria-label="Cancel pending batch"
                 >
@@ -215,7 +260,7 @@ export const StockOpnameReviewStep = ({ rows, onRowsChange, onAddRow, onDeleteRo
               { value: CREATE_NEW_BATCH, label: "+ Create New Batch", primaryText: "+ Create New Batch", isAction: true },
             ]
           : [];
-        const batchError = row.__showErrors ? getBatchError(row) : null;
+        const batchError = isFieldTouched(row, "batch") ? getBatchError(row) : null;
         return (
           <div onClick={stopRowToggle} onMouseDown={stopRowToggle}>
             <SearchableFieldSelect
@@ -224,7 +269,7 @@ export const StockOpnameReviewStep = ({ rows, onRowsChange, onAddRow, onDeleteRo
                 if (val === CREATE_NEW_BATCH) {
                   setBatchDrawerRowId(row.__rowId);
                 } else {
-                  updateRow(row.__rowId, { batchId: val || null });
+                  updateRow(row.__rowId, { batchId: val || null }, "batch");
                 }
               }}
               options={batchOptions}
@@ -238,11 +283,26 @@ export const StockOpnameReviewStep = ({ rows, onRowsChange, onAddRow, onDeleteRo
       },
     },
     {
+      key: "initialQty",
+      header: "Initial Qty",
+      tooltip: "The original quantity recorded when this batch was first created.",
+      width: COLUMN_WIDTH.initialQty,
+      render: (_, row) => <div style={plainCellStyle}><div style={plainCellInnerStyle}>{withUnit(row.initialQty, row.unit)}</div></div>,
+    },
+    {
+      key: "currentQty",
+      header: "Current Qty",
+      tooltip: "The system's stock quantity for this batch before this Stock Opname is applied.",
+      width: COLUMN_WIDTH.currentQty,
+      render: (_, row) => <div style={plainCellStyle}><div style={plainCellInnerStyle}>{withUnit(row.currentQty, row.unit)}</div></div>,
+    },
+    {
       key: "countedQty",
       header: "* Counted Qty",
+      tooltip: "The actual physical quantity counted during the stock check.",
       width: COLUMN_WIDTH.countedQty,
       render: (_, row) => {
-        const countedError = row.__showErrors ? getCountedQtyError(row) : null;
+        const countedError = isFieldTouched(row, "countedQty") ? getCountedQtyError(row) : null;
         return (
           <div onClick={stopRowToggle} onMouseDown={stopRowToggle}>
             <InputField
@@ -251,7 +311,7 @@ export const StockOpnameReviewStep = ({ rows, onRowsChange, onAddRow, onDeleteRo
               value={row.countedQty}
               placeholder="0"
               suffix={row.unit || undefined}
-              onChange={(e) => updateRow(row.__rowId, { countedQty: e.target.value })}
+              onChange={(e) => updateRow(row.__rowId, { countedQty: e.target.value }, "countedQty")}
               errorText={countedError}
             />
           </div>
@@ -259,20 +319,9 @@ export const StockOpnameReviewStep = ({ rows, onRowsChange, onAddRow, onDeleteRo
       },
     },
     {
-      key: "initialQty",
-      header: "Initial Qty",
-      width: COLUMN_WIDTH.initialQty,
-      render: (_, row) => <div style={plainCellStyle}><div style={plainCellInnerStyle}>{withUnit(row.initialQty, row.unit)}</div></div>,
-    },
-    {
-      key: "currentQty",
-      header: "Current Qty",
-      width: COLUMN_WIDTH.currentQty,
-      render: (_, row) => <div style={plainCellStyle}><div style={plainCellInnerStyle}>{withUnit(row.currentQty, row.unit)}</div></div>,
-    },
-    {
       key: "variance",
       header: "Variance",
+      tooltip: "The difference between Counted Qty and Current Qty.",
       width: COLUMN_WIDTH.variance,
       render: (_, row) => {
         const variance = getVariance(row);
@@ -410,7 +459,7 @@ export const StockOpnameReviewStep = ({ rows, onRowsChange, onAddRow, onDeleteRo
             countedQty={activeRow?.countedQty}
             initialPendingBatch={activeRow?.pendingBatch}
             onSave={(pendingBatch) => {
-              updateRow(batchDrawerRowId, { batchId: null, pendingBatch });
+              updateRow(batchDrawerRowId, { batchId: null, pendingBatch }, "batch");
               setBatchDrawerRowId(null);
             }}
           />
@@ -437,4 +486,4 @@ export const StockOpnameReviewStep = ({ rows, onRowsChange, onAddRow, onDeleteRo
       })()}
     </div>
   );
-};
+});

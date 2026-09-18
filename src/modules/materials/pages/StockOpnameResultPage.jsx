@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronLeft, Info, SearchNotFoundIllustration } from "../../../components/icons/Icons.jsx";
+import { ChevronLeft, Info, SearchNotFoundIllustration, FileText } from "../../../components/icons/Icons.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { StatusBadge, LabelValue } from "../../../components/index.js";
 import { ListStatusCounterCard } from "../../../components/common/ListStatusCounterCard.jsx";
+import { ChipTabBar } from "../../../components/molecules/ChipTabBar.jsx";
 import { Table, EmptyState } from "../../../ce-ui";
 import { TableSearchField } from "../../../components/table/TableSearchField.jsx";
 import { TablePaginationFooter } from "../../../components/table/TablePaginationFooter.jsx";
@@ -10,6 +11,65 @@ import { BackgroundProcessingScreen } from "../components/BackgroundProcessingSc
 import { Stepper } from "../components/StockOpnameStepper.jsx";
 import { getStockOpname, subscribeStockOpnames, updateStockOpname, SYSTEM_ACTOR_NAME, displayStatusLabel } from "../mock/stockOpnamesStore.js";
 import { applyStockOpnameRows } from "../mock/stockOpnameProcessing.js";
+import { findMaterialBySku } from "../mock/stockOpnameValidation.js";
+
+const withUnit = (value, unit) => (value == null || value === "" ? "-" : unit ? `${value} ${unit}` : String(value));
+
+// Same Blob/object-URL download technique as
+// stockOpnameFieldsConfig.js's downloadStockCountSheetCsv.
+const downloadResultCsv = (record, rows) => {
+  const headers = ["Material SKU", "Material Name", "Batch", "Initial Qty", "Before Qty", "Counted Qty", "Variance", "Result"];
+  const csvEscape = (value) => {
+    const str = String(value ?? "");
+    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+  };
+  const lines = [
+    headers.map(csvEscape).join(","),
+    ...rows.map((row) => {
+      const variance = Number.isFinite(Number(row.countedQty)) && Number.isFinite(row.beforeQty) ? Number(row.countedQty) - row.beforeQty : "";
+      return [
+        row.materialSku || "",
+        row.materialName || "",
+        row.batchNo || "",
+        row.initialQty ?? "",
+        row.beforeQty ?? "",
+        row.countedQty ?? "",
+        variance,
+        record.status === "Cancelled" ? "Not Applied" : row.result || "Not Applied",
+      ].map(csvEscape).join(",");
+    }),
+  ];
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `stock_opname_${record.id}_result.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+// Same "open a generated CSV in a new tab" interaction as
+// MaterialUploadDetailModal's own openSourceFile — there's no real uploaded
+// file kept in memory, so this rebuilds one from whatever raw rows the
+// record still has (upload-originated records only; manual ones have none).
+const openSourceFile = (record) => {
+  const rows = record.rawRows || [];
+  const headers = rows.length
+    ? Array.from(rows.reduce((set, row) => {
+        Object.keys(row).forEach((k) => set.add(k));
+        return set;
+      }, new Set()))
+    : ["File Name"];
+  const csvLines = rows.length
+    ? [headers.join(","), ...rows.map((row) => headers.map((h) => `"${String(row[h] ?? "").replace(/"/g, '""')}"`).join(","))]
+    : [record.sourceFile || ""];
+  const blob = new Blob([csvLines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener,noreferrer");
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
+};
 
 const STATUS_VARIANT = { Processing: "blue", Completed: "green", Cancelled: "red" };
 const RESULT_VARIANT = { Adjusted: "blue-light", "New Batch": "green-light", "No Change": "grey-light", "Not Applied": "red-light" };
@@ -34,6 +94,77 @@ const formatDateTime = (iso) => {
   }
 };
 
+// Same Name/Email/Activity/Timestamp shape as MaterialUploadDetailModal's own
+// LogsSection — Stock Opname's `logs` entries share that {name, email, title,
+// desc, timestamp} shape (see stockOpnamesStore.js's makeLog), so the layout
+// carries over directly. Only "Cancelled" surfaces its `desc`
+// (the cancellation reason) — every other log's desc is internal bookkeeping
+// copy, not something the user needs repeated back to them.
+const ActivityLogsSection = ({ logs }) => {
+  const sorted = [...(logs || [])].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+      <span style={{ fontSize: "var(--text-title-2)", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+        Activity Logs
+      </span>
+
+      {sorted.length === 0 ? (
+        <div style={{ padding: "16px 0", textAlign: "center", color: "var(--neutral-on-surface-tertiary)", fontSize: "14px" }}>
+          No activity yet.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div
+            style={{
+              display: "flex",
+              paddingBottom: "12px",
+              borderBottom: "1px solid var(--neutral-line-separator-1)",
+              fontWeight: "var(--font-weight-bold)",
+              fontSize: "var(--text-title-3)",
+              color: "var(--neutral-on-surface-primary)",
+            }}
+          >
+            <div style={{ flex: "1.1", minWidth: 0 }}>Name</div>
+            <div style={{ flex: "1.6", minWidth: 0 }}>Email</div>
+            <div style={{ flex: "2.4", minWidth: 0 }}>Activity</div>
+            <div style={{ width: "150px", flexShrink: 0 }}>Timestamp</div>
+          </div>
+
+          {sorted.map((log, idx) => (
+            <div
+              key={idx}
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                padding: "14px 0",
+                borderBottom: idx === sorted.length - 1 ? "none" : "1px solid var(--neutral-line-separator-1)",
+                fontSize: "var(--text-title-3)",
+              }}
+            >
+              <div style={{ flex: "1.1", minWidth: 0, paddingRight: "8px", overflowWrap: "break-word", wordBreak: "break-word", color: "var(--neutral-on-surface-primary)" }}>{log.name}</div>
+              <div style={{ flex: "1.6", minWidth: 0, paddingRight: "8px", overflowWrap: "break-word", wordBreak: "break-word", color: "var(--neutral-on-surface-primary)" }}>{log.email || "—"}</div>
+              <div style={{ flex: "2.4", minWidth: 0, paddingRight: "8px", display: "flex", flexDirection: "column", gap: log.title === "Cancelled" && log.desc ? "6px" : "0" }}>
+                <span style={{ overflowWrap: "break-word", wordBreak: "break-word", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>
+                  {log.title}
+                </span>
+                {log.title === "Cancelled" && log.desc && (
+                  <span style={{ overflowWrap: "break-word", wordBreak: "break-word", color: "var(--neutral-on-surface-secondary)", fontWeight: "var(--font-weight-regular)", lineHeight: "1.5" }}>
+                    {log.desc}
+                  </span>
+                )}
+              </div>
+              <div style={{ width: "150px", flexShrink: 0, color: "var(--neutral-on-surface-secondary)", fontSize: "13px" }}>
+                {formatDateTime(log.timestamp)}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // No horizontal padding here — the ce-ui Table already puts px-4 on both th
 // and td, so adding more here (beyond the vertical spacing the .so-result-
 // table CSS override expects) would offset a cell's content from its
@@ -53,6 +184,9 @@ export const StockOpnameResultPage = ({ onNavigate, showSnackbar, initialData })
   const [searchQuery, setSearchQuery] = useState("");
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState("list");
+  const [sortKey, setSortKey] = useState(null);
+  const [sortDirection, setSortDirection] = useState(null);
 
   useEffect(() => {
     if (!stockOpnameId) return undefined;
@@ -70,7 +204,7 @@ export const StockOpnameResultPage = ({ onNavigate, showSnackbar, initialData })
     if (record?.status === "Processing" && !hasScheduledRef.current) {
       hasScheduledRef.current = true;
       processTimeoutRef.current = setTimeout(() => {
-        const { rows: resultRows, summary } = applyStockOpnameRows(record.rows || []);
+        const { rows: resultRows, summary } = applyStockOpnameRows(record.rows || [], record.applyReason);
         // StockOpnameNotifier fires "Stock Opname Completed" on its own once
         // it sees this Processing -> Completed transition.
         updateStockOpname(record.id, {
@@ -127,36 +261,97 @@ export const StockOpnameResultPage = ({ onNavigate, showSnackbar, initialData })
     acc[card.key] = allRows.filter((row) => effectiveResult(row) === card.key).length;
     return acc;
   }, {});
-  const filteredRows = allRows.filter((row) => {
-    const matchesResult = resultFilters.length === 0 || resultFilters.includes(effectiveResult(row));
-    const query = searchQuery.trim().toLowerCase();
-    const matchesSearch = !query || [row.materialSku, row.materialName, row.batchNo].some((v) => String(v || "").toLowerCase().includes(query));
-    return matchesResult && matchesSearch;
-  });
+  const filteredRows = allRows
+    .filter((row) => {
+      const matchesResult = resultFilters.length === 0 || resultFilters.includes(effectiveResult(row));
+      const query = searchQuery.trim().toLowerCase();
+      const matchesSearch = !query || [row.materialSku, row.materialName, row.batchNo].some((v) => String(v || "").toLowerCase().includes(query));
+      return matchesResult && matchesSearch;
+    })
+    .sort((a, b) => {
+      if (!sortKey || !sortDirection) return 0;
+      const field = sortKey === "batch" ? "batchNo" : sortKey;
+      const av = String(a[field] || "").toLowerCase();
+      const bv = String(b[field] || "").toLowerCase();
+      const diff = av < bv ? -1 : av > bv ? 1 : 0;
+      return sortDirection === "asc" ? diff : -diff;
+    });
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
   const visibleRows = filteredRows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
+  const handleSortChange = (key, direction) => {
+    setSortKey(direction ? key : null);
+    setSortDirection(direction);
+  };
+
   // The reason typed into CancelStockOpnameConfirmModal is stored as the
-  // "Stock Opname Cancelled" activity log's own description (see
+  // "Cancelled" activity log's own description (see
   // StockOpnameNewPage.handleCancel) rather than a separate field — this is
   // the one place that needs to look it up, by finding that log entry.
-  const cancelledReason = [...(record.logs || [])].reverse().find((l) => l.title === "Stock Opname Cancelled")?.desc
+  const cancelledReason = [...(record.logs || [])].reverse().find((l) => l.title === "Cancelled")?.desc
     || "This Stock Opname was cancelled and no stock was adjusted.";
 
   const columns = [
-    { key: "materialSku", header: "Material SKU", width: 180, render: (_, row) => <div style={cellStyle}>{row.materialSku || "-"}</div> },
-    { key: "materialName", header: "Material Name", width: 220, render: (_, row) => <div style={cellStyle}>{row.materialName || "-"}</div> },
-    { key: "batch", header: "Batch", width: 180, render: (_, row) => <div style={cellStyle}>{row.batchNo || (row.pendingBatch ? "New Batch (Pending)" : "-")}</div> },
-    { key: "initialQty", header: "Initial Qty", width: 110, render: (_, row) => <div style={cellStyle}>{row.initialQty ?? "-"}</div> },
-    { key: "beforeQty", header: "Before Qty", width: 110, render: (_, row) => <div style={cellStyle}>{row.beforeQty ?? "-"}</div> },
-    { key: "countedQty", header: "Counted Qty", width: 120, render: (_, row) => <div style={cellStyle}>{row.countedQty ?? "-"}</div> },
+    {
+      key: "materialSku",
+      header: "Material SKU",
+      width: 180,
+      sortable: true,
+      render: (_, row) => {
+        const material = findMaterialBySku(row.materialSku);
+        if (!material) return <div style={cellStyle}>{row.materialSku || "-"}</div>;
+        return (
+          <div style={cellStyle}>
+            <span
+              className="so-hover-link"
+              style={{ color: "var(--feature-brand-primary)", cursor: "pointer" }}
+              onClick={() => onNavigate("detail", { ...material, returnTo: { view: "materials_stock-opname-result", data: { stockOpnameId } } })}
+            >
+              {row.materialSku}
+            </span>
+          </div>
+        );
+      },
+    },
+    { key: "materialName", header: "Material Name", width: 220, sortable: true, render: (_, row) => <div style={cellStyle}>{row.materialName || "-"}</div> },
+    {
+      key: "batch",
+      header: "Batch Number",
+      tooltip: "The specific batch being counted. Select an existing batch or create a new one if it doesn't exist yet.",
+      width: 180,
+      sortable: true,
+      render: (_, row) => <div style={cellStyle}>{row.batchNo || (row.pendingBatch ? "New Batch (Pending)" : "-")}</div>,
+    },
+    {
+      key: "initialQty",
+      header: "Initial Qty",
+      tooltip: "The original quantity recorded when this batch was first created.",
+      width: 130,
+      render: (_, row) => <div style={cellStyle}>{withUnit(row.initialQty, findMaterialBySku(row.materialSku)?.unit)}</div>,
+    },
+    {
+      key: "beforeQty",
+      header: "Before Qty",
+      tooltip: "The system's stock quantity for this batch before this Stock Opname is applied.",
+      width: 130,
+      render: (_, row) => <div style={cellStyle}>{withUnit(row.beforeQty, findMaterialBySku(row.materialSku)?.unit)}</div>,
+    },
+    {
+      key: "countedQty",
+      header: "Counted Qty",
+      tooltip: "The actual physical quantity counted during the stock check.",
+      width: 140,
+      render: (_, row) => <div style={cellStyle}>{withUnit(row.countedQty, findMaterialBySku(row.materialSku)?.unit)}</div>,
+    },
     {
       key: "variance",
       header: "Variance",
-      width: 100,
+      tooltip: "The difference between Counted Qty and Before Qty.",
+      width: 120,
       render: (_, row) => {
         const variance = Number.isFinite(Number(row.countedQty)) && Number.isFinite(row.beforeQty) ? Number(row.countedQty) - row.beforeQty : null;
-        return <div style={{ ...cellStyle, fontWeight: "var(--font-weight-bold)" }}>{variance == null ? "-" : variance > 0 ? `+${variance}` : variance}</div>;
+        const unit = findMaterialBySku(row.materialSku)?.unit;
+        return <div style={{ ...cellStyle, fontWeight: "var(--font-weight-bold)" }}>{variance == null ? "-" : withUnit(variance > 0 ? `+${variance}` : variance, unit)}</div>;
       },
     },
     {
@@ -178,6 +373,7 @@ export const StockOpnameResultPage = ({ onNavigate, showSnackbar, initialData })
 
   return (
     <div style={{ minHeight: "calc(100vh - 64px)", padding: "24px", boxSizing: "border-box", display: "flex", flexDirection: "column", gap: "16px" }}>
+      <style>{`.so-hover-link:hover { text-decoration: underline; }`}</style>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", marginLeft: "-4px" }} onClick={() => onNavigate("materials_stock-opname-list")}>
@@ -210,6 +406,11 @@ export const StockOpnameResultPage = ({ onNavigate, showSnackbar, initialData })
             <span style={{ fontSize: "14px", fontWeight: "var(--font-weight-bold)", color: "var(--neutral-on-surface-primary)" }}>Manual Entry</span>
             <span style={{ fontSize: "14px", color: "var(--neutral-on-surface-secondary)" }}>{record.id}</span>
           </div>
+        )}
+        {(record.status === "Completed" || record.status === "Cancelled") && (
+          <Button variant="outlined" leftIcon={FileText} onClick={() => downloadResultCsv(record, allRows)}>
+            Export as Excel
+          </Button>
         )}
       </div>
 
@@ -258,8 +459,19 @@ export const StockOpnameResultPage = ({ onNavigate, showSnackbar, initialData })
           <div style={{ margin: "0 24px", borderTop: "1px solid var(--neutral-line-separator-1)" }} />
           <div style={{ padding: "16px 24px", display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "24px" }}>
             <LabelValue label="Stock Opname By" value={record.createdBy} />
-            <LabelValue label="Source File" value={record.sourceFile || "-"} />
-            <LabelValue label="Stock Opname Time" value={formatDateTime(record.createdAt)} />
+            <LabelValue
+              label="Source File"
+              value={
+                record.sourceFile ? (
+                  <span className="so-hover-link" style={{ color: "var(--feature-brand-primary)", cursor: "pointer" }} onClick={() => openSourceFile(record)}>
+                    {record.sourceFile}
+                  </span>
+                ) : (
+                  "-"
+                )
+              }
+            />
+            <LabelValue label="Created At" value={formatDateTime(record.createdAt)} />
             <LabelValue label="Applied At" value={formatDateTime(record.appliedAt)} />
             <LabelValue label="Total Data" value={record.totalRows} />
           </div>
@@ -297,7 +509,24 @@ export const StockOpnameResultPage = ({ onNavigate, showSnackbar, initialData })
         </div>
       )}
 
-      {(record.status === "Completed" || record.status === "Cancelled") && record.result && (
+      {(record.status === "Completed" || record.status === "Cancelled") && (
+        <ChipTabBar
+          tabs={[
+            { id: "list", label: "List" },
+            { id: "logs", label: "Logs" },
+          ]}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+        />
+      )}
+
+      {(record.status === "Completed" || record.status === "Cancelled") && activeTab === "logs" && (
+        <div style={{ background: "var(--neutral-surface-primary)", borderRadius: "16px", border: "1px solid var(--neutral-line-separator-1)", padding: "24px" }}>
+          <ActivityLogsSection logs={record.logs} />
+        </div>
+      )}
+
+      {(record.status === "Completed" || record.status === "Cancelled") && activeTab === "list" && record.result && (
         <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
           {RESULT_CARDS.map((card) => (
             <ListStatusCounterCard
@@ -316,8 +545,8 @@ export const StockOpnameResultPage = ({ onNavigate, showSnackbar, initialData })
         </div>
       )}
 
-      {(record.status === "Completed" || record.status === "Cancelled") && (
-        <div style={{ maxHeight: "560px", minHeight: "320px", display: "flex", flexDirection: "column" }}>
+      {(record.status === "Completed" || record.status === "Cancelled") && activeTab === "list" && (
+        <div style={{ maxHeight: "560px", display: "flex", flexDirection: "column" }}>
           {/* A bounded card with its own internal scrollbar — same idea as
               the Dashboard's "Need To Do" panel — rather than an unbounded
               flex:1 region: the page itself keeps scrolling normally (root
@@ -354,6 +583,9 @@ export const StockOpnameResultPage = ({ onNavigate, showSnackbar, initialData })
             page={currentPage}
             perPage={rowsPerPage}
             onPageChange={setCurrentPage}
+            sortKey={sortKey}
+            sortDirection={sortDirection}
+            onSortChange={handleSortChange}
             emptyState={
               <EmptyState
                 illustration={<SearchNotFoundIllustration />}

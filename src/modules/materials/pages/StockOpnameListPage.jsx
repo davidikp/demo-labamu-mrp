@@ -10,6 +10,7 @@ import { TableSearchField } from "../../../components/table/TableSearchField.jsx
 import { getStockOpnames, subscribeStockOpnames, displayStatusLabel } from "../mock/stockOpnamesStore.js";
 import { downloadStockCountSheetCsv } from "../mock/stockOpnameFieldsConfig.js";
 import { NewStockOpnameModal } from "../components/NewStockOpnameModal.jsx";
+import { StockCountSheetFilterModal } from "../components/StockCountSheetFilterModal.jsx";
 
 const STATUS_VARIANT = {
   Mapping: "orange",
@@ -84,6 +85,7 @@ export const StockOpnameListPage = ({ onNavigate }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortDirection, setSortDirection] = useState(null); // null | "asc" | "desc"
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [isDownloadFilterOpen, setIsDownloadFilterOpen] = useState(false);
 
   useEffect(() => subscribeStockOpnames(setRecords), []);
 
@@ -140,7 +142,7 @@ export const StockOpnameListPage = ({ onNavigate }) => {
     { label: "Stock Opname No", key: "id", flex: "1.4" },
     { label: "Source File", key: "sourceFile", flex: "1.4" },
     { label: "Stock Opname By", key: "createdBy", flex: "1.6" },
-    { label: "Stock Opname Time", key: "createdAt", flex: "1.6", sortable: true },
+    { label: "Created At", key: "createdAt", flex: "1.6", sortable: true },
     { label: "Total Data", key: "totalRows", flex: "1" },
     { label: "Status", key: "status", flex: "1.4", minWidth: "160px" },
   ];
@@ -179,7 +181,7 @@ export const StockOpnameListPage = ({ onNavigate }) => {
         </div>
 
         <div style={{ display: "flex", gap: "12px" }}>
-          <Button variant="outlined" leftIcon={Download} onClick={downloadStockCountSheetCsv}>
+          <Button variant="outlined" leftIcon={Download} onClick={() => setIsDownloadFilterOpen(true)}>
             Download Stock Count Sheet
           </Button>
           <Button variant="filled" leftIcon={AddIcon} onClick={() => setIsNewModalOpen(true)}>
@@ -315,6 +317,15 @@ export const StockOpnameListPage = ({ onNavigate }) => {
         onClose={() => setIsNewModalOpen(false)}
         onSelectManual={() => openNewStockOpname("manual")}
         onSelectUpload={() => openNewStockOpname("upload")}
+      />
+
+      <StockCountSheetFilterModal
+        isOpen={isDownloadFilterOpen}
+        onClose={() => setIsDownloadFilterOpen(false)}
+        onConfirm={(filters) => {
+          downloadStockCountSheetCsv(filters);
+          setIsDownloadFilterOpen(false);
+        }}
       />
     </div>
   );

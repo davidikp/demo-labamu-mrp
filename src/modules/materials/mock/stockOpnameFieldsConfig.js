@@ -122,10 +122,25 @@ const csvEscape = (value) => {
 // blank for the user to fill in during physical counting (PRD "Stock Count
 // Sheet" AC 2-5). Same Blob/object-URL technique as
 // materialFieldsConfig.js's downloadMaterialTemplateCsv — no new dependency.
-export const downloadStockCountSheetCsv = () => {
-  const materials = getMaterials();
+// `filters` (all optional arrays, matching MaterialsListPage's own filter
+// values) narrow the sheet down to the Materials matching every non-empty
+// filter before its Batches are included.
+const ALL_FILTER_VALUE = "__all__";
+// A field holding just ["__all__"] (the modal's "All ..." option) means the
+// same thing as an empty array here — no filter on that field.
+const isUnfiltered = (values) => values.length === 0 || values.includes(ALL_FILTER_VALUE);
+
+export const downloadStockCountSheetCsv = (filters = {}) => {
+  const { category = [], type = [], status = [], abcClassification = [] } = filters;
+  const materials = getMaterials().filter((m) => {
+    const matchesCategory = isUnfiltered(category) || category.includes(m.category);
+    const matchesType = isUnfiltered(type) || type.includes(m.type);
+    const matchesStatus = isUnfiltered(status) || status.includes(m.status);
+    const matchesAbc = isUnfiltered(abcClassification) || abcClassification.includes(m.abcClassification);
+    return matchesCategory && matchesType && matchesStatus && matchesAbc;
+  });
   const materialById = new Map(materials.map((m) => [m.id, m]));
-  const batches = getBatches().filter((b) => b.status !== "Disposed");
+  const batches = getBatches().filter((b) => b.status !== "Disposed" && materialById.has(b.materialId));
 
   const snapshotTime = formatSnapshotTimestamp(new Date());
   const headers = [

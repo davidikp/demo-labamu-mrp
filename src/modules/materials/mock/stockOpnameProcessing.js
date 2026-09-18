@@ -6,7 +6,9 @@
 // Rows that fail re-validation are left untouched and reported "Not Applied"
 // rather than aborting the whole run.
 import { addBatch, updateBatch } from "./batchesStore.js";
+import { addTransaction } from "./transactionsStore.js";
 import { getRowErrors, hydrateRow } from "./stockOpnameValidation.js";
+import { CURRENT_USER } from "../../../data/notification/notificationConfig.js";
 
 const generateBatchId = () => `batch-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
@@ -30,9 +32,11 @@ export const revalidateForApply = (rows) => {
 // is expected to have already called revalidateForApply and blocked Apply on
 // failure) so a row that somehow still fails is skipped as "Not Applied"
 // instead of throwing.
-export const applyStockOpnameRows = (rows) => {
-  const materials = getMaterials();
+export const applyStockOpnameRows = (rows, reason) => {
   const summary = { totalRows: rows.length, adjusted: 0, newBatch: 0, noChange: 0, notApplied: 0 };
+  const transactionReason = reason || "Stock Opname";
+  let txSeq = 0;
+  const nextTransactionId = () => `tx-so-${Date.now()}-${++txSeq}`;
 
   const resultRows = rows.map((row) => {
     const hydrated = hydrateRow(row);
@@ -61,6 +65,19 @@ export const applyStockOpnameRows = (rows) => {
       };
       addBatch(newBatch);
       summary.newBatch += 1;
+      addTransaction({
+        id: nextTransactionId(),
+        materialId: hydrated.materialId,
+        date: new Date().toISOString(),
+        batchNo: newBatch.batchNo,
+        type: "In",
+        quantity: countedQty,
+        unit: hydrated.unit || "",
+        workOrder: null,
+        product: hydrated.materialName || "-",
+        reason: transactionReason,
+        actionBy: CURRENT_USER.name,
+      });
       return { ...hydrated, batchId: newBatch.id, batchNo: newBatch.batchNo, initialQty: countedQty, currentQty: countedQty, beforeQty: 0, result: "New Batch" };
     }
 
@@ -72,6 +89,19 @@ export const applyStockOpnameRows = (rows) => {
 
     updateBatch(hydrated.batchId, { currentQty: countedQty });
     summary.adjusted += 1;
+    addTransaction({
+      id: nextTransactionId(),
+      materialId: hydrated.materialId,
+      date: new Date().toISOString(),
+      batchNo: hydrated.batchNo,
+      type: "Adjustment",
+      quantity: countedQty - beforeQty,
+      unit: hydrated.unit || "",
+      workOrder: null,
+      product: hydrated.materialName || "-",
+      reason: transactionReason,
+      actionBy: CURRENT_USER.name,
+    });
     return { ...hydrated, beforeQty, currentQty: countedQty, result: "Adjusted" };
   });
 

@@ -175,7 +175,7 @@ export const StockOpnameUploadStep = ({ selectedFile, onFileSelected, isAnalyzin
             Upload Stock Opname File
           </span>
           <span style={{ fontSize: "14px", color: "var(--neutral-on-surface-secondary)" }}>
-            Upload your physical count file — a completed Stock Count Sheet works directly. We'll map its columns next.
+            Upload your physical count file. For easier mapping, use the Stock Count Sheet downloaded from the Stock Opname list.
           </span>
         </div>
       </div>

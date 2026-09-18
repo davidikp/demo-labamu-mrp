@@ -3,7 +3,7 @@ import { StatusBadge } from "../atoms/StatusBadge.jsx";
 
 export const LabelValue = ({ label, value, badge }) => {
   const displayValue =
-    typeof value === "object" && value !== null ? JSON.stringify(value) : value;
+    typeof value === "object" && value !== null && !React.isValidElement(value) ? JSON.stringify(value) : value;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
